@@ -1,2 +1,5 @@
-let a = 7 + 3
-println(-a == -10)
+fn fib(n) {
+    if (n < 2) { return n }
+    return fib(n - 1) + fib(n - 2)
+}
+fout(fib(30))

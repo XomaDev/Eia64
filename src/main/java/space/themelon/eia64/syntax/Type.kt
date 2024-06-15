@@ -17,7 +17,10 @@ enum class Type {
     OPERATOR, LOGICAL, BITWISE, EQUALITY, RELATIONAL, BINARY_PRECEDE, BINARY, NON_COMMUTE, UNARY,
 
     S_OPERATOR,
-    ASSIGNMENT, OPEN_CURVE, CLOSE_CURVE, COMMA,
+    ASSIGNMENT,
+    OPEN_CURVE, CLOSE_CURVE,
+    OPEN_CURLY, CLOSE_CURLY,
+    COMMA,
 
     CLASS,
     C_INT, C_BOOL, C_STRING,
@@ -26,7 +29,16 @@ enum class Type {
     ALPHA,
     E_TRUE, E_FALSE,
 
-    V_KEYWORD, LET, VAR;
+    V_KEYWORD, F_OUT, F_READ, LET, VAR,
+    IF, ELSE, FOR, WHILE,
+    FUN,
+
+    RETURN, BREAK, CONTINUE,
+
+    NATIVE_CALL,
+    INTERRUPTION,
+    NONE,
+    ;
 
     override fun toString(): String {
         return name.lowercase(Locale.getDefault())
@@ -58,6 +70,8 @@ enum class Type {
 
                 it["("] = Token(OPEN_CURVE, arrayOf(S_OPERATOR))
                 it[")"] = Token(CLOSE_CURVE, arrayOf(S_OPERATOR))
+                it["{"] = Token(OPEN_CURLY, arrayOf(S_OPERATOR))
+                it["}"] = Token(CLOSE_CURLY, arrayOf(S_OPERATOR))
                 it[","] = Token(COMMA, arrayOf(S_OPERATOR))
 
                 it["Int"] = Token(C_INT, arrayOf(CLASS))
@@ -67,8 +81,20 @@ enum class Type {
                 it["true"] = Token(E_TRUE, arrayOf(VALUE, C_BOOL))
                 it["false"] = Token(E_FALSE, arrayOf(VALUE, C_BOOL))
 
+                it["fout"] = Token(F_OUT, arrayOf(NATIVE_CALL))
+                it["fread"] = Token(F_READ, arrayOf(NATIVE_CALL))
+
                 it["let"] = Token(LET, arrayOf(V_KEYWORD))
                 it["var"] = Token(VAR, arrayOf(V_KEYWORD))
+
+                it["if"] = Token(IF, arrayOf(NONE))
+                it["else"] = Token(ELSE, arrayOf(NONE))
+
+                it["fn"] = Token(FUN, arrayOf(NONE))
+
+                it["return"] = Token(RETURN, arrayOf(INTERRUPTION))
+                it["break"] = Token(BREAK, arrayOf(INTERRUPTION))
+                it["continue"] = Token(CONTINUE, arrayOf(INTERRUPTION))
             }
         }
     }

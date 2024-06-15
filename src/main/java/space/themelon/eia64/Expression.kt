@@ -13,7 +13,12 @@ abstract class Expression(private val representation: String) {
         fun unaryOperation(expr: UnaryOperation): R
         fun binaryOperation(expr: BinaryOperation): R
         fun variable(variable: Variable): R
+        fun expressionList(exprList: ExpressionList): R
         fun methodCall(call: MethodCall): R
+        fun nativeCall(call: NativeCall): R
+        fun interruption(interruption: Interruption): R
+        fun ifFunction(ifDecl: IfFunction): R
+        fun function(function: Function): R
     }
 
     abstract fun <R> accept(v: Visitor<R>): R
@@ -61,8 +66,43 @@ abstract class Expression(private val representation: String) {
 
     open class MethodCall(
         val name: String,
-        val arguments: List<Expression>,
+        val arguments: ExpressionList,
     ) : Expression("MethodCall($name, $arguments)") {
         override fun <R> accept(v: Visitor<R>) = v.methodCall(this)
+    }
+
+    open class NativeCall(
+        val type: Type,
+        val arguments: ExpressionList,
+    ) : Expression("NativeCall($type, $arguments)") {
+        override fun <R> accept(v: Visitor<R>) = v.nativeCall(this)
+    }
+
+    open class ExpressionList(
+        val expressions: List<Expression>
+    ) : Expression("List($expressions)") {
+        val size = expressions.size
+        override fun <R> accept(v: Visitor<R>) = v.expressionList(this)
+    }
+
+    open class IfFunction(
+        val condition: Expression,
+        val thenBranch: Expression,
+        val elseBranch: Expression? = null,
+    ) : Expression("IfFunction($condition, $thenBranch, $elseBranch)") {
+        override fun <R> accept(v: Visitor<R>) = v.ifFunction(this)
+    }
+
+    open class Interruption(val type: Operator, val expr: Expression? = null)
+        : Expression("Interruption($type, $expr)") {
+        override fun <R> accept(v: Visitor<R>) = v.interruption(this)
+    }
+
+    open class Function(
+        val name: String,
+        val arguments: ExpressionList,
+        val body: Expression
+    ) : Expression("Function($name, $arguments, $body)") {
+        override fun <R> accept(v: Visitor<R>) = v.function(this)
     }
 }
