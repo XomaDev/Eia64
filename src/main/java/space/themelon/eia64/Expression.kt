@@ -10,7 +10,8 @@ abstract class Expression(private val representation: String) {
         fun eString(eString: EString): R
         fun alpha(alpha: Alpha): R
         fun operator(operator: Operator): R
-        fun binaryOperation(operation: BinaryOperation): R
+        fun unaryOperation(expr: UnaryOperation): R
+        fun binaryOperation(expr: BinaryOperation): R
         fun variable(variable: Variable): R
         fun methodCall(call: MethodCall): R
     }
@@ -37,6 +38,12 @@ abstract class Expression(private val representation: String) {
 
     open class Operator(val value: Type) : Expression("OP($value)") {
         override fun <R> accept(v: Visitor<R>) = v.operator(this)
+    }
+
+    open class UnaryOperation(
+        val operator: Operator,
+        val expr: Expression) : Expression("Unary($operator, $expr)") {
+        override fun <R> accept(v: Visitor<R>) = v.unaryOperation(this)
     }
 
     open class BinaryOperation(

@@ -18,18 +18,34 @@ class Evaluator(
         return memory.get(alpha.value)
     }
 
-    override fun binaryOperation(operation: Expression.BinaryOperation): Any {
-        val operator = eval(operation.operator)
+    override fun unaryOperation(expr: Expression.UnaryOperation): Any {
+        return when (val operator = eval(expr.operator)) {
+            Type.NOT -> {
+                !evalBoolean(expr.expr, "! [Not]")
+            }
+
+            Type.NEGATE -> {
+                Math.negateExact(evalInt(expr.expr, "- [Negate]"))
+            }
+
+            else -> {
+                throw RuntimeException("Unknown unary operator $operator")
+            }
+        }
+    }
+
+    override fun binaryOperation(expr: Expression.BinaryOperation): Any {
+        val operator = eval(expr.operator)
 
         if (operator == Type.PLUS) {
-            val left = eval(operation.left)
-            val right = eval(operation.right)
+            val left = eval(expr.left)
+            val right = eval(expr.right)
 
             return if (left is Int && right is Int) left + right
             else left.toString() + right.toString()
         } else if (operator == Type.EQUALS || operator == Type.NOT_EQUALS) {
-            val left = eval(operation.left)
-            val right = eval(operation.right)
+            val left = eval(expr.left)
+            val right = eval(expr.right)
 
             if (left::class != right::class) {
                 return operator != Type.EQUALS
@@ -44,51 +60,51 @@ class Evaluator(
 
         return when (operator) {
             Type.NEGATE -> {
-                evalInt(operation.left, "-") - evalInt(operation.right, "-")
+                evalInt(expr.left, "-") - evalInt(expr.right, "-")
             }
 
             Type.ASTERISK -> {
-                evalInt(operation.left, "*") * evalInt(operation.right, "*")
+                evalInt(expr.left, "*") * evalInt(expr.right, "*")
             }
 
             Type.SLASH -> {
-                evalInt(operation.left, "/") / evalInt(operation.right, "/")
+                evalInt(expr.left, "/") / evalInt(expr.right, "/")
             }
 
             Type.LOGICAL_AND -> {
-                evalBoolean(operation.left, "&&") && evalBoolean(operation.right, "&&")
+                evalBoolean(expr.left, "&&") && evalBoolean(expr.right, "&&")
             }
 
             Type.LOGICAL_OR -> {
-                evalBoolean(operation.left, "||") || evalBoolean(operation.right, "||")
+                evalBoolean(expr.left, "||") || evalBoolean(expr.right, "||")
             }
 
             Type.GREATER_THAN -> {
-                evalInt(operation.left, ">") > evalInt(operation.right, ">")
+                evalInt(expr.left, ">") > evalInt(expr.right, ">")
             }
 
             Type.LESSER_THAN -> {
-                evalInt(operation.left, "<") < evalInt(operation.right, "<")
+                evalInt(expr.left, "<") < evalInt(expr.right, "<")
             }
 
             Type.GREATER_THAN_EQUALS -> {
-                evalInt(operation.left, ">=") >= evalInt(operation.right, ">=")
+                evalInt(expr.left, ">=") >= evalInt(expr.right, ">=")
             }
 
             Type.LESSER_THAN_EQUALS -> {
-                evalInt(operation.left, "<=") <= evalInt(operation.right, "<=")
+                evalInt(expr.left, "<=") <= evalInt(expr.right, "<=")
             }
 
             Type.BITWISE_AND -> {
-                evalInt(operation.left, "&") and evalInt(operation.right, "&")
+                evalInt(expr.left, "&") and evalInt(expr.right, "&")
             }
 
             Type.BITWISE_OR -> {
-                evalInt(operation.left, "|") or evalInt(operation.right, "|")
+                evalInt(expr.left, "|") or evalInt(expr.right, "|")
             }
 
             else -> {
-                throw RuntimeException("Unknown operator $operation")
+                throw RuntimeException("Unknown operator $expr")
             }
         }
     }

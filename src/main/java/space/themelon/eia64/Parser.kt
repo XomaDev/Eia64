@@ -23,6 +23,7 @@ class Parser(private val tokens: List<Token>) {
             Type.V_KEYWORD -> {
                 variableDeclaration(token)
             }
+
             else -> {
                 back()
                 parseExpr(0)
@@ -52,8 +53,8 @@ class Parser(private val tokens: List<Token>) {
 
             if (precedence >= minPrecedence) {
                 val right = if (opToken.hasFlag(Type.NON_COMMUTE))
-                        parseElement()
-                    else parseExpr(precedence)
+                    parseElement()
+                else parseExpr(precedence)
                 left = Expression.BinaryOperation(
                     left,
                     right,
@@ -78,21 +79,18 @@ class Parser(private val tokens: List<Token>) {
 
     private fun parseElement(): Expression {
         val token = next()
-        return when (token.flags[0]) {
-            Type.VALUE -> {
-                if (!isEOF() && peek().type == Type.OPEN_CURVE)
-                    funcInvoke(token)
-                else parseValue(token)
-            }
-
-            Type.S_OPERATOR -> {
-                parseSpecial(token)
-            }
-
-            else -> {
-                throw RuntimeException("Unknown token type: $token")
-            }
+        if (token.type == Type.OPEN_CURVE) {
+            val expr = parseNext()
+            eat(Type.CLOSE_CURVE)
+            return expr
         }
+        if (token.hasFlag(Type.VALUE)) {
+            return if (!isEOF() && peek().type == Type.OPEN_CURVE) funcInvoke(token)
+            else parseValue(token)
+        } else if (token.hasFlag(Type.UNARY)) {
+            return Expression.UnaryOperation(Expression.Operator(token.type), parseElement())
+        }
+        throw RuntimeException("Unexpected token $token")
     }
 
     private fun parseValue(token: Token): Expression {
@@ -122,21 +120,6 @@ class Parser(private val tokens: List<Token>) {
 
             else -> {
                 throw RuntimeException("Unknown token type: $token")
-            }
-        }
-    }
-
-    private fun parseSpecial(token: Token): Expression {
-        // [ s_operator equals|open_curve|close_curve|comma ]
-        when (token.type) {
-            Type.OPEN_CURVE -> {
-                val expr = parseNext()
-                eat(Type.CLOSE_CURVE)
-                return expr
-            }
-
-            else -> {
-                throw RuntimeException("Unexpected parse special token: $token")
             }
         }
     }
