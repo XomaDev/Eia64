@@ -1,15 +1,16 @@
 package space.themelon.eia64
 
-import java.io.File
+import space.themelon.eia64.syntax.SyntaxAnalysis
 
 object Main {
     @JvmStatic
     fun main(args: Array<String>) {
         val loader = javaClass.classLoader
-        val syntaxFile = File(loader.getResource("syntax")!!.file)
         val source = loader.getResource("hello.eia")!!.readText()
 
-        SyntaxAnalysis(syntaxFile).tokenize(source)
+        val tokens = SyntaxAnalysis().tokenize(source)
 
+        val evaluator = Evaluator(Memory())
+        Parser(tokens).expressions.forEach { evaluator.eval(it) }
     }
 }

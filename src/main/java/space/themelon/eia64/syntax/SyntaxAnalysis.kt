@@ -1,19 +1,9 @@
-package space.themelon.eia64
+package space.themelon.eia64.syntax
 
-import java.io.File
+import space.themelon.eia64.syntax.Type.Companion.SYMBOLS
 import kotlin.text.StringBuilder
 
-class SyntaxAnalysis(file: File) {
-
-    private val symbols = HashMap<String, List<String>>()
-
-    init {
-        file.readLines().forEach { line ->
-            line.trim().split(" ").let {
-                symbols[it[0]] = it[1].split(":")
-            }
-        }
-    }
+class SyntaxAnalysis {
 
     private lateinit var source: String
     private var iterIndex = 0
@@ -21,7 +11,7 @@ class SyntaxAnalysis(file: File) {
 
     private lateinit var tokens: ArrayList<Token>
 
-    fun tokenize(source: String) {
+    fun tokenize(source: String): ArrayList<Token> {
         this.source = source
         this.iterIndex = 0
         this.sourceSize = source.length
@@ -31,6 +21,8 @@ class SyntaxAnalysis(file: File) {
             scanTokens()
         }
         tokens.forEach { println(it) }
+        println()
+        return tokens
     }
 
     private fun scanTokens() {
@@ -44,13 +36,13 @@ class SyntaxAnalysis(file: File) {
         }
         back()
         var match = ""
-        var types: List<String>? = null
+        var token: Token? = null
         while (!isEOF()) {
-            types = symbols[match + peek()] ?: break
+            token = SYMBOLS[match + peek()] ?: break
             match += next()
         }
-        if (match.isNotEmpty()) {
-            tokens.add(Token(types!!, match))
+        if (token != null) {
+            tokens.add(token)
         } else {
             if (isAlpha(c)) {
                 parseAlpha()
@@ -81,8 +73,13 @@ class SyntaxAnalysis(file: File) {
                 skip()
             } else break
         }
-        val symbol = content.toString()
-        tokens.add(Token(symbols[symbol] ?: ALPHA, symbol))
+        val value = content.toString()
+        val token = SYMBOLS[value]
+        if (token != null) {
+            tokens.add(token)
+        } else {
+            tokens.add(Token(ALPHA_TYPE, value))
+        }
     }
 
     private fun parseNumeric() {
@@ -97,6 +94,9 @@ class SyntaxAnalysis(file: File) {
         tokens.add(Token(NUMBER_TYPE, content.toString()))
     }
 
+    private fun isNumeric(c: Char) = c in '0'..'9'
+    private fun isAlpha(c: Char) = c in 'a'..'z' || c in 'A'..'Z'
+
     private fun back() {
         iterIndex--
     }
@@ -105,16 +105,13 @@ class SyntaxAnalysis(file: File) {
         iterIndex++
     }
 
-    private fun isNumeric(c: Char) = c in '0'..'9'
-    private fun isAlpha(c: Char) = c in 'a'..'z' || c in 'A'..'Z'
-
     private fun next() = source[iterIndex++]
     private fun peek() = source[iterIndex]
     private fun isEOF() = iterIndex == sourceSize
 
     companion object {
-        private val NUMBER_TYPE = listOf("Number", "Value")
-        private val STRING_TYPE = listOf("String", "Value")
-        private val ALPHA = listOf("Identifier", "Value")
+        private val NUMBER_TYPE = arrayOf(Type.VALUE, Type.C_INT)
+        private val STRING_TYPE = arrayOf(Type.VALUE, Type.C_STRING)
+        private val ALPHA_TYPE = arrayOf(Type.VALUE, Type.ALPHA)
     }
 }

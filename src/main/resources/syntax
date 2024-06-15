@@ -13,3 +13,5 @@ var Var
 : Colon
 " DoubleQuote
 ' SingleQuote
+( LeftCurve
+) RightCurve
