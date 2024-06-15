@@ -1,14 +1,16 @@
 package space.themelon.eia64.syntax
 
-data class Token(val types: Array<Type>, val symbol: String? = null) {
+data class Token(
+    val type: Type,
+    val flags: Array<Type>,
+    val optionalData: Any? = null
+) {
 
-    val firstType: Type get() = types[0]
-    fun hasType(type: Type): Boolean = types.contains(type)
+    fun hasFlag(type: Type): Boolean = flags.contains(type)
 
     override fun toString(): String {
-        return if (symbol != null) {
-            "($symbol ${types.contentToString()})"
-        } else return types.contentToString()
+        val flagsString = flags.contentToString()
+        return if (optionalData == null) "($type, $flagsString)" else "($type, $flagsString, od=$optionalData)"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -17,15 +19,18 @@ data class Token(val types: Array<Type>, val symbol: String? = null) {
 
         other as Token
 
-        if (!types.contentEquals(other.types)) return false
-        if (symbol != other.symbol) return false
+        if (type != other.type) return false
+        if (!flags.contentEquals(other.flags)) return false
+        if (optionalData != other.optionalData) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = types.contentHashCode()
-        result = 31 * result + symbol.hashCode()
+        var result = type.hashCode()
+        result = 31 * result + flags.contentHashCode()
+        result = 31 * result + (optionalData?.hashCode() ?: 0)
         return result
     }
+
 }

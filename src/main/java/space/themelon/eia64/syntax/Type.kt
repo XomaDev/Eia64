@@ -5,12 +5,19 @@ import kotlin.collections.HashMap
 
 enum class Type {
 
-    OPERATOR,
-    PLUS, NEGATE, SLASH, ASTERISK,
-    EQUALS, FLAG_NON_COMMUTE,
+    LOGICAL_AND, LOGICAL_OR,
+    BITWISE_AND, BITWISE_OR,
+    EQUALS, NOT_EQUALS,
+    GREATER_THAN, LESSER_THAN,
+    GREATER_THAN_EQUALS, LESSER_THAN_EQUALS,
+    SLASH, ASTERISK,
+    PLUS, NEGATE,
+    NOT,
+
+    OPERATOR, LOGICAL, BITWISE, EQUALITY, RELATIONAL, BINARY_PRECEDE, BINARY, NON_COMMUTE, UNARY,
 
     S_OPERATOR,
-    OPEN_CURVE, CLOSE_CURVE, COMMA,
+    ASSIGNMENT, OPEN_CURVE, CLOSE_CURVE, COMMA,
 
     CLASS,
     C_INT, C_BOOL, C_STRING,
@@ -30,25 +37,38 @@ enum class Type {
 
         init {
             SYMBOLS.let {
-                it["+"] = Token(arrayOf(OPERATOR, PLUS))
-                it["-"] = Token(arrayOf(OPERATOR, NEGATE))
-                it["/"] = Token(arrayOf(OPERATOR, SLASH, FLAG_NON_COMMUTE))
-                it["*"] = Token(arrayOf(OPERATOR, ASTERISK, FLAG_NON_COMMUTE))
+                // FLAGS [ PRECEDENCE, .. OPERATOR ]
+                it["&&"] = Token(LOGICAL_AND, arrayOf(LOGICAL, OPERATOR))
+                it["||"] = Token(LOGICAL_OR, arrayOf(LOGICAL, OPERATOR))
+                it["&"] = Token(BITWISE_AND, arrayOf(BITWISE, OPERATOR))
+                it["|"] = Token(BITWISE_OR, arrayOf(BITWISE, OPERATOR))
+                it["=="] = Token(EQUALS, arrayOf(EQUALITY, OPERATOR))
+                it["!="] = Token(NOT_EQUALS, arrayOf(EQUALITY, OPERATOR))
+                it[">"] = Token(GREATER_THAN, arrayOf(RELATIONAL, OPERATOR))
+                it["<"] = Token(LESSER_THAN, arrayOf(RELATIONAL, OPERATOR))
+                it[">="] = Token(GREATER_THAN_EQUALS, arrayOf(RELATIONAL, OPERATOR))
+                it["<="] = Token(LESSER_THAN_EQUALS, arrayOf(RELATIONAL, OPERATOR))
+                it["/"] = Token(SLASH, arrayOf(BINARY_PRECEDE, NON_COMMUTE, OPERATOR))
+                it["*"] = Token(ASTERISK, arrayOf(BINARY_PRECEDE, NON_COMMUTE, OPERATOR))
+                it["+"] = Token(PLUS, arrayOf(BINARY, OPERATOR))
+                it["-"] = Token(NEGATE, arrayOf(BINARY, UNARY, OPERATOR))
+                it["!"] = Token(NOT, arrayOf(UNARY))
 
-                it["="] = Token(arrayOf(S_OPERATOR, EQUALS))
-                it["("] = Token(arrayOf(S_OPERATOR, OPEN_CURVE))
-                it[")"] = Token(arrayOf(S_OPERATOR, CLOSE_CURVE))
-                it[","] = Token(arrayOf(S_OPERATOR, COMMA))
+                it["="] = Token(ASSIGNMENT, arrayOf(S_OPERATOR))
 
-                it["Int"] = Token(arrayOf(CLASS, C_INT))
-                it["Bool"] = Token(arrayOf(CLASS, C_BOOL))
-                it["String"] = Token(arrayOf(CLASS, C_STRING))
+                it["("] = Token(OPEN_CURVE, arrayOf(S_OPERATOR))
+                it[")"] = Token(CLOSE_CURVE, arrayOf(S_OPERATOR))
+                it[","] = Token(COMMA, arrayOf(S_OPERATOR))
 
-                it["true"] = Token(arrayOf(VALUE, C_BOOL, E_TRUE))
-                it["false"] = Token(arrayOf(VALUE, C_BOOL, E_FALSE))
+                it["Int"] = Token(C_INT, arrayOf(CLASS))
+                it["Bool"] = Token(C_BOOL, arrayOf(CLASS))
+                it["String"] = Token(C_STRING, arrayOf(CLASS))
 
-                it["let"] = Token(arrayOf(V_KEYWORD, LET))
-                it["var"] = Token(arrayOf(V_KEYWORD, VAR))
+                it["true"] = Token(E_TRUE, arrayOf(VALUE, C_BOOL))
+                it["false"] = Token(E_FALSE, arrayOf(VALUE, C_BOOL))
+
+                it["let"] = Token(LET, arrayOf(V_KEYWORD))
+                it["var"] = Token(VAR, arrayOf(V_KEYWORD))
             }
         }
     }

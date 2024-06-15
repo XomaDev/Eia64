@@ -61,7 +61,7 @@ class SyntaxAnalysis {
             }
             content.append(c)
         }
-        tokens.add(Token(STRING_TYPE, content.toString()))
+        tokens.add(Token(Type.C_STRING, arrayOf(Type.VALUE), content.toString()))
     }
 
     private fun parseAlpha() {
@@ -78,7 +78,7 @@ class SyntaxAnalysis {
         if (token != null) {
             tokens.add(token)
         } else {
-            tokens.add(Token(ALPHA_TYPE, value))
+            tokens.add(Token(Type.ALPHA, arrayOf(Type.VALUE), value))
         }
     }
 
@@ -91,7 +91,7 @@ class SyntaxAnalysis {
                 skip()
             } else break
         }
-        tokens.add(Token(NUMBER_TYPE, content.toString()))
+        tokens.add(Token(Type.C_INT, arrayOf(Type.VALUE), content.toString()))
     }
 
     private fun isNumeric(c: Char) = c in '0'..'9'
@@ -108,10 +108,4 @@ class SyntaxAnalysis {
     private fun next() = source[iterIndex++]
     private fun peek() = source[iterIndex]
     private fun isEOF() = iterIndex == sourceSize
-
-    companion object {
-        private val NUMBER_TYPE = arrayOf(Type.VALUE, Type.C_INT)
-        private val STRING_TYPE = arrayOf(Type.VALUE, Type.C_STRING)
-        private val ALPHA_TYPE = arrayOf(Type.VALUE, Type.ALPHA)
-    }
 }

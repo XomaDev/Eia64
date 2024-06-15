@@ -19,11 +19,10 @@ class Parser(private val tokens: List<Token>) {
 
     private fun parseNext(): Expression {
         val token = next()
-        return when (token.firstType) {
+        return when (token.flags[0]) {
             Type.V_KEYWORD -> {
                 variableDeclaration(token)
             }
-
             else -> {
                 back()
                 parseExpr(0)
@@ -33,8 +32,8 @@ class Parser(private val tokens: List<Token>) {
 
     private fun variableDeclaration(token: Token): Expression {
         // for now, we do not care about 'let' or 'var'
-        val name = next().symbol!!
-        eat(Type.EQUALS)
+        val name = next().optionalData as String
+        eat(Type.ASSIGNMENT)
         val expr = parseNext()
         return Expression.Variable(name, expr)
     }
@@ -43,42 +42,45 @@ class Parser(private val tokens: List<Token>) {
         var left = parseElement()
         while (!isEOF()) {
             // [ operator, plus|negate|slash|asterisk ]
-            if (peek().firstType != Type.OPERATOR)
+            if (!peek().hasFlag(Type.OPERATOR))
                 return left
 
             val opToken = next()
-            val operator = opToken.types[1]
-            val precedence = operatorPrecedence(operator)
+            val precedence = operatorPrecedence(opToken.flags[0])
             if (precedence == -1)
                 return left
 
             if (precedence >= minPrecedence) {
-                val right = if (opToken.hasType(Type.FLAG_NON_COMMUTE))
+                val right = if (opToken.hasFlag(Type.NON_COMMUTE))
                         parseElement()
                     else parseExpr(precedence)
                 left = Expression.BinaryOperation(
                     left,
                     right,
-                    Expression.Operator(operator)
+                    Expression.Operator(opToken.type)
                 )
-            } else break
+            } else return left
         }
         return left
     }
 
     private fun operatorPrecedence(type: Type): Int {
         return when (type) {
-            Type.PLUS, Type.NEGATE -> 1
-            Type.ASTERISK, Type.SLASH -> 2
+            Type.BITWISE -> 1
+            Type.LOGICAL -> 2
+            Type.EQUALITY -> 3
+            Type.RELATIONAL -> 4
+            Type.BINARY -> 5
+            Type.BINARY_PRECEDE -> 6
             else -> -1
         }
     }
 
     private fun parseElement(): Expression {
         val token = next()
-        return when (token.firstType) {
+        return when (token.flags[0]) {
             Type.VALUE -> {
-                if (!isEOF() && peek().hasType(Type.OPEN_CURVE))
+                if (!isEOF() && peek().type == Type.OPEN_CURVE)
                     funcInvoke(token)
                 else parseValue(token)
             }
@@ -95,21 +97,21 @@ class Parser(private val tokens: List<Token>) {
 
     private fun parseValue(token: Token): Expression {
         // [ value, alpha|c_int|c_bool|c_string ]
-        return when (token.types[1]) {
+        return when (token.type) {
             Type.C_BOOL -> {
-                Expression.EBool(token.hasType(Type.E_TRUE))
+                Expression.EBool(token.hasFlag(Type.E_TRUE))
             }
 
             Type.C_INT -> {
-                Expression.EInt(token.symbol!!.toInt())
+                Expression.EInt((token.optionalData as String).toInt())
             }
 
             Type.C_STRING -> {
-                Expression.EString(token.symbol!!)
+                Expression.EString(token.optionalData as String)
             }
 
             Type.ALPHA -> {
-                return Expression.Alpha(token.symbol!!)
+                return Expression.Alpha(token.optionalData as String)
             }
 
             Type.OPEN_CURVE -> {
@@ -126,7 +128,7 @@ class Parser(private val tokens: List<Token>) {
 
     private fun parseSpecial(token: Token): Expression {
         // [ s_operator equals|open_curve|close_curve|comma ]
-        when (token.types[1]) {
+        when (token.type) {
             Type.OPEN_CURVE -> {
                 val expr = parseNext()
                 eat(Type.CLOSE_CURVE)
@@ -140,7 +142,7 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun funcInvoke(token: Token): Expression {
-        val name = token.symbol!!
+        val name = token.optionalData as String
         eat(Type.OPEN_CURVE)
         val arguments = parseArguments()
         eat(Type.CLOSE_CURVE)
@@ -149,19 +151,20 @@ class Parser(private val tokens: List<Token>) {
 
     private fun parseArguments(): List<Expression> {
         val expressions = ArrayList<Expression>()
-        if (!isEOF() && peek().hasType(Type.CLOSE_CURVE))
+        if (!isEOF() && peek().type == Type.CLOSE_CURVE)
             return expressions
         while (!isEOF()) {
             expressions.add(parseNext())
-            if (!peek().hasType(Type.COMMA))
+            if (peek().type != Type.COMMA)
                 break
+            skip()
         }
         return expressions
     }
 
     private fun eat(type: Type) {
         val next = next()
-        if (!next.hasType(type)) {
+        if (next.type != type) {
             throw RuntimeException("Expected token type: $type, got token $next")
         }
     }
