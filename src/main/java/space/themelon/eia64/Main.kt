@@ -7,7 +7,7 @@ object Main {
     @JvmStatic
     fun main(args: Array<String>) {
         val loader = javaClass.classLoader
-        val source = loader.getResource("hello.eia")!!.readText()
+        val source = loader.getResource("trashguy.eia")!!.readText()
 
         val tokens = SyntaxAnalysis().tokenize(source)
 

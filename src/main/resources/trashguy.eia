@@ -1,0 +1,13 @@
+let trash = "🗑️"
+let happy_right = "(> ^_^)>"
+let happy_left = "<(^_^ <)"
+
+fn generateSpaces(n) {
+    let spaces = ""
+    let i = 0
+    until (i++ != n) {
+        spaces = spaces + " "
+    }
+    return spaces
+}
+fout("Spaces: " + generateSpaces(5))

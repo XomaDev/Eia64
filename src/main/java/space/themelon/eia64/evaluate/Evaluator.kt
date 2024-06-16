@@ -103,7 +103,9 @@ class Evaluator : Expression.Visitor<Any> {
     override fun expressions(list: Expression.ExpressionList): Any {
         for (expression in list.expressions) {
             val result = eval(expression)
-            if (result is FlowBlack) return result
+            if (result is FlowBlack) {
+                return if (result.interrupt == Interrupt.RETURN) result.data!! else result
+            }
         }
         return list
     }
@@ -125,7 +127,7 @@ class Evaluator : Expression.Visitor<Any> {
         destroySubMemory()
         if (result is FlowBlack && result.interrupt == Interrupt.RETURN)
             return result.data!!
-        return Interrupt.NONE
+        return result
     }
 
     override fun until(until: Expression.Until): Any {
