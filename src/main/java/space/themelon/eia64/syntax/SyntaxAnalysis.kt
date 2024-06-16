@@ -1,5 +1,6 @@
 package space.themelon.eia64.syntax
 
+import space.themelon.eia64.Config
 import space.themelon.eia64.syntax.Type.Companion.SYMBOLS
 import kotlin.text.StringBuilder
 
@@ -20,8 +21,10 @@ class SyntaxAnalysis {
         while (!isEOF()) {
             scanTokens()
         }
-        tokens.forEach { println(it) }
-        println()
+        if (Config.DEBUG) {
+            tokens.forEach { println(it) }
+            println()
+        }
         return tokens
     }
 
@@ -95,7 +98,7 @@ class SyntaxAnalysis {
     }
 
     private fun isNumeric(c: Char) = c in '0'..'9'
-    private fun isAlpha(c: Char) = c in 'a'..'z' || c in 'A'..'Z'
+    private fun isAlpha(c: Char) = (c in 'a'..'z' || c in 'A'..'Z') || c == '_'
 
     private fun back() {
         iterIndex--

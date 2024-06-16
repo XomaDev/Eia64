@@ -3,6 +3,7 @@ package space.themelon.eia64.evaluate
 import space.themelon.eia64.Expression
 import space.themelon.eia64.Memory
 import space.themelon.eia64.syntax.Type.*
+import java.util.*
 
 class Evaluator : Expression.Visitor<Any> {
     
@@ -146,14 +147,35 @@ class Evaluator : Expression.Visitor<Any> {
         return until
     }
 
-    override fun nativeReadWrite(call: Expression.NativeReadWrite): Any {
+    override fun nativeCall(call: Expression.NativeCall): Any {
         val argsSize = call.arguments.size
         when (val type = call.type) {
-            F_OUT -> {
-                if (argsSize != 1) throw RuntimeException("Expected only 1 argument for fout, got $argsSize")
-                val obj = eval(call.arguments.expressions[0]).toString()
-                println(obj)
-                return obj.length
+            PRINT, PRINTLN -> {
+                var printCount = 0
+                call.arguments.expressions.forEach {
+                    val obj = eval(it).toString()
+                    printCount += obj.length
+                    print(obj)
+                }
+                if (type == PRINTLN) println()
+                return printCount
+            }
+
+            READ, READLN -> {
+                if (argsSize != 0) throw RuntimeException("Expected no arguments for read()/readln(), got $argsSize")
+                return Scanner(System.`in`).let { if (type == READ) it.next() else it.nextLine() }
+            }
+
+            SLEEP -> {
+                if (argsSize != 1) throw RuntimeException("Expected only 1 argument for sleep, got $argsSize")
+                val ms = intExpr(call.arguments.expressions[0], "sleep()")
+                Thread.sleep(ms.toLong())
+                return ms
+            }
+
+            LEN -> {
+                if (argsSize != 1) throw RuntimeException("Expected only 1 argument for len, got $argsSize")
+                return eval(call.arguments.expressions[0]).toString().length
             }
             else -> throw RuntimeException("Unknown native read write $type")
         }
@@ -180,5 +202,12 @@ class Evaluator : Expression.Visitor<Any> {
     override fun function(function: Expression.Function): Any {
         memory.define(function.name, function)
         return function
+    }
+
+    override fun elementAccess(access: Expression.ElementAccess): Any {
+        val entity = eval(access.expr)
+        val index = intExpr(access.index, "[] ArrayAccess")
+        if (entity is String) return entity[index].toString()
+        throw RuntimeException("Unknown entity type $entity")
     }
 }

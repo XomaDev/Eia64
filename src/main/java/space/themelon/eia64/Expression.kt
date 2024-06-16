@@ -15,11 +15,12 @@ abstract class Expression(private val representation: String) {
         fun variable(variable: Variable): R
         fun expressions(list: ExpressionList): R
         fun methodCall(call: MethodCall): R
+        fun nativeCall(call: NativeCall): R
         fun until(until: Until): R
-        fun nativeReadWrite(call: NativeReadWrite): R
         fun interruption(interruption: Interruption): R
         fun ifFunction(ifExpr: If): R
         fun function(function: Function): R
+        fun elementAccess(access: ElementAccess): R
     }
 
     abstract fun <R> accept(v: Visitor<R>): R
@@ -74,11 +75,11 @@ abstract class Expression(private val representation: String) {
         override fun <R> accept(v: Visitor<R>) = v.methodCall(this)
     }
 
-    open class NativeReadWrite(
+    open class NativeCall(
         val type: Type,
         val arguments: ExpressionList,
     ) : Expression("NativeCall($type, $arguments)") {
-        override fun <R> accept(v: Visitor<R>) = v.nativeReadWrite(this)
+        override fun <R> accept(v: Visitor<R>) = v.nativeCall(this)
     }
 
     open class ExpressionList(
@@ -116,4 +117,10 @@ abstract class Expression(private val representation: String) {
         override fun <R> accept(v: Visitor<R>) = v.function(this)
     }
 
+    open class ElementAccess(
+        val expr: Expression,
+        val index: Expression
+    ) : Expression("ElementAccess($expr, $index)") {
+        override fun <R> accept(v: Visitor<R>) = v.elementAccess(this)
+    }
 }

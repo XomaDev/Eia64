@@ -15,7 +15,7 @@ class Parser(private val tokens: List<Token>) {
         while (!isEOF()) {
             expressions.add(parseNext())
         }
-        expressions.forEach { println(it) }
+        if (Config.DEBUG) expressions.forEach { println(it) }
         parsedResult = Expression.ExpressionList(expressions)
     }
 
@@ -40,13 +40,6 @@ class Parser(private val tokens: List<Token>) {
 
     private fun sysCall(token: Token): Expression {
         when (token.type) {
-            Type.F_OUT -> {
-                eat(Type.OPEN_CURVE)
-                val arguments = parseArguments()
-                eat(Type.CLOSE_CURVE)
-                return Expression.NativeReadWrite(token.type, Expression.ExpressionList(arguments))
-            }
-
             Type.UNTIL -> {
                 eat(Type.OPEN_CURVE)
                 val expr = parseNext()
@@ -54,8 +47,12 @@ class Parser(private val tokens: List<Token>) {
                 val body = readBody()
                 return Expression.Until(expr, body)
             }
-
-            else -> throw RuntimeException("Unexpected token $token")
+            else -> {
+                eat(Type.OPEN_CURVE)
+                val arguments = parseArguments()
+                eat(Type.CLOSE_CURVE)
+                return Expression.NativeCall(token.type, Expression.ExpressionList(arguments))
+            }
         }
     }
 
@@ -125,14 +122,22 @@ class Parser(private val tokens: List<Token>) {
 
     private fun parseExpr(minPrecedence: Int): Expression {
         var left = parseElement()
+        // a[x][y]
+        // {{a, x}, y}
+        while (!isEOF() && peek().type == Type.OPEN_SQUARE) {
+            skip()
+            val expr = parseNext()
+            eat(Type.CLOSE_SQUARE)
+            left = Expression.ElementAccess(left, expr)
+        }
+        // TODO: order could be tricky
+        if (!isEOF() && peek().hasFlag(Type.UNARY))
+            left = Expression.UnaryOperation(Expression.Operator(next().type), left, false)
         while (!isEOF()) {
-            if (peek().hasFlag(Type.UNARY))
-                left = Expression.UnaryOperation(Expression.Operator(next().type), left, false)
             if (!peek().hasFlag(Type.OPERATOR))
                 return left
 
             val opToken = next()
-            println("op=$opToken")
             val precedence = operatorPrecedence(opToken.flags[0])
             if (precedence == -1)
                 return left
@@ -185,8 +190,8 @@ class Parser(private val tokens: List<Token>) {
 
     private fun parseValue(token: Token): Expression {
         return when (token.type) {
-            Type.C_BOOL -> {
-                Expression.EBool(token.hasFlag(Type.E_TRUE))
+            Type.E_TRUE, Type.E_FALSE -> {
+                Expression.EBool(token.type == Type.E_TRUE)
             }
 
             Type.C_INT -> {

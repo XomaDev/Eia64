@@ -19,6 +19,7 @@ enum class Type {
     S_OPERATOR,
     ASSIGNMENT,
     OPEN_CURVE, CLOSE_CURVE,
+    OPEN_SQUARE, CLOSE_SQUARE,
     OPEN_CURLY, CLOSE_CURLY,
     COMMA,
 
@@ -32,7 +33,7 @@ enum class Type {
     V_KEYWORD, LET, VAR,
     IF, ELSE, FOR, WHILE,
     FUN,
-    F_OUT, F_READ, INVOKE,
+    PRINT, PRINTLN, READ, READLN, LEN, SLEEP, INVOKE,
     UNTIL,
 
     RETURN, BREAK, CONTINUE,
@@ -72,6 +73,9 @@ enum class Type {
 
                 it["="] = Token(ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
 
+                it["["] = Token(OPEN_SQUARE, arrayOf(S_OPERATOR))
+                it["]"] = Token(CLOSE_SQUARE, arrayOf(S_OPERATOR))
+
                 it["("] = Token(OPEN_CURVE, arrayOf(S_OPERATOR))
                 it[")"] = Token(CLOSE_CURVE, arrayOf(S_OPERATOR))
                 it["{"] = Token(OPEN_CURLY, arrayOf(S_OPERATOR))
@@ -85,8 +89,12 @@ enum class Type {
                 it["true"] = Token(E_TRUE, arrayOf(VALUE, C_BOOL))
                 it["false"] = Token(E_FALSE, arrayOf(VALUE, C_BOOL))
 
-                it["fout"] = Token(F_OUT, arrayOf(NATIVE_CALL))
-                it["fread"] = Token(F_READ, arrayOf(NATIVE_CALL))
+                it["print"] = Token(PRINT, arrayOf(NATIVE_CALL))
+                it["println"] = Token(PRINTLN, arrayOf(NATIVE_CALL))
+                it["read"] = Token(READ, arrayOf(NATIVE_CALL))
+                it["readln"] = Token(READLN, arrayOf(NATIVE_CALL))
+                it["sleep"] = Token(SLEEP, arrayOf(NATIVE_CALL))
+                it["len"] = Token(LEN, arrayOf(NATIVE_CALL))
 
                 it["until"] = Token(UNTIL, arrayOf(NATIVE_CALL))
 
