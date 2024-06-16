@@ -8,15 +8,15 @@ class Parser(private val tokens: List<Token>) {
     private var index = 0
     private val size = tokens.size
 
-    val expressions = ArrayList<Expression>()
+    private val expressions = ArrayList<Expression>()
+    val parsedResult: Expression
 
     init {
         while (!isEOF()) {
-            val result = parseNext()
-            println("result $result")
-            expressions.add(result)
+            expressions.add(parseNext())
         }
         expressions.forEach { println(it) }
+        parsedResult = Expression.ExpressionList(expressions)
     }
 
     private fun parseNext(): Expression {
@@ -39,10 +39,24 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun sysCall(token: Token): Expression {
-        eat(Type.OPEN_CURVE)
-        val arguments = parseArguments()
-        eat(Type.CLOSE_CURVE)
-        return Expression.NativeCall(token.type, Expression.ExpressionList(arguments))
+        when (token.type) {
+            Type.F_OUT -> {
+                eat(Type.OPEN_CURVE)
+                val arguments = parseArguments()
+                eat(Type.CLOSE_CURVE)
+                return Expression.NativeReadWrite(token.type, Expression.ExpressionList(arguments))
+            }
+
+            Type.UNTIL -> {
+                eat(Type.OPEN_CURVE)
+                val expr = parseNext()
+                eat(Type.CLOSE_CURVE)
+                val body = readBody()
+                return Expression.Until(expr, body)
+            }
+
+            else -> throw RuntimeException("Unexpected token $token")
+        }
     }
 
     private fun interruption(token: Token): Expression.Interruption {
@@ -58,37 +72,39 @@ class Parser(private val tokens: List<Token>) {
     private fun fnDeclaration(token: Token): Expression {
         val name = next().optionalData as String
         eat(Type.OPEN_CURVE)
-        val requiredArgs = ArrayList<Expression>()
+        val requiredArgs = ArrayList<String>()
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
-            requiredArgs.add(Expression.Alpha(eat(Type.ALPHA).optionalData as String))
+            requiredArgs.add(eat(Type.ALPHA).optionalData as String)
             if (peek().type != Type.COMMA)
                 break
             skip()
         }
         eat(Type.CLOSE_CURVE)
-        return Expression.Function(name, Expression.ExpressionList(requiredArgs), readBody())
+        return Expression.Function(name, requiredArgs, readBody())
     }
 
     private fun ifDeclaration(token: Token): Expression {
         eat(Type.OPEN_CURVE)
         val logicalExpr = parseNext()
         eat(Type.CLOSE_CURVE)
-        val ifBody = parseExpr(0)
+        val ifBody = parseNext()
 
-        println("body=$ifBody")
         if (isEOF() || peek().type != Type.ELSE)
-            return Expression.IfFunction(logicalExpr, ifBody)
+            return Expression.If(logicalExpr, ifBody)
         skip()
 
         val elseBranch = when (peek().type) {
             Type.IF -> ifDeclaration(next())
-            else -> parseExpr(0)
+            else -> parseNext()
         }
-        println("else=$elseBranch")
-        return Expression.IfFunction(logicalExpr, ifBody, elseBranch)
+        return Expression.If(logicalExpr, ifBody, elseBranch)
     }
 
     private fun readBody(): Expression {
+        if (peek().type == Type.ASSIGNMENT) {
+            skip()
+            return Expression.Interruption(Expression.Operator(Type.RETURN), parseNext())
+        }
         eat(Type.OPEN_CURLY)
         val expressions = ArrayList<Expression>()
         while (!isEOF() && peek().type != Type.CLOSE_CURLY)
@@ -114,6 +130,7 @@ class Parser(private val tokens: List<Token>) {
                 return left
 
             val opToken = next()
+            println("op=$opToken")
             val precedence = operatorPrecedence(opToken.flags[0])
             if (precedence == -1)
                 return left
@@ -132,16 +149,15 @@ class Parser(private val tokens: List<Token>) {
         return left
     }
 
-    private fun operatorPrecedence(type: Type): Int {
-        return when (type) {
-            Type.BITWISE -> 1
-            Type.LOGICAL -> 2
-            Type.EQUALITY -> 3
-            Type.RELATIONAL -> 4
-            Type.BINARY -> 5
-            Type.BINARY_PRECEDE -> 6
-            else -> -1
-        }
+    private fun operatorPrecedence(type: Type) = when (type) {
+        Type.ASSIGNMENT_TYPE -> 1
+        Type.BITWISE -> 2
+        Type.LOGICAL -> 3
+        Type.EQUALITY -> 4
+        Type.RELATIONAL -> 5
+        Type.BINARY -> 6
+        Type.BINARY_PRECEDE -> 7
+        else -> -1
     }
 
     private fun parseElement(): Expression {

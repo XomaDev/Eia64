@@ -13,11 +13,12 @@ abstract class Expression(private val representation: String) {
         fun unaryOperation(expr: UnaryOperation): R
         fun binaryOperation(expr: BinaryOperation): R
         fun variable(variable: Variable): R
-        fun expressionList(exprList: ExpressionList): R
+        fun expressions(list: ExpressionList): R
         fun methodCall(call: MethodCall): R
-        fun nativeCall(call: NativeCall): R
+        fun until(until: Until): R
+        fun nativeReadWrite(call: NativeReadWrite): R
         fun interruption(interruption: Interruption): R
-        fun ifFunction(ifDecl: IfFunction): R
+        fun ifFunction(ifExpr: If): R
         fun function(function: Function): R
     }
 
@@ -71,21 +72,28 @@ abstract class Expression(private val representation: String) {
         override fun <R> accept(v: Visitor<R>) = v.methodCall(this)
     }
 
-    open class NativeCall(
+    open class NativeReadWrite(
         val type: Type,
         val arguments: ExpressionList,
     ) : Expression("NativeCall($type, $arguments)") {
-        override fun <R> accept(v: Visitor<R>) = v.nativeCall(this)
+        override fun <R> accept(v: Visitor<R>) = v.nativeReadWrite(this)
     }
 
     open class ExpressionList(
         val expressions: List<Expression>
     ) : Expression("List($expressions)") {
         val size = expressions.size
-        override fun <R> accept(v: Visitor<R>) = v.expressionList(this)
+        override fun <R> accept(v: Visitor<R>) = v.expressions(this)
     }
 
-    open class IfFunction(
+    open class Until(
+        val expression: Expression,
+        val body: Expression
+    ) : Expression("Until($expression, $body)") {
+        override fun <R> accept(v: Visitor<R>) = v.until(this)
+    }
+
+    open class If(
         val condition: Expression,
         val thenBranch: Expression,
         val elseBranch: Expression? = null,
@@ -100,9 +108,10 @@ abstract class Expression(private val representation: String) {
 
     open class Function(
         val name: String,
-        val arguments: ExpressionList,
+        val arguments: List<String>,
         val body: Expression
     ) : Expression("Function($name, $arguments, $body)") {
         override fun <R> accept(v: Visitor<R>) = v.function(this)
     }
+
 }

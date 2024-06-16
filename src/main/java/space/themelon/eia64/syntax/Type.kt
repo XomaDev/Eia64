@@ -14,7 +14,7 @@ enum class Type {
     PLUS, NEGATE,
     NOT,
 
-    OPERATOR, LOGICAL, BITWISE, EQUALITY, RELATIONAL, BINARY_PRECEDE, BINARY, NON_COMMUTE, UNARY,
+    OPERATOR, LOGICAL, BITWISE, EQUALITY, RELATIONAL, BINARY_PRECEDE, BINARY, NON_COMMUTE, UNARY, ASSIGNMENT_TYPE,
 
     S_OPERATOR,
     ASSIGNMENT,
@@ -29,9 +29,11 @@ enum class Type {
     ALPHA,
     E_TRUE, E_FALSE,
 
-    V_KEYWORD, F_OUT, F_READ, LET, VAR,
+    V_KEYWORD, LET, VAR,
     IF, ELSE, FOR, WHILE,
     FUN,
+    F_OUT, F_READ, INVOKE,
+    UNTIL,
 
     RETURN, BREAK, CONTINUE,
 
@@ -66,7 +68,7 @@ enum class Type {
                 it["-"] = Token(NEGATE, arrayOf(BINARY, UNARY, OPERATOR))
                 it["!"] = Token(NOT, arrayOf(UNARY))
 
-                it["="] = Token(ASSIGNMENT, arrayOf(S_OPERATOR))
+                it["="] = Token(ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
 
                 it["("] = Token(OPEN_CURVE, arrayOf(S_OPERATOR))
                 it[")"] = Token(CLOSE_CURVE, arrayOf(S_OPERATOR))
@@ -83,6 +85,8 @@ enum class Type {
 
                 it["fout"] = Token(F_OUT, arrayOf(NATIVE_CALL))
                 it["fread"] = Token(F_READ, arrayOf(NATIVE_CALL))
+
+                it["until"] = Token(UNTIL, arrayOf(NATIVE_CALL))
 
                 it["let"] = Token(LET, arrayOf(V_KEYWORD))
                 it["var"] = Token(VAR, arrayOf(V_KEYWORD))

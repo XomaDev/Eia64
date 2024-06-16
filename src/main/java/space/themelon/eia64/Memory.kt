@@ -22,4 +22,12 @@ class Memory(private val memory: Memory? = null) {
 
     fun get(name: String): Any = values[name] ?: memory?.get(name)
     ?: throw RuntimeException("get() unable to find variable $name")
+
+    fun update(name: String, value: Any) {
+        if (!values.containsKey(name)) {
+            if (memory != null) memory.update(name, value)
+            else throw RuntimeException("Unable to find variable $name to update")
+        }
+        values[name] = value
+    }
 }

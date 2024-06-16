@@ -11,9 +11,9 @@ object Main {
 
         val tokens = SyntaxAnalysis().tokenize(source)
 
-        val evaluator = Evaluator(Memory())
+        val evaluator = Evaluator()
         val startTime = System.nanoTime()
-        evaluator.evalList(Parser(tokens).expressions)
+        evaluator.eval(Parser(tokens).parsedResult)
         println("Took " + (System.nanoTime() - startTime) + " ns")
     }
 }
