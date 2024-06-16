@@ -48,7 +48,9 @@ abstract class Expression(private val representation: String) {
 
     open class UnaryOperation(
         val operator: Operator,
-        val expr: Expression) : Expression("Unary($operator, $expr)") {
+        val expr: Expression,
+        val left: Boolean
+    ) : Expression("Unary($left, $operator, $expr)") {
         override fun <R> accept(v: Visitor<R>) = v.unaryOperation(this)
     }
 

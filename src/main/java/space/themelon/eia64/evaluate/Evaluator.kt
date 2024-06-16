@@ -40,6 +40,19 @@ class Evaluator : Expression.Visitor<Any> {
     override fun unaryOperation(expr: Expression.UnaryOperation) = when (val type = operator(expr.operator)) {
         NOT -> !booleanExpr(expr.expr, "! Not")
         NEGATE -> Math.negateExact(intExpr(expr.expr, "- Negate"))
+        INCREMENT, DECREMENT -> {
+            if (expr.expr !is Expression.Alpha)
+                throw RuntimeException("Expected variable type for ${type.name} operation")
+            val name = expr.expr.value
+            var curr = intExpr(expr.expr, "++ Increment")
+            if (expr.left) {
+                memory.update(name, if (type == INCREMENT) ++curr else --curr)
+                curr
+            } else {
+                memory.update(name, if (type == INCREMENT) curr + 1 else curr - 1)
+                curr
+            }
+        }
         else -> throw RuntimeException("Unknown unary operator $type")
     }
 

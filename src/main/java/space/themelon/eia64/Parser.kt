@@ -126,6 +126,8 @@ class Parser(private val tokens: List<Token>) {
     private fun parseExpr(minPrecedence: Int): Expression {
         var left = parseElement()
         while (!isEOF()) {
+            if (peek().hasFlag(Type.UNARY))
+                left = Expression.UnaryOperation(Expression.Operator(next().type), left, false)
             if (!peek().hasFlag(Type.OPERATOR))
                 return left
 
@@ -176,7 +178,7 @@ class Parser(private val tokens: List<Token>) {
             return if (!isEOF() && peek().type == Type.OPEN_CURVE) funcInvoke(token)
             else parseValue(token)
         } else if (token.hasFlag(Type.UNARY)) {
-            return Expression.UnaryOperation(Expression.Operator(token.type), parseElement())
+            return Expression.UnaryOperation(Expression.Operator(token.type), parseElement(), true)
         }
         throw RuntimeException("Unexpected token $token")
     }

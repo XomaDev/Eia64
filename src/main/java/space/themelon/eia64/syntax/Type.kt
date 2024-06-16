@@ -12,7 +12,7 @@ enum class Type {
     GREATER_THAN_EQUALS, LESSER_THAN_EQUALS,
     SLASH, ASTERISK,
     PLUS, NEGATE,
-    NOT,
+    NOT, INCREMENT, DECREMENT,
 
     OPERATOR, LOGICAL, BITWISE, EQUALITY, RELATIONAL, BINARY_PRECEDE, BINARY, NON_COMMUTE, UNARY, ASSIGNMENT_TYPE,
 
@@ -67,6 +67,8 @@ enum class Type {
                 it["+"] = Token(PLUS, arrayOf(BINARY, OPERATOR))
                 it["-"] = Token(NEGATE, arrayOf(BINARY, UNARY, OPERATOR))
                 it["!"] = Token(NOT, arrayOf(UNARY))
+                it["++"] = Token(INCREMENT, arrayOf(UNARY))
+                it["--"] = Token(DECREMENT, arrayOf(UNARY))
 
                 it["="] = Token(ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
 

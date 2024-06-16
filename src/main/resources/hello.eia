@@ -1,2 +1,6 @@
-fn fib(n) = if (n < 2) n else fib(n - 1) + fib(n - 2)
-fout(fib(30))
+let a = 1
+let square = 0
+until ((square = a * 3) != 9) {
+    fout(a)
+    a++
+}
