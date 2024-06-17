@@ -6,8 +6,8 @@ import space.themelon.eia64.syntax.Type.*
 data class Entity(val name: String, val mutable: Boolean, var value: Any, val type: Type) {
     fun update(another: Any) {
         if (!mutable)
-            throw RuntimeException("Variable $name is already immutable")
-        if (type == Type.C_ANY) value = another
+            throw RuntimeException("Variable $name is immutable")
+        if (type == C_ANY) value = another
         else {
             val otherType = getType(another)
             if (otherType != type)

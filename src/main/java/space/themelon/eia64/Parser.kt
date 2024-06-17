@@ -74,7 +74,6 @@ class Parser(private val tokens: List<Token>) {
                         skip()
                         by = parseNext()
                     }
-                    println("to=$to")
                     expectType(Type.CLOSE_CURVE)
                     return Expression.Itr(iName, from, to, by, readBody())
                 } else {

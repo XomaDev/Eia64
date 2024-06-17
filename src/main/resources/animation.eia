@@ -1,27 +1,26 @@
-let TRASH = "🗑️"
-let HAPPY_RIGHT = "(> ^_^)>"
-let HAPPY_LEFT = "<(^_^ <)"
+let TRASH: String = "🗑️"
+let HAPPY_RIGHT: String = "(> ^_^)>"
+let HAPPY_LEFT: String = "<(^_^ <)"
 
-fn generateSpaces(n) {
-    let spaces = ""
-    let i = 0
+fn generateSpaces(n: Int) {
+    var spaces: String = ""
+    var i: Int = 0
     until (i++ != n) {
         spaces = spaces + " "
     }
     return spaces
 }
 
-fn trash(text) {
-    let size = len(text)
+fn trash(text: String) {
+    let size: Int = len(text)
 
-    let i = 0
+    var i: Int = 0
     until (i < size) {
-        let l = text[0]
+        let l: String = text[0]
+        var going_right: Bool = true
 
-        let going_right = true
-
-        let left_space = 0
-        let right_space = 10 + i
+        var left_space: Int = 0
+        var right_space: Int = 10 + i
 
         until (true) {
             println(TRASH,
@@ -36,9 +35,9 @@ fn trash(text) {
                 left_space = 10 + i
                 right_space = 0
 
-                let newText = ""
-                let j = 1
-                let newLength = len(text)
+                var newText: String = ""
+                var j: Int = 1
+                let newLength: Int = len(text)
                 until (j < newLength) {
                     newText = newText + text[j]
                     j++

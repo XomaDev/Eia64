@@ -1,7 +1,12 @@
-fn fib(n: Int) {
-    if (n < 2) return n
-    return fib(n - 1) + fib(n - 2)
+fn generateSpaces(n: Int) {
+    println("N is " + n)
+    var spaces: String = ""
+    var i: Int = 0
+    until (i++ != n) {
+        spaces = spaces + " "
+    }
+    return spaces
 }
 
-let result: Any = fib(30)
-println(result)
+let num: Int = 5
+println("Spaces: " + generateSpaces(num))

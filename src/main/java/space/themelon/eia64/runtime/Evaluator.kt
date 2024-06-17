@@ -7,7 +7,6 @@ import space.themelon.eia64.runtime.Entity.Companion.unbox
 import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
 import java.util.*
-import kotlin.collections.ArrayList
 
 class Evaluator : Expression.Visitor<Any> {
     
@@ -85,7 +84,7 @@ class Evaluator : Expression.Visitor<Any> {
 
             if (getType(left) == C_INT && getType(right) == C_INT)
                 unbox(left) as Int + unbox(right) as Int
-            else left.toString() + right.toString()
+            else unbox(left).toString() + unbox(right).toString()
         }
         NEGATE -> intExpr(expr.left, "- Subtract") - intExpr(expr.right, "- Subtract")
         ASTERISK -> intExpr(expr.left, "* Multiply") * intExpr(expr.right, "* Multiply")
@@ -93,8 +92,9 @@ class Evaluator : Expression.Visitor<Any> {
         EQUALS, NOT_EQUALS -> {
             var left = eval(expr.left)
             var right = eval(expr.right)
-            if (getType(left) != getType(right)) type != EQUALS
-            else {
+            if (getType(left) != getType(right)) {
+                type != EQUALS
+            } else {
                 left = unbox(left)
                 right = unbox(right)
 
@@ -107,7 +107,11 @@ class Evaluator : Expression.Visitor<Any> {
         LOGICAL_AND -> booleanExpr(expr.left, "&& Logical And") && booleanExpr(expr.right, "&& Logical And")
         LOGICAL_OR -> booleanExpr(expr.left, "|| Logical Or") || booleanExpr(expr.right, "|| Logical Or")
         GREATER_THAN -> intExpr(expr.left, "> GreaterThan") > intExpr(expr.right, "> GreaterThan")
-        LESSER_THAN -> intExpr(expr.left, "< LesserThan") < intExpr(expr.right, "< LesserThan")
+        LESSER_THAN -> {
+            val left = intExpr(expr.left, "< LesserThan")
+            val right = intExpr(expr.right, "< LesserThan")
+            left < right
+        }
         GREATER_THAN_EQUALS -> intExpr(expr.left, ">= GreaterThanEquals") >= intExpr(expr.right, ">= GreaterThanEquals")
         LESSER_THAN_EQUALS -> intExpr(expr.left, "<= LesserThan") <= intExpr(expr.right, "<= LesserThan")
         ASSIGNMENT -> {
@@ -143,13 +147,15 @@ class Evaluator : Expression.Visitor<Any> {
 
         val names = fn.arguments.iterator()
         val evaluated = ArrayList<Any>()
-        call.arguments.expressions.iterator().forEach { evaluated.add(eval(it)) }
+        // TODO:
+        //  in future we will have to verify the types
+        call.arguments.expressions.iterator().forEach { evaluated.add(unbox(eval(it))) }
         val evalItr = evaluated.iterator()
 
         createSubMemory()
         while (names.hasNext()) {
             val def = names.next()
-            memory.defineVar(def.name, evalItr.next(), false, def.type)
+            memory.defineVar(def.name, evalItr.next(), true, def.type)
         }
         val result = eval(fn.body)
         destroySubMemory()
@@ -273,7 +279,7 @@ class Evaluator : Expression.Visitor<Any> {
 
             LEN -> {
                 if (argsSize != 1) throw RuntimeException("Expected only 1 argument for len, got $argsSize")
-                return eval(call.arguments.expressions[0]).toString().length
+                return unbox(eval(call.arguments.expressions[0])).toString().length
             }
             else -> throw RuntimeException("Unknown native read write $type")
         }
@@ -304,8 +310,10 @@ class Evaluator : Expression.Visitor<Any> {
 
     override fun elementAccess(access: Expression.ElementAccess): Any {
         val entity = eval(access.expr)
-        val index = intExpr(access.index, "[] ArrayAccess")
-        if (entity is String) return entity[index].toString()
+        if (getType(entity) == C_STRING) {
+            val index = intExpr(access.index, "[] ArrayAccess")
+            return (unbox(entity) as String)[index].toString()
+        }
         throw RuntimeException("Unknown entity type $entity")
     }
 }
