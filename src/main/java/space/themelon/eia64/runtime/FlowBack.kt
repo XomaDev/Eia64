@@ -1,4 +1,4 @@
-package space.themelon.eia64.evaluate
+package space.themelon.eia64.runtime
 
 enum class Interrupt {
     RETURN,

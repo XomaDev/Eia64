@@ -10,9 +10,9 @@ abstract class Expression(private val representation: String) {
         fun eString(eString: EString): R
         fun alpha(alpha: Alpha): R
         fun operator(operator: Operator): R
+        fun variable(variable: Variable): R
         fun unaryOperation(expr: UnaryOperation): R
         fun binaryOperation(expr: BinaryOperation): R
-        fun variable(variable: Variable): R
         fun expressions(list: ExpressionList): R
         fun methodCall(call: MethodCall): R
         fun nativeCall(call: NativeCall): R
@@ -65,9 +65,16 @@ abstract class Expression(private val representation: String) {
         override fun <R> accept(v: Visitor<R>) = v.binaryOperation(this)
     }
 
-    open class Variable(
+    data class DefinitionType(
         val name: String,
-        val expr: Expression) : Expression("Variable($name, $expr)") {
+        val type: Type
+    )
+
+    open class Variable(
+        val mutable: Boolean,
+        val definition: DefinitionType,
+        val expr: Expression
+    ) : Expression("Variable($mutable, $definition, $expr)") {
         override fun <R> accept(v: Visitor<R>) = v.variable(this)
     }
 
@@ -141,7 +148,7 @@ abstract class Expression(private val representation: String) {
 
     open class Function(
         val name: String,
-        val arguments: List<String>,
+        val arguments: List<DefinitionType>,
         val body: Expression
     ) : Expression("Function($name, $arguments, $body)") {
         override fun <R> accept(v: Visitor<R>) = v.function(this)

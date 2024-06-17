@@ -1,25 +1,28 @@
-package space.themelon.eia64.evaluate
+package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
 import space.themelon.eia64.Memory
+import space.themelon.eia64.runtime.Entity.Companion.getType
+import space.themelon.eia64.runtime.Entity.Companion.unbox
+import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
 import java.util.*
+import kotlin.collections.ArrayList
 
 class Evaluator : Expression.Visitor<Any> {
     
     fun eval(expr: Expression) = expr.accept(this)
-    
-    private fun booleanExpr(expr: Expression, operation: String) : Boolean {
-        val value = expr.accept(this)
-        if (value is Boolean) return value
-        throw IllegalArgumentException("Expected boolean type for [$operation], but got $value")
+
+    private fun safeUnbox(expr: Expression, expectedType: Type, operation: String): Any {
+        val result = eval(expr)
+        val gotType = getType(result)
+        if (gotType != expectedType)
+            throw RuntimeException("Expected type $expectedType for [$operation] but got $gotType")
+        return unbox(result)
     }
     
-    private fun intExpr(expr: Expression, operation: String) : Int {
-        val value = expr.accept(this)
-        if (value is Int) return value
-        throw IllegalArgumentException("Expected int type for [$operation], but got $value")
-    }
+    private fun booleanExpr(expr: Expression, operation: String) = safeUnbox(expr, C_BOOL, operation) as Boolean
+    private fun intExpr(expr: Expression, operation: String) = safeUnbox(expr, C_INT, operation) as Int
     
     private var memory = Memory()
 
@@ -38,6 +41,24 @@ class Evaluator : Expression.Visitor<Any> {
     override fun alpha(alpha: Expression.Alpha) = memory.get(alpha.value)
     override fun operator(operator: Expression.Operator) = operator.value
 
+    private fun define(mutable: Boolean, def: Expression.DefinitionType, value: Any) {
+        // make sure variable type = assigned type
+        val valueType = getType(value)
+        if (def.type != C_ANY && def.type != valueType)
+            throw RuntimeException("Variable ${def.name} has type ${def.type}, but got value type of $valueType")
+        memory.defineVar(def.name, unbox(value), mutable, valueType)
+    }
+
+    private fun update(name: String, value: Any) {
+        (memory.get(name) as Entity).update(value)
+    }
+
+    override fun variable(variable: Expression.Variable): Any {
+        val value = eval(variable.expr)
+        define(variable.mutable, variable.definition, value)
+        return value
+    }
+
     override fun unaryOperation(expr: Expression.UnaryOperation) = when (val type = operator(expr.operator)) {
         NOT -> !booleanExpr(expr.expr, "! Not")
         NEGATE -> Math.negateExact(intExpr(expr.expr, "- Negate"))
@@ -47,10 +68,10 @@ class Evaluator : Expression.Visitor<Any> {
             val name = expr.expr.value
             var curr = intExpr(expr.expr, "++ Increment")
             if (expr.left) {
-                memory.update(name, if (type == INCREMENT) ++curr else --curr)
+                update(name, if (type == INCREMENT) ++curr else --curr)
                 curr
             } else {
-                memory.update(name, if (type == INCREMENT) curr + 1 else curr - 1)
+                update(name, if (type == INCREMENT) curr + 1 else curr - 1)
                 curr
             }
         }
@@ -61,19 +82,26 @@ class Evaluator : Expression.Visitor<Any> {
         PLUS -> {
             val left = eval(expr.left)
             val right = eval(expr.right)
-            if (left is Int && right is Int) left + right
+
+            if (getType(left) == C_INT && getType(right) == C_INT)
+                unbox(left) as Int + unbox(right) as Int
             else left.toString() + right.toString()
         }
         NEGATE -> intExpr(expr.left, "- Subtract") - intExpr(expr.right, "- Subtract")
         ASTERISK -> intExpr(expr.left, "* Multiply") * intExpr(expr.right, "* Multiply")
         SLASH -> intExpr(expr.left, "/ Divide") / intExpr(expr.right, "/ Divide")
         EQUALS, NOT_EQUALS -> {
-            val left = eval(expr.left)
-            val right = eval(expr.right)
-            if (left::class != right::class) type != EQUALS
-            else when (left) {
-                is Int, is String -> if (type == EQUALS) left == right else left != right
-                else -> false
+            var left = eval(expr.left)
+            var right = eval(expr.right)
+            if (getType(left) != getType(right)) type != EQUALS
+            else {
+                left = unbox(left)
+                right = unbox(right)
+
+                when (left) {
+                    is Int, is String -> if (type == EQUALS) left == right else left != right
+                    else -> false
+                }
             }
         }
         LOGICAL_AND -> booleanExpr(expr.left, "&& Logical And") && booleanExpr(expr.right, "&& Logical And")
@@ -87,18 +115,12 @@ class Evaluator : Expression.Visitor<Any> {
                 throw RuntimeException("[OP =] expected left type to be a name, but got ${expr.left}")
             val name = expr.left.value
             val value = eval(expr.right)
-            memory.update(name, value)
+            update(name, value)
             value
         }
         BITWISE_AND -> intExpr(expr.left, "& BitwiseAnd") and intExpr(expr.right, "& BitwiseAnd")
         BITWISE_OR -> intExpr(expr.left, "| BitwiseOr") or intExpr(expr.right, "| BitwiseOr")
         else -> throw RuntimeException("Unknown binary operator $type")
-    }
-
-    override fun variable(variable: Expression.Variable): Any {
-        val value = eval(variable.expr)
-        memory.define(variable.name, value)
-        return value
     }
 
     override fun expressions(list: Expression.ExpressionList): Any {
@@ -120,10 +142,15 @@ class Evaluator : Expression.Visitor<Any> {
         if (expectedArgsSize != gotArgsSize) throw RuntimeException("Expected $expectedArgsSize, but got $gotArgsSize for fn $name")
 
         val names = fn.arguments.iterator()
-        val values = call.arguments.expressions.iterator()
+        val evaluated = ArrayList<Any>()
+        call.arguments.expressions.iterator().forEach { evaluated.add(eval(it)) }
+        val evalItr = evaluated.iterator()
 
         createSubMemory()
-        while (names.hasNext()) memory.define(names.next(), eval(values.next()))
+        while (names.hasNext()) {
+            val def = names.next()
+            memory.defineVar(def.name, evalItr.next(), false, def.type)
+        }
         val result = eval(fn.body)
         destroySubMemory()
         if (result is FlowBlack && result.interrupt == Interrupt.RETURN)
@@ -153,7 +180,7 @@ class Evaluator : Expression.Visitor<Any> {
         if (iterable is String) {
             for (c in iterable) {
                 createSubMemory()
-                memory.define(named, c.toString())
+                memory.defineVar(named, c.toString(), false, C_STRING)
                 val result = eval(forEach.body)
                 destroySubMemory()
                 if (result is FlowBlack)
@@ -164,7 +191,7 @@ class Evaluator : Expression.Visitor<Any> {
                         else -> { }
                     }
             }
-        }
+        } else throw RuntimeException("Unknown non-interactable type $iterable")
         return forEach
     }
 
@@ -179,7 +206,7 @@ class Evaluator : Expression.Visitor<Any> {
 
         while (if (reverse) from >= to else from <= to) {
             createSubMemory()
-            memory.define(named, from)
+            memory.defineVar(named, from, false, C_INT)
             val result = eval(itr.body)
             destroySubMemory()
             if (result is FlowBlack)
@@ -224,7 +251,7 @@ class Evaluator : Expression.Visitor<Any> {
             PRINT, PRINTLN -> {
                 var printCount = 0
                 call.arguments.expressions.forEach {
-                    val obj = eval(it).toString()
+                    val obj = unbox(eval(it)).toString()
                     printCount += obj.length
                     print(obj)
                 }
@@ -271,7 +298,7 @@ class Evaluator : Expression.Visitor<Any> {
     }
 
     override fun function(function: Expression.Function): Any {
-        memory.define(function.name, function)
+        memory.defineFunc(function.name, function)
         return function
     }
 

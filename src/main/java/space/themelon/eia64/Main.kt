@@ -1,13 +1,13 @@
 package space.themelon.eia64
 
-import space.themelon.eia64.evaluate.Evaluator
+import space.themelon.eia64.runtime.Evaluator
 import space.themelon.eia64.syntax.SyntaxAnalysis
 
 object Main {
     @JvmStatic
     fun main(args: Array<String>) {
         val loader = javaClass.classLoader
-        val source = loader.getResource("trashguy.eia")!!.readText()
+        val source = loader.getResource("trytobreak.eia")!!.readText()
 
         val tokens = SyntaxAnalysis().tokenize(source)
 

@@ -26,7 +26,7 @@ enum class Type {
     COMMA,
 
     CLASS,
-    C_INT, C_BOOL, C_STRING,
+    C_INT, C_BOOL, C_STRING, C_CHAR, C_ANY,
 
     VALUE,
     ALPHA,
@@ -90,6 +90,8 @@ enum class Type {
                 it["Int"] = Token(C_INT, arrayOf(CLASS))
                 it["Bool"] = Token(C_BOOL, arrayOf(CLASS))
                 it["String"] = Token(C_STRING, arrayOf(CLASS))
+                it["Char"] = Token(C_CHAR, arrayOf(CLASS))
+                it["Any"] = Token(C_ANY, arrayOf(CLASS))
 
                 it["true"] = Token(E_TRUE, arrayOf(VALUE, C_BOOL))
                 it["false"] = Token(E_FALSE, arrayOf(VALUE, C_BOOL))
