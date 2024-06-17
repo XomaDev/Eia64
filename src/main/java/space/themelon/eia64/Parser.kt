@@ -22,7 +22,7 @@ class Parser(private val tokens: List<Token>) {
     private fun parseNext(): Expression {
         val token = next()
         return when (token.flags[0]) {
-            Type.NATIVE_CALL -> sysCall(token)
+            Type.LOOP -> loop(token)
             Type.V_KEYWORD -> variableDeclaration(token)
             Type.INTERRUPTION -> interruption(token)
             else -> {
@@ -38,7 +38,7 @@ class Parser(private val tokens: List<Token>) {
         }
     }
 
-    private fun sysCall(token: Token): Expression {
+    private fun loop(token: Token): Expression {
         when (token.type) {
             Type.UNTIL -> {
                 eat(Type.OPEN_CURVE)
@@ -47,12 +47,44 @@ class Parser(private val tokens: List<Token>) {
                 val body = readBody()
                 return Expression.Until(expr, body)
             }
-            else -> {
+            Type.FOR -> {
                 eat(Type.OPEN_CURVE)
-                val arguments = parseArguments()
+                val args = parseArguments(Type.COLON)
+                if (args.size != 3) throw RuntimeException("[For-Loop] Expected 3 expressions (initializer:conditional:operational)")
                 eat(Type.CLOSE_CURVE)
-                return Expression.NativeCall(token.type, Expression.ExpressionList(arguments))
+                val expr = Expression.ForLoop(
+                    initializer = args[0],
+                    conditional = args[1],
+                    operational = args[2],
+                    readBody()
+                )
+                return expr
             }
+            Type.ITR -> {
+                eat(Type.OPEN_CURVE)
+                val iName = readAlpha()
+                if (peek().type == Type.COLON) {
+                    skip()
+                    val from = parseNext()
+                    eat(Type.TO)
+                    val to = parseNext()
+
+                    var by: Expression? = null
+                    if (peek().type == Type.BY) {
+                        skip()
+                        by = parseNext()
+                    }
+                    println("to=$to")
+                    eat(Type.CLOSE_CURVE)
+                    return Expression.Itr(iName, from, to, by, readBody())
+                } else {
+                    eat(Type.IN)
+                    val entity = parseNext()
+                    eat(Type.CLOSE_CURVE)
+                    return Expression.ForEach(iName, entity, readBody())
+                }
+            }
+            else -> throw RuntimeException("Unknown loop token ${token.type}")
         }
     }
 
@@ -67,17 +99,17 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun fnDeclaration(token: Token): Expression {
-        val name = next().optionalData as String
+        val name = readAlpha()
         eat(Type.OPEN_CURVE)
         val requiredArgs = ArrayList<String>()
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
-            requiredArgs.add(eat(Type.ALPHA).optionalData as String)
+            requiredArgs.add(readAlpha())
             if (peek().type != Type.COMMA)
                 break
             skip()
         }
         eat(Type.CLOSE_CURVE)
-        return Expression.Function(name, requiredArgs, readBody())
+        return Expression.Function(name, requiredArgs, readBody(allowAssign = true))
     }
 
     private fun ifDeclaration(token: Token): Expression {
@@ -97,8 +129,8 @@ class Parser(private val tokens: List<Token>) {
         return Expression.If(logicalExpr, ifBody, elseBranch)
     }
 
-    private fun readBody(): Expression {
-        if (peek().type == Type.ASSIGNMENT) {
+    private fun readBody(allowAssign: Boolean = false): Expression {
+        if (allowAssign && peek().type == Type.ASSIGNMENT) {
             skip()
             return Expression.Interruption(Expression.Operator(Type.RETURN), parseNext())
         }
@@ -114,7 +146,7 @@ class Parser(private val tokens: List<Token>) {
 
     private fun variableDeclaration(token: Token): Expression {
         // for now, we do not care about 'let' or 'var'
-        val name = next().optionalData as String
+        val name = readAlpha()
         eat(Type.ASSIGNMENT)
         val expr = parseNext()
         return Expression.Variable(name, expr)
@@ -130,8 +162,7 @@ class Parser(private val tokens: List<Token>) {
             eat(Type.CLOSE_SQUARE)
             left = Expression.ElementAccess(left, expr)
         }
-        // TODO: order could be tricky
-        if (!isEOF() && peek().hasFlag(Type.UNARY))
+        if (!isEOF() && peek().hasFlag(Type.POSSIBLE_RIGHT_UNARY))
             left = Expression.UnaryOperation(Expression.Operator(next().type), left, false)
         while (!isEOF()) {
             if (!peek().hasFlag(Type.OPERATOR))
@@ -184,6 +215,11 @@ class Parser(private val tokens: List<Token>) {
             else parseValue(token)
         } else if (token.hasFlag(Type.UNARY)) {
             return Expression.UnaryOperation(Expression.Operator(token.type), parseElement(), true)
+        } else if (token.hasFlag(Type.NATIVE_CALL)) {
+            eat(Type.OPEN_CURVE)
+            val arguments = parseArguments(Type.COMMA)
+            eat(Type.CLOSE_CURVE)
+            return Expression.NativeCall(token.type, Expression.ExpressionList(arguments))
         }
         throw RuntimeException("Unexpected token $token")
     }
@@ -195,15 +231,15 @@ class Parser(private val tokens: List<Token>) {
             }
 
             Type.C_INT -> {
-                Expression.EInt((token.optionalData as String).toInt())
+                Expression.EInt(token.optionalData.toString().toInt())
             }
 
             Type.C_STRING -> {
-                Expression.EString(token.optionalData as String)
+                Expression.EString(token.optionalData.toString())
             }
 
             Type.ALPHA -> {
-                return Expression.Alpha(token.optionalData as String)
+                return Expression.Alpha(readAlpha(token))
             }
 
             Type.OPEN_CURVE -> {
@@ -219,25 +255,35 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun funcInvoke(token: Token): Expression {
-        val name = token.optionalData as String
+        val name = readAlpha(token)
         eat(Type.OPEN_CURVE)
-        val arguments = parseArguments()
+        val arguments = parseArguments(Type.COMMA)
         eat(Type.CLOSE_CURVE)
         return Expression.MethodCall(name, Expression.ExpressionList(arguments))
     }
 
-    private fun parseArguments(): List<Expression> {
+    private fun parseArguments(separator: Type): List<Expression> {
         val expressions = ArrayList<Expression>()
         if (!isEOF() && peek().type == Type.CLOSE_CURVE)
             return expressions
         while (!isEOF()) {
             expressions.add(parseNext())
-            if (peek().type != Type.COMMA)
+            if (peek().type != separator)
                 break
             skip()
         }
         return expressions
     }
+
+    private fun readAlpha(): String {
+        val token = next()
+        if (token.type != Type.ALPHA) throw RuntimeException("Expected alpha token got $token")
+        return token.optionalData as String
+    }
+
+    private fun readAlpha(token: Token) =
+            if (token.type == Type.ALPHA) token.optionalData as String
+                    else throw RuntimeException("Expected alpha token got $token")
 
     private fun eat(type: Type): Token {
         val next = next()

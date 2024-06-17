@@ -14,9 +14,11 @@ enum class Type {
     PLUS, NEGATE,
     NOT, INCREMENT, DECREMENT,
 
-    OPERATOR, LOGICAL, BITWISE, EQUALITY, RELATIONAL, BINARY_PRECEDE, BINARY, NON_COMMUTE, UNARY, ASSIGNMENT_TYPE,
+    OPERATOR, LOGICAL, BITWISE, EQUALITY, RELATIONAL, BINARY_PRECEDE, BINARY, NON_COMMUTE,
+    UNARY, POSSIBLE_RIGHT_UNARY, ASSIGNMENT_TYPE,
 
     S_OPERATOR,
+    COLON,
     ASSIGNMENT,
     OPEN_CURVE, CLOSE_CURVE,
     OPEN_SQUARE, CLOSE_SQUARE,
@@ -31,13 +33,15 @@ enum class Type {
     E_TRUE, E_FALSE,
 
     V_KEYWORD, LET, VAR,
-    IF, ELSE, FOR, WHILE,
+    IF, ELSE,
+    ITR, TO, IN, BY,
+    FOR, UNTIL,
     FUN,
     PRINT, PRINTLN, READ, READLN, LEN, SLEEP, INVOKE,
-    UNTIL,
 
     RETURN, BREAK, CONTINUE,
 
+    LOOP,
     NATIVE_CALL,
     INTERRUPTION,
     NONE,
@@ -68,10 +72,11 @@ enum class Type {
                 it["+"] = Token(PLUS, arrayOf(BINARY, OPERATOR))
                 it["-"] = Token(NEGATE, arrayOf(BINARY, UNARY, OPERATOR))
                 it["!"] = Token(NOT, arrayOf(UNARY))
-                it["++"] = Token(INCREMENT, arrayOf(UNARY))
-                it["--"] = Token(DECREMENT, arrayOf(UNARY))
+                it["++"] = Token(INCREMENT, arrayOf(UNARY, POSSIBLE_RIGHT_UNARY))
+                it["--"] = Token(DECREMENT, arrayOf(UNARY, POSSIBLE_RIGHT_UNARY))
 
                 it["="] = Token(ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
+                it[":"] = Token(COLON)
 
                 it["["] = Token(OPEN_SQUARE, arrayOf(S_OPERATOR))
                 it["]"] = Token(CLOSE_SQUARE, arrayOf(S_OPERATOR))
@@ -96,7 +101,12 @@ enum class Type {
                 it["sleep"] = Token(SLEEP, arrayOf(NATIVE_CALL))
                 it["len"] = Token(LEN, arrayOf(NATIVE_CALL))
 
-                it["until"] = Token(UNTIL, arrayOf(NATIVE_CALL))
+                it["until"] = Token(UNTIL, arrayOf(LOOP))
+                it["itr"] = Token(ITR, arrayOf(LOOP))
+                it["to"] = Token(TO)
+                it["in"] = Token(IN)
+                it["by"] = Token(BY)
+                it["for"] = Token(FOR, arrayOf(LOOP))
 
                 it["let"] = Token(LET, arrayOf(V_KEYWORD))
                 it["var"] = Token(VAR, arrayOf(V_KEYWORD))

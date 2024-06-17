@@ -2,7 +2,7 @@ package space.themelon.eia64.syntax
 
 data class Token(
     val type: Type,
-    val flags: Array<Type>,
+    val flags: Array<Type> = arrayOf(),
     val optionalData: Any? = null
 ) {
 

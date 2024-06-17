@@ -38,7 +38,7 @@ fn trash(text) {
 
                 let newText = ""
                 let j = 1
-                let newLength = len(text) - 1
+                let newLength = len(text)
                 until (j < newLength) {
                     newText = newText + text[j]
                     j++
@@ -46,6 +46,7 @@ fn trash(text) {
                 text = newText
             } else if (!going_right && right_space >= 10 + i) {
                 println(TRASH, HAPPY_LEFT, generateSpaces(10 + i + 1), text)
+                sleep(500)
                 break
             }
             if (going_right) {

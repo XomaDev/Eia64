@@ -147,6 +147,77 @@ class Evaluator : Expression.Visitor<Any> {
         return until
     }
 
+    override fun forEach(forEach: Expression.ForEach): Any {
+        val named = forEach.name
+        val iterable = eval(forEach.entity)
+        if (iterable is String) {
+            for (c in iterable) {
+                createSubMemory()
+                memory.define(named, c.toString())
+                val result = eval(forEach.body)
+                destroySubMemory()
+                if (result is FlowBlack)
+                    when (result.interrupt) {
+                        Interrupt.BREAK -> break
+                        Interrupt.CONTINUE -> continue
+                        Interrupt.RETURN -> return result
+                        else -> { }
+                    }
+            }
+        }
+        return forEach
+    }
+
+    override fun itr(itr: Expression.Itr): Any {
+        val named = itr.name
+        var from = intExpr(itr.from, "Itr from")
+        val to = intExpr(itr.to, "Itr to")
+        var by = if (itr.by == null) 1 else intExpr(itr.by, "Itr by")
+
+        val reverse = from > to
+        if (reverse) by = -by
+
+        while (if (reverse) from >= to else from <= to) {
+            createSubMemory()
+            memory.define(named, from)
+            val result = eval(itr.body)
+            destroySubMemory()
+            if (result is FlowBlack)
+                when (result.interrupt) {
+                    Interrupt.BREAK -> break
+                    Interrupt.CONTINUE -> continue
+                    Interrupt.RETURN -> return result
+                    else -> { }
+                }
+            from += by
+        }
+        return itr
+    }
+
+    override fun forLoop(forLoop: Expression.ForLoop): Any {
+        createSubMemory()
+        forLoop.initializer?.let { eval(it) }
+
+        val conditional = forLoop.conditional
+        while (if (conditional == null) true else booleanExpr(conditional, "ForLoop")) {
+            createSubMemory()
+            val result = eval(forLoop.body)
+            destroySubMemory()
+            if (result is FlowBlack) {
+                when (result.interrupt) {
+                    Interrupt.BREAK -> break
+                    Interrupt.CONTINUE -> continue
+                    Interrupt.RETURN -> return result
+                    else -> { }
+                }
+            }
+            forLoop.operational?.let { eval(it) }
+        }
+
+        destroySubMemory()
+        return forLoop
+    }
+
     override fun nativeCall(call: Expression.NativeCall): Any {
         val argsSize = call.arguments.size
         when (val type = call.type) {

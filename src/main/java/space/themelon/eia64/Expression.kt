@@ -17,6 +17,9 @@ abstract class Expression(private val representation: String) {
         fun methodCall(call: MethodCall): R
         fun nativeCall(call: NativeCall): R
         fun until(until: Until): R
+        fun itr(itr: Itr): R
+        fun forEach(forEach: ForEach): R
+        fun forLoop(forLoop: ForLoop): R
         fun interruption(interruption: Interruption): R
         fun ifFunction(ifExpr: If): R
         fun function(function: Function): R
@@ -87,6 +90,33 @@ abstract class Expression(private val representation: String) {
     ) : Expression("List($expressions)") {
         val size = expressions.size
         override fun <R> accept(v: Visitor<R>) = v.expressions(this)
+    }
+
+    open class ForEach(
+        val name: String,
+        val entity: Expression,
+        val body: Expression,
+    ): Expression("ForEach($name, $entity)") {
+        override fun <R> accept(v: Visitor<R>) = v.forEach(this)
+    }
+
+    open class ForLoop(
+        val initializer: Expression?,
+        val conditional: Expression?,
+        val operational: Expression?,
+        val body: Expression,
+    ) : Expression("ForEach($initializer: $conditional: $operational)") {
+        override fun <R> accept(v: Visitor<R>) = v.forLoop(this)
+    }
+
+    open class Itr(
+        val name: String,
+        val from: Expression,
+        val to: Expression,
+        val by: Expression?,
+        val body: Expression,
+    ) : Expression("Itr($name: $from to $to by $by)") {
+        override fun <R> accept(v: Visitor<R>) = v.itr(this)
     }
 
     open class Until(
