@@ -1,12 +1,5 @@
-fn generateSpaces(n: Int) {
-    println("N is " + n)
-    var spaces: String = ""
-    var i: Int = 0
-    until (i++ != n) {
-        spaces = spaces + " "
-    }
-    return spaces
+fn hello(name: String) {
+    println("Hello " + name + "!")
 }
 
-let num: Int = 5
-println("Spaces: " + generateSpaces(num))
+hello(123)

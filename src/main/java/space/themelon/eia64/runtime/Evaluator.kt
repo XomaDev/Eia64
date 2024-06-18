@@ -7,6 +7,7 @@ import space.themelon.eia64.runtime.Entity.Companion.unbox
 import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
 import java.util.*
+import kotlin.collections.ArrayList
 
 class Evaluator : Expression.Visitor<Any> {
     
@@ -138,26 +139,41 @@ class Evaluator : Expression.Visitor<Any> {
     }
 
     override fun methodCall(call: Expression.MethodCall): Any {
-        val name = call.name
-        val fn = memory.get(name)
-        if (fn !is Expression.Function) throw RuntimeException("Expected function type, got $fn")
-        val expectedArgsSize = fn.arguments.size
-        val gotArgsSize = call.arguments.size
-        if (expectedArgsSize != gotArgsSize) throw RuntimeException("Expected $expectedArgsSize, but got $gotArgsSize for fn $name")
+        val fnName = call.name
+        val fn = memory.get(fnName)
+        if (fn !is Expression.Function)
+            throw RuntimeException("Unable to find function $fnName")
 
-        val names = fn.arguments.iterator()
-        val evaluated = ArrayList<Any>()
-        // TODO:
-        //  in future we will have to verify the types
-        call.arguments.expressions.iterator().forEach { evaluated.add(unbox(eval(it))) }
-        val evalItr = evaluated.iterator()
+        val sigArgsSize = fn.arguments.size
+        val callArgsSize = call.arguments.size
+
+        if (sigArgsSize != callArgsSize)
+            throw RuntimeException("Expected $sigArgsSize args for function $fnName but got $callArgsSize")
+
+        val parameters = fn.arguments.iterator()
+        val callExpressions = call.arguments.expressions.iterator()
+
+        val callValues = ArrayList<Pair<Expression.DefinitionType, Any>>()
+        while (parameters.hasNext()) {
+            val definedParameter = parameters.next()
+            val typeSignature = definedParameter.type
+
+            val callValue = eval(callExpressions.next())
+            val gotTypeSignature = getType(callValue)
+
+            if (typeSignature != gotTypeSignature)
+                throw RuntimeException("Expected type $typeSignature for arg '${definedParameter.name}' for function $fnName but got $gotTypeSignature")
+            callValues.add(Pair(definedParameter, callValue))
+        }
 
         createSubMemory()
-        while (names.hasNext()) {
-            val def = names.next()
-            memory.defineVar(def.name, evalItr.next(), true, def.type)
+        callValues.forEach {
+            val definedParameter = it.first
+            val value = it.second
+
+            memory.defineVar(definedParameter.name, value, true, definedParameter.type)
         }
-        val result = eval(fn.body)
+        val result = eval(call)
         destroySubMemory()
         if (result is FlowBlack && result.interrupt == Interrupt.RETURN)
             return result.data!!
