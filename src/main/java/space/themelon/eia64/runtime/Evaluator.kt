@@ -158,7 +158,7 @@ class Evaluator : Expression.Visitor<Any> {
             val definedParameter = parameters.next()
             val typeSignature = definedParameter.type
 
-            val callValue = eval(callExpressions.next())
+            val callValue = unbox(eval(callExpressions.next()))
             val gotTypeSignature = getType(callValue)
 
             if (typeSignature != gotTypeSignature)
