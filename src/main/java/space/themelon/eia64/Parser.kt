@@ -49,11 +49,11 @@ class Parser(private val tokens: List<Token>) {
             }
             Type.FOR -> {
                 expectType(Type.OPEN_CURVE)
-                val initializer = if (peek().type == Type.COMMA) null else parseNext()
+                val initializer = if (isNext(Type.COMMA)) null else parseNext()
                 expectType(Type.COMMA)
-                val conditional = if (peek().type == Type.COMMA) null else parseNext()
+                val conditional = if (isNext(Type.COMMA)) null else parseNext()
                 expectType(Type.COMMA)
-                val operational = if (peek().type == Type.CLOSE_CURVE) null else parseNext()
+                val operational = if (isNext(Type.CLOSE_CURVE)) null else parseNext()
                 expectType(Type.CLOSE_CURVE)
                 val expr = Expression.ForLoop(
                     initializer = initializer,
@@ -66,14 +66,14 @@ class Parser(private val tokens: List<Token>) {
             Type.ITR -> {
                 expectType(Type.OPEN_CURVE)
                 val iName = readAlpha()
-                if (peek().type == Type.COLON) {
+                if (isNext(Type.COLON)) {
                     skip()
                     val from = parseNext()
                     expectType(Type.TO)
                     val to = parseNext()
 
                     var by: Expression? = null
-                    if (peek().type == Type.BY) {
+                    if (isNext(Type.BY)) {
                         skip()
                         by = parseNext()
                     }
@@ -106,12 +106,11 @@ class Parser(private val tokens: List<Token>) {
         val requiredArgs = ArrayList<Expression.DefinitionType>()
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             requiredArgs.add(readVarDefinition())
-            if (peek().type != Type.COMMA)
-                break
+            if (!isNext(Type.COMMA)) break
             skip()
         }
         expectType(Type.CLOSE_CURVE)
-        val returnType = if (peek().type == Type.COLON) {
+        val returnType = if (isNext(Type.COLON)) {
             skip()
             expectFlag(Type.CLASS).type
         } else Type.C_ANY
@@ -152,7 +151,7 @@ class Parser(private val tokens: List<Token>) {
 
     private fun variableDeclaration(token: Token): Expression {
         val name = readAlpha()
-        if (peek().type != Type.COLON) {
+        if (!isNext(Type.COLON)) {
             expectType(Type.ASSIGNMENT)
             return Expression.AutoVariable(name, parseNext())
         }
@@ -273,8 +272,7 @@ class Parser(private val tokens: List<Token>) {
             return expressions
         while (!isEOF()) {
             expressions.add(parseNext())
-            if (peek().type != Type.COMMA)
-                break
+            if (!isNext(Type.COMMA)) break
             skip()
         }
         return expressions
@@ -303,6 +301,8 @@ class Parser(private val tokens: List<Token>) {
             throw RuntimeException("Expected flag: $flag, got $next")
         return next
     }
+
+    private fun isNext(type: Type) = peek().type == type
 
     private fun back() {
         index--
