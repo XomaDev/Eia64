@@ -1,5 +1,5 @@
 package space.themelon.eia64
 
 object Config {
-    const val DEBUG = false
+    const val DEBUG = true
 }

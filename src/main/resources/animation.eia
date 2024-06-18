@@ -4,8 +4,7 @@ let HAPPY_LEFT: String = "<(^_^ <)"
 
 fn generateSpaces(n: Int) {
     var spaces: String = ""
-    var i: Int = 0
-    until (i++ != n) {
+    for (var x: Int = 0: x < n: x++) {
         spaces = spaces + " "
     }
     return spaces
@@ -14,8 +13,7 @@ fn generateSpaces(n: Int) {
 fn trash(text: String) {
     let size: Int = len(text)
 
-    var i: Int = 0
-    until (i < size) {
+    for (var i:Int = 0: i < size: i++) {
         let l: String = text[0]
         var going_right: Bool = true
 
@@ -56,8 +54,9 @@ fn trash(text: String) {
                 right_space++
             }
         }
-        i++
     }
 }
-print("Enter a word: ")
-trash(readln())
+until (true) {
+    print("Enter a word: ")
+    trash(readln())
+}
