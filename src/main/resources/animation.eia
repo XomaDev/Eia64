@@ -3,22 +3,22 @@ let HAPPY_RIGHT: String = "(> ^_^)>"
 let HAPPY_LEFT: String = "<(^_^ <)"
 
 fn generateSpaces(n: Int): String {
-    auto spaces = ""
-    for (auto x = 0, x < n, x++) {
+    var spaces = ""
+    for (var x = 0, x < n, x++) {
         spaces = spaces + " "
     }
     return spaces
 }
 
 fn trash(text: String) {
-    let size: Int = len(text)
+    let size = len(text)
 
-    for (auto i = 0, i < size, i++) {
-        let l: String = text[0]
-        auto going_right = true
+    for (var i = 0, i < size, i++) {
+        var l = text[0]
+        var going_right = true
 
-        auto left_space = 0
-        auto right_space = 10 + i
+        var left_space = 0
+        var right_space = 10 + i
 
         until (true) {
             println(TRASH,
@@ -33,8 +33,8 @@ fn trash(text: String) {
                 left_space = 10 + i
                 right_space = 0
 
-                auto newText = ""
-                auto j = 1
+                var newText = ""
+                var j = 1
                 until (j < len(text)) {
                     newText = newText + text[j]
                     j++

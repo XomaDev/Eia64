@@ -3,5 +3,5 @@ fn fib(n: Int): Int {
     return fib(n - 1) + fib(n - 2)
 }
 
-let result: Int = fib(30)
+let result = fib(30)
 println(result)
