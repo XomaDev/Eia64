@@ -165,7 +165,6 @@ class Evaluator : Expression.Visitor<Any> {
                 throw RuntimeException("Expected type $typeSignature for arg '${definedParameter.name}' for function $fnName but got $gotTypeSignature")
             callValues.add(Pair(definedParameter, callValue))
         }
-
         createSubMemory()
         callValues.forEach {
             val definedParameter = it.first
@@ -173,7 +172,7 @@ class Evaluator : Expression.Visitor<Any> {
 
             memory.defineVar(definedParameter.name, value, true, definedParameter.type)
         }
-        val result = eval(call)
+        val result = eval(fn.body)
         destroySubMemory()
         if (result is FlowBlack && result.interrupt == Interrupt.RETURN)
             return result.data!!
