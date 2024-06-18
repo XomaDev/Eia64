@@ -2,7 +2,7 @@ let TRASH: String = "🗑️"
 let HAPPY_RIGHT: String = "(> ^_^)>"
 let HAPPY_LEFT: String = "<(^_^ <)"
 
-fn generateSpaces(n: Int) {
+fn generateSpaces(n: Int) String {
     var spaces: String = ""
     for (var x: Int = 0, x < n, x++) {
         spaces = spaces + " "

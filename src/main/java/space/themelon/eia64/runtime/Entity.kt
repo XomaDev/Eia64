@@ -1,5 +1,6 @@
 package space.themelon.eia64.runtime
 
+import space.themelon.eia64.Expression
 import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
 
@@ -25,6 +26,7 @@ data class Entity(val name: String, val mutable: Boolean, var value: Any, val ty
             is String -> C_STRING
             is Boolean -> C_BOOL
             is Char -> C_CHAR
+            is Expression -> C_UNIT
             else -> throw RuntimeException("Unknown type of value $value")
         }
     }

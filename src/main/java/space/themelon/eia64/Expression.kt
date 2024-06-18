@@ -149,6 +149,7 @@ abstract class Expression(private val representation: String) {
     open class Function(
         val name: String,
         val arguments: List<DefinitionType>,
+        val returnType: Type,
         val body: Expression
     ) : Expression("Function($name, $arguments, $body)") {
         override fun <R> accept(v: Visitor<R>) = v.function(this)

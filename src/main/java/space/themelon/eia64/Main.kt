@@ -2,7 +2,6 @@ package space.themelon.eia64
 
 import space.themelon.eia64.runtime.Evaluator
 import space.themelon.eia64.syntax.SyntaxAnalysis
-import java.io.File
 
 object Main {
     @JvmStatic

@@ -28,7 +28,7 @@ class Parser(private val tokens: List<Token>) {
             else -> {
                 when (token.type) {
                     Type.IF -> ifDeclaration(token)
-                    Type.FUN -> fnDeclaration(token)
+                    Type.FUN -> fnDeclaration()
                     else -> {
                         back()
                         parseExpr(0)
@@ -100,7 +100,7 @@ class Parser(private val tokens: List<Token>) {
         )
     }
 
-    private fun fnDeclaration(token: Token): Expression {
+    private fun fnDeclaration(): Expression {
         val name = readAlpha()
         expectType(Type.OPEN_CURVE)
         val requiredArgs = ArrayList<Expression.DefinitionType>()
@@ -111,7 +111,11 @@ class Parser(private val tokens: List<Token>) {
             skip()
         }
         expectType(Type.CLOSE_CURVE)
-        return Expression.Function(name, requiredArgs, readBody(allowAssign = true))
+        val returnType = if (peek().type == Type.COLON) {
+            skip()
+            expectFlag(Type.CLASS).type
+        } else Type.C_ANY
+        return Expression.Function(name, requiredArgs, returnType, readBody(allowAssign = true))
     }
 
     private fun ifDeclaration(token: Token): Expression {

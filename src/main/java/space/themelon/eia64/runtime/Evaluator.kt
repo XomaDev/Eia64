@@ -172,10 +172,17 @@ class Evaluator : Expression.Visitor<Any> {
 
             memory.defineVar(definedParameter.name, value, true, definedParameter.type)
         }
-        val result = eval(fn.body)
+        var result = eval(fn.body)
         destroySubMemory()
         if (result is FlowBlack && result.interrupt == Interrupt.RETURN)
-            return result.data!!
+            result = result.data!!
+
+        val returnSignature = fn.returnType
+        val gotReturnSignature = getType(result)
+
+        if (returnSignature != gotReturnSignature)
+            throw RuntimeException("Expected return type $returnSignature for function $fnName but got $gotReturnSignature")
+
         return result
     }
 
