@@ -90,22 +90,24 @@ class Parser(private val tokens: List<Token>) {
         }
     }
 
-    private fun interruption(token: Token): Expression.Interruption {
-        return Expression.Interruption(
-            Expression.Operator(token.type),
-            when (token.type) {
-                Type.RETURN -> parseNext()
-                else -> null
-            }
-        )
-    }
+    private fun interruption(token: Token) = Expression.Interruption(
+        Expression.Operator(token.type),
+        when (token.type) {
+            Type.RETURN -> parseNext()
+            else -> null
+        }
+    )
 
     private fun fnDeclaration(): Expression {
         val name = readAlpha()
         expectType(Type.OPEN_CURVE)
         val requiredArgs = ArrayList<Expression.DefinitionType>()
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
-            requiredArgs.add(readVarDefinition())
+            val parameterName = readAlpha()
+            expectType(Type.COLON)
+            val clazz = expectFlag(Type.CLASS).type
+
+            requiredArgs.add(Expression.DefinitionType(parameterName, clazz))
             if (!isNext(Type.COMMA)) break
             skip()
         }
@@ -159,14 +161,6 @@ class Parser(private val tokens: List<Token>) {
         val definition = Expression.DefinitionType(name, expectFlag(Type.CLASS).type)
         expectType(Type.ASSIGNMENT)
         return Expression.ExplicitVariable(token.type == Type.VAR, definition, parseNext())
-    }
-
-    private fun readVarDefinition(): Expression.DefinitionType {
-        // name:Type
-        val name = readAlpha()
-        expectType(Type.COLON)
-        val clazz = expectFlag(Type.CLASS).type
-        return Expression.DefinitionType(name, clazz)
     }
 
     private fun parseExpr(minPrecedence: Int): Expression {
