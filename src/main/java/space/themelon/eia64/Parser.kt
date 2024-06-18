@@ -151,11 +151,16 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun variableDeclaration(token: Token): Expression {
-        // for now, we do not care about 'let' or 'var'
+        if (token.type == Type.AUTO) {
+            val name = readAlpha()
+            expectType(Type.ASSIGNMENT)
+            val expr = parseNext()
+            return Expression.AutoVariable(name, expr)
+        }
         val definition = readVarDefinition()
         expectType(Type.ASSIGNMENT)
         val expr = parseNext()
-        return Expression.Variable(token.type == Type.VAR, definition, expr)
+        return Expression.ExplicitVariable(token.type == Type.VAR, definition, expr)
     }
 
     private fun readVarDefinition(): Expression.DefinitionType {

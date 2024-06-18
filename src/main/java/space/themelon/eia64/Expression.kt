@@ -10,7 +10,8 @@ abstract class Expression(private val representation: String) {
         fun eString(eString: EString): R
         fun alpha(alpha: Alpha): R
         fun operator(operator: Operator): R
-        fun variable(variable: Variable): R
+        fun variable(variable: ExplicitVariable): R
+        fun autoVariable(autoVariable: AutoVariable): R
         fun unaryOperation(expr: UnaryOperation): R
         fun binaryOperation(expr: BinaryOperation): R
         fun expressions(list: ExpressionList): R
@@ -70,12 +71,19 @@ abstract class Expression(private val representation: String) {
         val type: Type
     )
 
-    open class Variable(
+    open class ExplicitVariable(
         val mutable: Boolean,
         val definition: DefinitionType,
         val expr: Expression
     ) : Expression("Variable($mutable, $definition, $expr)") {
         override fun <R> accept(v: Visitor<R>) = v.variable(this)
+    }
+
+    open class AutoVariable(
+        val name: String,
+        val expr: Expression
+    ) : Expression("AutoVariable($name, $expr)") {
+        override fun <R> accept(v: Visitor<R>) = v.autoVariable(this)
     }
 
     open class MethodCall(

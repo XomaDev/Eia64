@@ -32,7 +32,7 @@ enum class Type {
     ALPHA,
     E_TRUE, E_FALSE,
 
-    V_KEYWORD, LET, VAR,
+    V_KEYWORD, LET, VAR, AUTO,
     IF, ELSE,
     ITR, TO, IN, BY,
     FOR, UNTIL,
@@ -113,6 +113,7 @@ enum class Type {
 
                 it["let"] = Token(LET, arrayOf(V_KEYWORD))
                 it["var"] = Token(VAR, arrayOf(V_KEYWORD))
+                it["auto"] = Token(AUTO, arrayOf(V_KEYWORD))
 
                 it["if"] = Token(IF, arrayOf(NONE))
                 it["else"] = Token(ELSE, arrayOf(NONE))

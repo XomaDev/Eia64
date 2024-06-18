@@ -53,9 +53,15 @@ class Evaluator : Expression.Visitor<Any> {
         (memory.get(name) as Entity).update(value)
     }
 
-    override fun variable(variable: Expression.Variable): Any {
+    override fun variable(variable: Expression.ExplicitVariable): Any {
         val value = eval(variable.expr)
         define(variable.mutable, variable.definition, value)
+        return value
+    }
+
+    override fun autoVariable(autoVariable: Expression.AutoVariable): Any {
+        val value = eval(autoVariable.expr)
+        memory.defineVar(autoVariable.name, unbox(value), true, getType(value))
         return value
     }
 
@@ -180,7 +186,7 @@ class Evaluator : Expression.Visitor<Any> {
         val returnSignature = fn.returnType
         val gotReturnSignature = getType(result)
 
-        if (returnSignature != gotReturnSignature)
+        if (returnSignature != C_ANY && returnSignature != gotReturnSignature)
             throw RuntimeException("Expected return type $returnSignature for function $fnName but got $gotReturnSignature")
 
         return result
