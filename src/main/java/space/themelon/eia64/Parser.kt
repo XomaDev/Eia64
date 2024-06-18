@@ -49,13 +49,16 @@ class Parser(private val tokens: List<Token>) {
             }
             Type.FOR -> {
                 expectType(Type.OPEN_CURVE)
-                val args = parseArguments(Type.COLON)
-                if (args.size != 3) throw RuntimeException("[For-Loop] Expected 3 expressions (initializer:conditional:operational)")
+                val initializer = if (peek().type == Type.COMMA) null else parseNext()
+                expectType(Type.COMMA)
+                val conditional = if (peek().type == Type.COMMA) null else parseNext()
+                expectType(Type.COMMA)
+                val operational = if (peek().type == Type.CLOSE_CURVE) null else parseNext()
                 expectType(Type.CLOSE_CURVE)
                 val expr = Expression.ForLoop(
-                    initializer = args[0],
-                    conditional = args[1],
-                    operational = args[2],
+                    initializer = initializer,
+                    conditional = conditional,
+                    operational = operational,
                     readBody()
                 )
                 return expr
@@ -224,7 +227,7 @@ class Parser(private val tokens: List<Token>) {
             return Expression.UnaryOperation(Expression.Operator(token.type), parseElement(), true)
         } else if (token.hasFlag(Type.NATIVE_CALL)) {
             expectType(Type.OPEN_CURVE)
-            val arguments = parseArguments(Type.COMMA)
+            val arguments = parseArguments()
             expectType(Type.CLOSE_CURVE)
             return Expression.NativeCall(token.type, Expression.ExpressionList(arguments))
         }
@@ -251,18 +254,18 @@ class Parser(private val tokens: List<Token>) {
     private fun funcInvoke(token: Token): Expression {
         val name = readAlpha(token)
         expectType(Type.OPEN_CURVE)
-        val arguments = parseArguments(Type.COMMA)
+        val arguments = parseArguments()
         expectType(Type.CLOSE_CURVE)
         return Expression.MethodCall(name, Expression.ExpressionList(arguments))
     }
 
-    private fun parseArguments(separator: Type): List<Expression> {
+    private fun parseArguments(): List<Expression> {
         val expressions = ArrayList<Expression>()
         if (!isEOF() && peek().type == Type.CLOSE_CURVE)
             return expressions
         while (!isEOF()) {
             expressions.add(parseNext())
-            if (peek().type != separator)
+            if (peek().type != Type.COMMA)
                 break
             skip()
         }

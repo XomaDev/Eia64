@@ -7,7 +7,7 @@ import java.io.File
 object Main {
     @JvmStatic
     fun main(args: Array<String>) {
-        val source = javaClass.classLoader.getResource("animation.eia").readText()
+        val source = javaClass.classLoader.getResource("trytobreak.eia").readText()
 
         val tokens = SyntaxAnalysis().tokenize(source)
 
