@@ -48,7 +48,7 @@ class Parser(private val tokens: List<Token>) {
                 expectType(Type.OPEN_CURVE)
                 val expr = parseNext()
                 expectType(Type.CLOSE_CURVE)
-                val body = body()
+                val body = bodyOrExpr()
                 return Expression.Until(expr, body)
             }
             Type.FOR -> {
@@ -60,7 +60,7 @@ class Parser(private val tokens: List<Token>) {
                 expectType(Type.COMMA)
                 val operational = if (isNext(Type.CLOSE_CURVE)) null else parseNext()
                 expectType(Type.CLOSE_CURVE)
-                val body = body()
+                val body = bodyOrExpr()
                 nameResolver.leaveScope()
                 return Expression.ForLoop(
                     initializer,
@@ -83,12 +83,12 @@ class Parser(private val tokens: List<Token>) {
                         by = parseNext()
                     }
                     expectType(Type.CLOSE_CURVE)
-                    return Expression.Itr(iName, from, to, by, body())
+                    return Expression.Itr(iName, from, to, by, bodyOrExpr())
                 } else {
                     expectType(Type.IN)
                     val entity = parseNext()
                     expectType(Type.CLOSE_CURVE)
-                    return Expression.ForEach(iName, entity, body())
+                    return Expression.ForEach(iName, entity, bodyOrExpr())
                 }
             }
             else -> throw RuntimeException("Unknown loop token ${token.type}")
@@ -105,7 +105,6 @@ class Parser(private val tokens: List<Token>) {
 
     private fun fnDeclaration(): Expression {
         val name = readAlpha()
-        println("declaring f$name")
         nameResolver.defineFn(name)
         nameResolver.enterScope()
         expectType(Type.OPEN_CURVE)
