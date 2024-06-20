@@ -1,7 +1,6 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.Memory
 import space.themelon.eia64.runtime.Entity.Companion.getType
 import space.themelon.eia64.runtime.Entity.Companion.unbox
 import space.themelon.eia64.syntax.Type
@@ -24,21 +23,10 @@ class Evaluator : Expression.Visitor<Any> {
     private fun booleanExpr(expr: Expression, operation: String) = safeUnbox(expr, C_BOOL, operation) as Boolean
     private fun intExpr(expr: Expression, operation: String) = safeUnbox(expr, C_INT, operation) as Int
     
-    private var memory = Memory()
+    private val memory = Memory()
 
-    private fun createSubMemory() {
-        memory = if (memory.next != null) memory.next!! else Memory(memory)
-    }
-
-    private fun destroySubMemory() {
-        if (memory.isLower()) memory = memory.superMemory()
-        else throw RuntimeException("Already a super memory")
-    }
-
-    override fun eBool(bool: Expression.EBool) = bool.value
-    override fun eInt(eInt: Expression.EInt) = eInt.value
-    override fun eString(eString: Expression.EString) = eString.value
-    override fun alpha(alpha: Expression.Alpha) = memory.get(alpha.value)
+    override fun literal(literal: Expression.Literal) = literal.data
+    override fun alpha(alpha: Expression.Alpha) = memory.getVar(alpha.index, alpha.value)
     override fun operator(operator: Expression.Operator) = operator.value
 
     private fun define(mutable: Boolean, def: Expression.DefinitionType, value: Any) {
@@ -46,11 +34,11 @@ class Evaluator : Expression.Visitor<Any> {
         val valueType = getType(value)
         if (def.type != C_ANY && def.type != valueType)
             throw RuntimeException("Variable ${def.name} has type ${def.type}, but got value type of $valueType")
-        memory.defineVar(def.name, unbox(value), mutable, valueType)
+        memory.declareVar(def.name, Entity(def.name, mutable, value, valueType))
     }
 
-    private fun update(name: String, value: Any) {
-        (memory.get(name) as Entity).update(value)
+    private fun update(scope: Int, name: String, value: Any) {
+        (memory.getVar(scope, name) as Entity).update(value)
     }
 
     override fun variable(variable: Expression.ExplicitVariable): Any {
@@ -61,7 +49,7 @@ class Evaluator : Expression.Visitor<Any> {
 
     override fun autoVariable(autoVariable: Expression.AutoVariable): Any {
         val value = eval(autoVariable.expr)
-        memory.defineVar(autoVariable.name, unbox(value), true, getType(value))
+        memory.declareVar(autoVariable.name, Entity(autoVariable.name, true, unbox(value), getType(value)))
         return value
     }
 
@@ -72,12 +60,13 @@ class Evaluator : Expression.Visitor<Any> {
             if (expr.expr !is Expression.Alpha)
                 throw RuntimeException("Expected variable type for ${type.name} operation")
             val name = expr.expr.value
+            val scope = expr.expr.index
             var curr = intExpr(expr.expr, "++ Increment")
             if (expr.left) {
-                update(name, if (type == INCREMENT) ++curr else --curr)
+                update(scope, name, if (type == INCREMENT) ++curr else --curr)
                 curr
             } else {
-                update(name, if (type == INCREMENT) curr + 1 else curr - 1)
+                update(scope, name, if (type == INCREMENT) curr + 1 else curr - 1)
                 curr
             }
         }
@@ -104,9 +93,8 @@ class Evaluator : Expression.Visitor<Any> {
             } else {
                 left = unbox(left)
                 right = unbox(right)
-
                 when (left) {
-                    is Int, is String -> if (type == EQUALS) left == right else left != right
+                    is Int, is String, is Char -> if (type == EQUALS) left == right else left != right
                     else -> false
                 }
             }
@@ -126,7 +114,7 @@ class Evaluator : Expression.Visitor<Any> {
                 throw RuntimeException("[OP =] expected left type to be a name, but got ${expr.left}")
             val name = expr.left.value
             val value = eval(expr.right)
-            update(name, value)
+            update(expr.left.index, name, value)
             value
         }
         BITWISE_AND -> intExpr(expr.left, "& BitwiseAnd") and intExpr(expr.right, "& BitwiseAnd")
@@ -146,7 +134,7 @@ class Evaluator : Expression.Visitor<Any> {
 
     override fun methodCall(call: Expression.MethodCall): Any {
         val fnName = call.name
-        val fn = memory.get(fnName)
+        val fn = memory.getFn(call.scope, fnName)
         if (fn !is Expression.Function)
             throw RuntimeException("Unable to find function $fnName")
 
@@ -171,15 +159,15 @@ class Evaluator : Expression.Visitor<Any> {
                 throw RuntimeException("Expected type $typeSignature for arg '${definedParameter.name}' for function $fnName but got $gotTypeSignature")
             callValues.add(Pair(definedParameter, callValue))
         }
-        createSubMemory()
+        memory.enterScope()
         callValues.forEach {
             val definedParameter = it.first
             val value = it.second
-
-            memory.defineVar(definedParameter.name, value, true, definedParameter.type)
+            memory.declareVar(definedParameter.name,
+                Entity(definedParameter.name, true, value, definedParameter.type))
         }
         var result = eval(fn.body)
-        destroySubMemory()
+        memory.leaveScope()
         if (result is FlowBlack && result.interrupt == Interrupt.RETURN)
             result = result.data!!
 
@@ -194,9 +182,9 @@ class Evaluator : Expression.Visitor<Any> {
 
     override fun until(until: Expression.Until): Any {
         while (booleanExpr(until.expression, "Until Condition")) {
-            createSubMemory()
+            memory.enterScope()
             val result = eval(until.body)
-            destroySubMemory()
+            memory.leaveScope()
             if (result is FlowBlack)
                 when (result.interrupt) {
                     Interrupt.BREAK -> break
@@ -213,10 +201,10 @@ class Evaluator : Expression.Visitor<Any> {
         val iterable = eval(forEach.entity)
         if (iterable is String) {
             for (c in iterable) {
-                createSubMemory()
-                memory.defineVar(named, c.toString(), false, C_STRING)
+                memory.enterScope()
+                memory.declareVar(named, Entity(named, false, c, C_STRING))
                 val result = eval(forEach.body)
-                destroySubMemory()
+                memory.leaveScope()
                 if (result is FlowBlack)
                     when (result.interrupt) {
                         Interrupt.BREAK -> break
@@ -239,10 +227,10 @@ class Evaluator : Expression.Visitor<Any> {
         if (reverse) by = -by
 
         while (if (reverse) from >= to else from <= to) {
-            createSubMemory()
-            memory.defineVar(named, from, false, C_INT)
+            memory.enterScope()
+            memory.declareVar(named, Entity(named, false, from, C_INT))
             val result = eval(itr.body)
-            destroySubMemory()
+            memory.leaveScope()
             if (result is FlowBlack)
                 when (result.interrupt) {
                     Interrupt.BREAK -> break
@@ -256,27 +244,32 @@ class Evaluator : Expression.Visitor<Any> {
     }
 
     override fun forLoop(forLoop: Expression.ForLoop): Any {
-        createSubMemory()
+        memory.enterScope()
         forLoop.initializer?.let { eval(it) }
 
         val conditional = forLoop.conditional
+
+        var loopResult: Any = forLoop
         while (if (conditional == null) true else booleanExpr(conditional, "ForLoop")) {
-            createSubMemory()
+            memory.enterScope()
             val result = eval(forLoop.body)
-            destroySubMemory()
+            memory.leaveScope()
             if (result is FlowBlack) {
                 when (result.interrupt) {
                     Interrupt.BREAK -> break
                     Interrupt.CONTINUE -> continue
-                    Interrupt.RETURN -> return result
+                    Interrupt.RETURN -> {
+                        loopResult = result
+                        break
+                    }
                     else -> { }
                 }
             }
             forLoop.operational?.let { eval(it) }
         }
 
-        destroySubMemory()
-        return forLoop
+        memory.leaveScope()
+        return loopResult
     }
 
     override fun nativeCall(call: Expression.NativeCall): Any {
@@ -321,18 +314,20 @@ class Evaluator : Expression.Visitor<Any> {
     }
 
     override fun ifFunction(ifExpr: Expression.If): Any {
-        val body = if (booleanExpr(ifExpr.condition, "If Condition")) ifExpr.thenBranch else ifExpr.elseBranch
+        val body = if (booleanExpr(ifExpr.condition, "If Condition")) ifExpr.thenBody else ifExpr.elseBody
         if (body != null) {
-            createSubMemory()
+            val newScope = body is Expression.ExpressionList
+            if (newScope) memory.enterScope()
             val result = eval(body)
-            destroySubMemory()
+            if (newScope) memory.leaveScope()
             return result
         }
         return ifExpr
     }
 
     override fun function(function: Expression.Function): Any {
-        memory.defineFunc(function.name, function)
+        println("function: ${function.name}")
+        memory.declareFn(function.name, function)
         return function
     }
 

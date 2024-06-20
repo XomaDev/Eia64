@@ -1,9 +1,13 @@
-package space.themelon.eia64
+package space.themelon.eia64.analysis
 
+import space.themelon.eia64.Config
+import space.themelon.eia64.Expression
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 
 class Parser(private val tokens: List<Token>) {
+
+    private val nameResolver = NameResolver()
 
     private var index = 0
     private val size = tokens.size
@@ -44,24 +48,25 @@ class Parser(private val tokens: List<Token>) {
                 expectType(Type.OPEN_CURVE)
                 val expr = parseNext()
                 expectType(Type.CLOSE_CURVE)
-                val body = readBody()
+                val body = body()
                 return Expression.Until(expr, body)
             }
             Type.FOR -> {
                 expectType(Type.OPEN_CURVE)
+                nameResolver.enterScope()
                 val initializer = if (isNext(Type.COMMA)) null else parseNext()
                 expectType(Type.COMMA)
                 val conditional = if (isNext(Type.COMMA)) null else parseNext()
                 expectType(Type.COMMA)
                 val operational = if (isNext(Type.CLOSE_CURVE)) null else parseNext()
                 expectType(Type.CLOSE_CURVE)
-                val expr = Expression.ForLoop(
-                    initializer = initializer,
-                    conditional = conditional,
-                    operational = operational,
-                    readBody()
-                )
-                return expr
+                val body = body()
+                nameResolver.leaveScope()
+                return Expression.ForLoop(
+                    initializer,
+                    conditional,
+                    operational,
+                    body)
             }
             Type.ITR -> {
                 expectType(Type.OPEN_CURVE)
@@ -78,12 +83,12 @@ class Parser(private val tokens: List<Token>) {
                         by = parseNext()
                     }
                     expectType(Type.CLOSE_CURVE)
-                    return Expression.Itr(iName, from, to, by, readBody())
+                    return Expression.Itr(iName, from, to, by, body())
                 } else {
                     expectType(Type.IN)
                     val entity = parseNext()
                     expectType(Type.CLOSE_CURVE)
-                    return Expression.ForEach(iName, entity, readBody())
+                    return Expression.ForEach(iName, entity, body())
                 }
             }
             else -> throw RuntimeException("Unknown loop token ${token.type}")
@@ -100,10 +105,14 @@ class Parser(private val tokens: List<Token>) {
 
     private fun fnDeclaration(): Expression {
         val name = readAlpha()
+        println("declaring f$name")
+        nameResolver.defineFn(name)
+        nameResolver.enterScope()
         expectType(Type.OPEN_CURVE)
         val requiredArgs = ArrayList<Expression.DefinitionType>()
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val parameterName = readAlpha()
+            nameResolver.defineVr(parameterName)
             expectType(Type.COLON)
             val clazz = expectFlag(Type.CLASS).type
 
@@ -116,14 +125,21 @@ class Parser(private val tokens: List<Token>) {
             skip()
             expectFlag(Type.CLASS).type
         } else Type.C_ANY
-        return Expression.Function(name, requiredArgs, returnType, readBody(allowAssign = true))
+        val body = if (isNext(Type.ASSIGNMENT)) {
+            skip()
+            parseNext()
+        } else body(false)
+        nameResolver.leaveScope()
+        return Expression.Function(name, requiredArgs, returnType, body)
     }
 
     private fun ifDeclaration(token: Token): Expression {
         expectType(Type.OPEN_CURVE)
         val logicalExpr = parseNext()
         expectType(Type.CLOSE_CURVE)
-        val ifBody = parseNext()
+        // TODO:
+        //  need to handle bodies over here
+        val ifBody = bodyOrExpr()
 
         if (isEOF() || peek().type != Type.ELSE)
             return Expression.If(logicalExpr, ifBody)
@@ -131,21 +147,25 @@ class Parser(private val tokens: List<Token>) {
 
         val elseBranch = when (peek().type) {
             Type.IF -> ifDeclaration(next())
-            else -> parseNext()
+            else -> bodyOrExpr()
         }
         return Expression.If(logicalExpr, ifBody, elseBranch)
     }
 
-    private fun readBody(allowAssign: Boolean = false): Expression {
-        if (allowAssign && peek().type == Type.ASSIGNMENT) {
-            skip()
-            return Expression.Interruption(Expression.Operator(Type.RETURN), parseNext())
-        }
+    private fun bodyOrExpr(): Expression {
+        if (peek().type == Type.OPEN_CURLY)
+            return body(true)
+        return parseNext()
+    }
+
+    private fun body(createScope: Boolean = true): Expression {
+        if (createScope) nameResolver.enterScope()
         expectType(Type.OPEN_CURLY)
         val expressions = ArrayList<Expression>()
         while (!isEOF() && peek().type != Type.CLOSE_CURLY)
             expressions.add(parseNext())
         expectType(Type.CLOSE_CURLY)
+        if (createScope) nameResolver.leaveScope()
         if (expressions.size == 1)
             return expressions[0]
         return Expression.ExpressionList(expressions)
@@ -153,6 +173,7 @@ class Parser(private val tokens: List<Token>) {
 
     private fun variableDeclaration(token: Token): Expression {
         val name = readAlpha()
+        nameResolver.defineVr(name)
         if (!isNext(Type.COLON)) {
             expectType(Type.ASSIGNMENT)
             return Expression.AutoVariable(name, parseNext())
@@ -217,7 +238,7 @@ class Parser(private val tokens: List<Token>) {
                 expectType(Type.CLOSE_CURVE)
                 return expr
             }
-            Type.OPEN_CURLY -> return readBody()
+            Type.OPEN_CURLY -> return body()
             else -> { }
         }
         val token = next()
@@ -237,10 +258,13 @@ class Parser(private val tokens: List<Token>) {
 
     private fun parseValue(token: Token): Expression {
         return when (token.type) {
-            Type.E_TRUE, Type.E_FALSE -> Expression.EBool(token.type == Type.E_TRUE)
-            Type.C_INT -> Expression.EInt(token.optionalData.toString().toInt())
-            Type.C_STRING -> Expression.EString(token.optionalData.toString())
-            Type.ALPHA -> Expression.Alpha(readAlpha(token))
+            Type.E_TRUE, Type.E_FALSE -> Expression.Literal(token.type == Type.E_TRUE)
+            Type.C_INT -> Expression.Literal(token.optionalData.toString().toInt())
+            Type.C_STRING, Type.C_CHAR -> Expression.Literal(token.optionalData!!)
+            Type.ALPHA -> {
+                val name = readAlpha(token)
+                Expression.Alpha(nameResolver.resolveVr(name), name)
+            }
 
             Type.OPEN_CURVE -> {
                 val expr = parseNext()
@@ -257,7 +281,7 @@ class Parser(private val tokens: List<Token>) {
         expectType(Type.OPEN_CURVE)
         val arguments = parseArguments()
         expectType(Type.CLOSE_CURVE)
-        return Expression.MethodCall(name, Expression.ExpressionList(arguments))
+        return Expression.MethodCall(nameResolver.resolveFn(name), name, Expression.ExpressionList(arguments))
     }
 
     private fun parseArguments(): List<Expression> {

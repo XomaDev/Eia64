@@ -2,12 +2,10 @@ package space.themelon.eia64
 
 import space.themelon.eia64.syntax.Type
 
-abstract class Expression(private val representation: String) {
+abstract class Expression {
 
     interface Visitor<R> {
-        fun eBool(bool: EBool): R
-        fun eInt(eInt: EInt): R
-        fun eString(eString: EString): R
+        fun literal(literal: Literal): R
         fun alpha(alpha: Alpha): R
         fun operator(operator: Operator): R
         fun variable(variable: ExplicitVariable): R
@@ -29,40 +27,30 @@ abstract class Expression(private val representation: String) {
 
     abstract fun <R> accept(v: Visitor<R>): R
 
-    override fun toString() = representation
-
-    open class EBool(val value: Boolean) : Expression("Int($value)") {
-        override fun <R> accept(v: Visitor<R>) = v.eBool(this)
+    data class Literal(val data: Any): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.literal(this)
     }
 
-    open class EInt(val value: Int) : Expression("Int($value)") {
-        override fun <R> accept(v: Visitor<R>) = v.eInt(this)
-    }
-
-    open class EString(val value: String) : Expression("String($value)") {
-        override fun <R> accept(v: Visitor<R>) = v.eString(this)
-    }
-
-    open class Alpha(val value: String) : Expression("Alpha($value)") {
+    data class Alpha(val index: Int, val value: String) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.alpha(this)
     }
 
-    open class Operator(val value: Type) : Expression("OP($value)") {
+    data class Operator(val value: Type) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.operator(this)
     }
 
-    open class UnaryOperation(
+    data class UnaryOperation(
         val operator: Operator,
         val expr: Expression,
         val left: Boolean
-    ) : Expression("Unary($left, $operator, $expr)") {
+    ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.unaryOperation(this)
     }
 
-    open class BinaryOperation(
+    data class BinaryOperation(
         val left: Expression,
         val right: Expression,
-        val operator: Operator) : Expression("BinaryOperation($operator, $left, $right)") {
+        val operator: Operator) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.binaryOperation(this)
     }
 
@@ -71,102 +59,103 @@ abstract class Expression(private val representation: String) {
         val type: Type
     )
 
-    open class ExplicitVariable(
+    data class ExplicitVariable(
         val mutable: Boolean,
         val definition: DefinitionType,
         val expr: Expression
-    ) : Expression("Variable($mutable, $definition, $expr)") {
+    ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.variable(this)
     }
 
-    open class AutoVariable(
+    data class AutoVariable(
         val name: String,
         val expr: Expression
-    ) : Expression("AutoVariable($name, $expr)") {
+    ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.autoVariable(this)
     }
 
-    open class MethodCall(
+    data class MethodCall(
+        val scope: Int,
         val name: String,
         val arguments: ExpressionList,
-    ) : Expression("MethodCall($name, $arguments)") {
+    ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.methodCall(this)
     }
 
-    open class NativeCall(
+    data class NativeCall(
         val type: Type,
         val arguments: ExpressionList,
-    ) : Expression("NativeCall($type, $arguments)") {
+    ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.nativeCall(this)
     }
 
-    open class ExpressionList(
+    data class ExpressionList(
         val expressions: List<Expression>
-    ) : Expression("List($expressions)") {
+    ) : Expression() {
         val size = expressions.size
         override fun <R> accept(v: Visitor<R>) = v.expressions(this)
     }
 
-    open class ForEach(
+    data class ForEach(
         val name: String,
         val entity: Expression,
         val body: Expression,
-    ): Expression("ForEach($name, $entity)") {
+    ): Expression() {
         override fun <R> accept(v: Visitor<R>) = v.forEach(this)
     }
 
-    open class ForLoop(
+    data class ForLoop(
         val initializer: Expression?,
         val conditional: Expression?,
         val operational: Expression?,
         val body: Expression,
-    ) : Expression("ForEach($initializer: $conditional: $operational)") {
+    ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.forLoop(this)
     }
 
-    open class Itr(
+    data class Itr(
         val name: String,
         val from: Expression,
         val to: Expression,
         val by: Expression?,
         val body: Expression,
-    ) : Expression("Itr($name: $from to $to by $by)") {
+    ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.itr(this)
     }
 
-    open class Until(
+    data class Until(
         val expression: Expression,
         val body: Expression
-    ) : Expression("Until($expression, $body)") {
+    ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.until(this)
     }
 
-    open class If(
+    data class If(
         val condition: Expression,
-        val thenBranch: Expression,
-        val elseBranch: Expression? = null,
-    ) : Expression("IfFunction($condition, $thenBranch, $elseBranch)") {
+        val thenBody: Expression,
+        val elseBody: Expression? = null,
+    ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.ifFunction(this)
     }
 
-    open class Interruption(val type: Operator, val expr: Expression? = null)
-        : Expression("Interruption($type, $expr)") {
+    data class Interruption(val type: Operator, val expr: Expression? = null)
+        : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.interruption(this)
     }
 
-    open class Function(
+    data class Function(
         val name: String,
         val arguments: List<DefinitionType>,
         val returnType: Type,
         val body: Expression
-    ) : Expression("Function($name, $arguments, $body)") {
+    ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.function(this)
     }
 
-    open class ElementAccess(
+    data class ElementAccess(
         val expr: Expression,
         val index: Expression
-    ) : Expression("ElementAccess($expr, $index)") {
+    ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.elementAccess(this)
     }
 }

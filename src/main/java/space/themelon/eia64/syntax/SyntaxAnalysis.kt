@@ -37,6 +37,10 @@ class SyntaxAnalysis {
             parseString()
             return
         }
+        if (c == '\'') {
+            parseChar()
+            return
+        }
         back()
         var match = ""
         var token: Token? = null
@@ -53,6 +57,13 @@ class SyntaxAnalysis {
                 parseNumeric()
             } else throw RuntimeException("Unknown character '$c'")
         }
+    }
+
+    private fun parseChar() {
+        val char = next()
+        if (next() != '\'')
+            throw RuntimeException("Invalid syntax while using single quotes")
+        tokens.add(Token(Type.C_CHAR, arrayOf(Type.VALUE), char))
     }
 
     private fun parseString() {
