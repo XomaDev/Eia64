@@ -1,2 +1,15 @@
-let name = "Kumaraswamy"
-println(.f"Hello %name%!")
+var square_result = 0
+var n = 0
+fn square(upto: Int, callback: Unit) {
+    for (n = 0, n < upto, n++) {
+        square_result = n * n
+        ~callback
+    }
+}
+
+let callback = { println(format("%d squared is %d", n, square_result)) }
+square(5, callback)
+
+let happy = true
+let getFruit = if (happy) { { "Mango" } } else { { "Banana" } }
+println(~getFruit)

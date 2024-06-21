@@ -40,7 +40,7 @@ enum class Type {
     ITR, TO, IN, BY,
     FOR, UNTIL,
     FUN,
-    PRINT, PRINTLN, READ, READLN, LEN, SLEEP,
+    PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT,
 
     RETURN, BREAK, CONTINUE,
 
@@ -110,6 +110,7 @@ enum class Type {
                 it["readln"] = Token(READLN, arrayOf(NATIVE_CALL))
                 it["sleep"] = Token(SLEEP, arrayOf(NATIVE_CALL))
                 it["len"] = Token(LEN, arrayOf(NATIVE_CALL))
+                it["format"] = Token(FORMAT, arrayOf(NATIVE_CALL))
 
                 it["until"] = Token(UNTIL, arrayOf(LOOP))
                 it["itr"] = Token(ITR, arrayOf(LOOP))
