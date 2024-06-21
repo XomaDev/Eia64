@@ -350,7 +350,12 @@ class Evaluator : Expression.Visitor<Any> {
 
             LEN -> {
                 if (argsSize != 1) throw RuntimeException("Expected only 1 argument for len, got $argsSize")
-                return unbox(eval(call.arguments.expressions[0])).toString().length
+                return when (val data = unbox(eval(call.arguments.expressions[0]))) {
+                    is String -> data.length
+                    is Array<*> -> data.size
+                    is Expression.ExpressionList -> data.size
+                    else -> throw RuntimeException("Unknown measurable data type $data")
+                }
             }
             else -> throw RuntimeException("Unknown native read write $type")
         }
