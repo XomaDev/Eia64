@@ -90,7 +90,7 @@ class Parser(private val tokens: List<Token>) {
                     expectType(Type.CLOSE_CURVE)
                     nameResolver.enterScope()
                     nameResolver.defineVr(iName)
-                    val body = optimiseExpr(body(false))
+                    val body = bodyOrExpr()
                     nameResolver.leaveScope()
                     return Expression.ForEach(iName, entity, body)
                 }

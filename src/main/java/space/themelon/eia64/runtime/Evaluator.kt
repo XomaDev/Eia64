@@ -233,13 +233,11 @@ class Evaluator : Expression.Visitor<Any> {
         when (iterable) {
             is String -> {
                 size = iterable.length
-                type = C_CHAR
                 getNext = { iterable[index++] }
             }
 
             is Array<*> -> {
                 size = iterable.size
-                type = C_ANY
                 getNext = { iterable[index++]!! }
             }
 
@@ -251,7 +249,8 @@ class Evaluator : Expression.Visitor<Any> {
 
         while (index < size) {
             memory.enterScope()
-            memory.declareVar(named, Entity(named, false, getNext(), type))
+            val element = getNext()
+            memory.declareVar(named, Entity(named, false, element, getType(element)))
             val result = eval(body)
             memory.leaveScope()
             if (result is FlowBlack)
