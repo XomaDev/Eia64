@@ -9,7 +9,7 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 class Evaluator : Expression.Visitor<Any> {
-    
+
     fun eval(expr: Expression) = expr.accept(this)
 
     private fun safeUnbox(expr: Expression, expectedType: Type, operation: String): Any {
@@ -19,10 +19,10 @@ class Evaluator : Expression.Visitor<Any> {
             throw RuntimeException("Expected type $expectedType for [$operation] but got $gotType")
         return unbox(result)
     }
-    
+
     private fun booleanExpr(expr: Expression, operation: String) = safeUnbox(expr, C_BOOL, operation) as Boolean
     private fun intExpr(expr: Expression, operation: String) = safeUnbox(expr, C_INT, operation) as Int
-    
+
     private val memory = Memory()
 
     override fun literal(literal: Expression.Literal) = literal.data
@@ -223,23 +223,45 @@ class Evaluator : Expression.Visitor<Any> {
     }
 
     override fun forEach(forEach: Expression.ForEach): Any {
-        val named = forEach.name
-        val iterable = eval(forEach.entity)
-        if (iterable is String) {
-            for (c in iterable) {
-                memory.enterScope()
-                memory.declareVar(named, Entity(named, false, c, C_STRING))
-                val result = eval(forEach.body)
-                memory.leaveScope()
-                if (result is FlowBlack)
-                    when (result.interrupt) {
-                        Interrupt.BREAK -> break
-                        Interrupt.CONTINUE -> continue
-                        Interrupt.RETURN -> return result
-                        else -> { }
-                    }
+        val iterable = unbox(eval(forEach.entity))
+
+        var index = 0
+        val size:Int
+        val type: Type
+
+        val getNext: () -> Any
+        when (iterable) {
+            is String -> {
+                size = iterable.length
+                type = C_CHAR
+                getNext = { iterable[index++] }
             }
-        } else throw RuntimeException("Unknown non-interactable type $iterable")
+
+            is Array<*> -> {
+                size = iterable.size
+                type = C_ANY
+                getNext = { iterable[index++]!! }
+            }
+
+            else -> throw RuntimeException("Unknown non-iterable element $iterable")
+        }
+
+        val named = forEach.name
+        val body = forEach.body
+
+        while (index < size) {
+            memory.enterScope()
+            memory.declareVar(named, Entity(named, false, getNext(), type))
+            val result = eval(body)
+            memory.leaveScope()
+            if (result is FlowBlack)
+                when (result.interrupt) {
+                    Interrupt.BREAK -> break
+                    Interrupt.CONTINUE -> continue
+                    Interrupt.RETURN -> return result
+                    else -> { }
+                }
+        }
         return forEach
     }
 

@@ -88,7 +88,11 @@ class Parser(private val tokens: List<Token>) {
                     expectType(Type.IN)
                     val entity = parseNext()
                     expectType(Type.CLOSE_CURVE)
-                    return Expression.ForEach(iName, entity, bodyOrExpr())
+                    nameResolver.enterScope()
+                    nameResolver.defineVr(iName)
+                    val body = optimiseExpr(body(false))
+                    nameResolver.leaveScope()
+                    return Expression.ForEach(iName, entity, body)
                 }
             }
             else -> throw RuntimeException("Unknown loop token ${token.type}")
