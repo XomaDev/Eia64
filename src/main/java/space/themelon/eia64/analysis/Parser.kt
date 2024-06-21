@@ -25,19 +25,17 @@ class Parser(private val tokens: List<Token>) {
 
     private fun parseNext(): Expression {
         val token = next()
-        return when (token.flags[0]) {
-            Type.LOOP -> loop(token)
-            Type.V_KEYWORD -> variableDeclaration(token)
-            Type.INTERRUPTION -> interruption(token)
+        if (token.flags.isNotEmpty()) {
+            if (token.flags[0] == Type.LOOP) return loop(token)
+            else if (token.flags[0] == Type.V_KEYWORD) return variableDeclaration(token)
+            else if (token.flags[0] == Type.INTERRUPTION) return interruption(token)
+        }
+        when (token.type) {
+            Type.IF -> return ifDeclaration(token)
+            Type.FUN -> return fnDeclaration()
             else -> {
-                when (token.type) {
-                    Type.IF -> ifDeclaration(token)
-                    Type.FUN -> fnDeclaration()
-                    else -> {
-                        back()
-                        parseExpr(0)
-                    }
-                }
+                back()
+                return parseExpr(0)
             }
         }
     }
@@ -90,7 +88,7 @@ class Parser(private val tokens: List<Token>) {
                     expectType(Type.CLOSE_CURVE)
                     nameResolver.enterScope()
                     nameResolver.defineVr(iName)
-                    val body = optimiseExpr(body(false))
+                    val body = bodyOrExpr()
                     nameResolver.leaveScope()
                     return Expression.ForEach(iName, entity, body)
                 }
@@ -244,6 +242,10 @@ class Parser(private val tokens: List<Token>) {
                 return expr
             }
             Type.OPEN_CURLY -> return optimiseExpr(body())
+            Type.DOT -> {
+                skip()
+                return dotOperation()
+            }
             else -> { }
         }
         val token = next()
@@ -259,6 +261,15 @@ class Parser(private val tokens: List<Token>) {
             return Expression.NativeCall(token.type, Expression.ExpressionList(arguments))
         }
         throw RuntimeException("Unexpected token $token")
+    }
+
+    private fun dotOperation(): Expression.Dot {
+        val type = when (val operation = readAlpha()) {
+            "f" -> Expression.DotType.FORMAT
+            else -> throw RuntimeException("Unknown special dot operation $operation")
+        }
+        val operand = parseNext()
+        return Expression.Dot(type, operand)
     }
 
     private fun parseValue(token: Token): Expression {

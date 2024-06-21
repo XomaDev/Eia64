@@ -1,4 +1,2 @@
-let numbers = ~{ 1 2 3 }
-itr (number in numbers) {
-    println(number)
-}
+let name = "Kumaraswamy"
+println(.f"Hello %name%!")
