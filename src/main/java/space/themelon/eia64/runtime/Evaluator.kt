@@ -70,6 +70,17 @@ class Evaluator : Expression.Visitor<Any> {
                 curr
             }
         }
+        KITA -> {
+            var operand: Any = expr.expr
+            if (operand !is Expression.ExpressionList)
+                operand = unbox(eval(operand as Expression))
+            if (operand !is Expression.ExpressionList)
+                throw RuntimeException("Expected body operand for kita, but got $operand")
+            val evaluated = arrayOfNulls<Any>(operand.size)
+            for ((index, aExpr) in operand.expressions.withIndex())
+                evaluated[index] = unbox(eval(aExpr))
+            evaluated
+        }
         else -> throw RuntimeException("Unknown unary operator $type")
     }
 
@@ -110,11 +121,26 @@ class Evaluator : Expression.Visitor<Any> {
         GREATER_THAN_EQUALS -> intExpr(expr.left, ">= GreaterThanEquals") >= intExpr(expr.right, ">= GreaterThanEquals")
         LESSER_THAN_EQUALS -> intExpr(expr.left, "<= LesserThan") <= intExpr(expr.right, "<= LesserThan")
         ASSIGNMENT -> {
-            if (expr.left !is Expression.Alpha)
-                throw RuntimeException("[OP =] expected left type to be a name, but got ${expr.left}")
-            val name = expr.left.value
+            val toUpdate = expr.left
             val value = eval(expr.right)
-            update(expr.left.index, name, value)
+            when (toUpdate) {
+                is Expression.Alpha -> update(toUpdate.index, toUpdate.value, value)
+                is Expression.ElementAccess -> {
+                    val array = unbox(eval(toUpdate.expr))
+                    val index = intExpr(toUpdate.index, "[] ArraySet")
+
+                    @Suppress("UNCHECKED_CAST")
+                    when (getType(array)) {
+                        C_ARRAY -> (array as Array<Any>)[index] = value
+                        C_STRING -> {
+                            if (value !is Char) throw RuntimeException("string[index] requires a Char")
+                            (array as String).replaceRange(index, index, value.toString())
+                        }
+                        else -> throw RuntimeException("Unknown element access of $array")
+                    }
+                }
+                else -> throw RuntimeException("Unknown left operand for [= Assignment]: $toUpdate")
+            }
             value
         }
         BITWISE_AND -> intExpr(expr.left, "& BitwiseAnd") and intExpr(expr.right, "& BitwiseAnd")
@@ -278,11 +304,13 @@ class Evaluator : Expression.Visitor<Any> {
             PRINT, PRINTLN -> {
                 var printCount = 0
                 call.arguments.expressions.forEach {
-                    val obj = unbox(eval(it)).toString()
-                    printCount += obj.length
-                    print(obj)
+                    var printable = unbox(eval(it))
+                    printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
+
+                    printCount += printable.length
+                    print(printable)
                 }
-                if (type == PRINTLN) println()
+                if (type == PRINTLN) print('\n')
                 return printCount
             }
 
@@ -326,17 +354,19 @@ class Evaluator : Expression.Visitor<Any> {
     }
 
     override fun function(function: Expression.Function): Any {
-        println("function: ${function.name}")
         memory.declareFn(function.name, function)
         return function
     }
 
     override fun elementAccess(access: Expression.ElementAccess): Any {
-        val entity = eval(access.expr)
-        if (getType(entity) == C_STRING) {
-            val index = intExpr(access.index, "[] ArrayAccess")
-            return (unbox(entity) as String)[index].toString()
+        val entity = unbox(eval(access.expr))
+        val index = intExpr(access.index, "[] ArrayAccess")
+
+        val type = getType(entity)
+        return when (type) {
+            C_STRING -> (entity as String)[index]
+            C_ARRAY -> (entity as Array<*>)[index]!!
+            else -> throw RuntimeException("Unknown element access of $entity")
         }
-        throw RuntimeException("Unknown entity type $entity")
     }
 }

@@ -13,6 +13,7 @@ enum class Type {
     SLASH, ASTERISK,
     PLUS, NEGATE,
     NOT, INCREMENT, DECREMENT,
+    KITA,
 
     OPERATOR, LOGICAL, BITWISE, EQUALITY, RELATIONAL, BINARY_PRECEDE, BINARY, NON_COMMUTE,
     UNARY, POSSIBLE_RIGHT_UNARY, ASSIGNMENT_TYPE,
@@ -26,7 +27,8 @@ enum class Type {
     COMMA,
 
     CLASS,
-    C_INT, C_BOOL, C_STRING, C_CHAR, C_ANY, C_UNIT,
+    C_INT, C_BOOL, C_STRING, C_CHAR,
+    C_ARRAY, C_ANY, C_UNIT,
 
     VALUE,
     ALPHA,
@@ -72,6 +74,7 @@ enum class Type {
                 it["+"] = Token(PLUS, arrayOf(BINARY, OPERATOR))
                 it["-"] = Token(NEGATE, arrayOf(BINARY, UNARY, OPERATOR))
                 it["!"] = Token(NOT, arrayOf(UNARY))
+                it["~"] = Token(KITA, arrayOf(UNARY))
                 it["++"] = Token(INCREMENT, arrayOf(UNARY, POSSIBLE_RIGHT_UNARY))
                 it["--"] = Token(DECREMENT, arrayOf(UNARY, POSSIBLE_RIGHT_UNARY))
 
@@ -92,6 +95,7 @@ enum class Type {
                 it["String"] = Token(C_STRING, arrayOf(CLASS))
                 it["Char"] = Token(C_CHAR, arrayOf(CLASS))
                 it["Any"] = Token(C_ANY, arrayOf(CLASS))
+                it["Array"] = Token(C_ARRAY, arrayOf(CLASS))
                 it["Unit"] = Token(C_UNIT, arrayOf(CLASS))
 
                 it["true"] = Token(E_TRUE, arrayOf(VALUE, C_BOOL))

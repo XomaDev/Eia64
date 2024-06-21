@@ -127,7 +127,7 @@ class Parser(private val tokens: List<Token>) {
         val body = if (isNext(Type.ASSIGNMENT)) {
             skip()
             parseNext()
-        } else body(false)
+        } else optimiseExpr(body(false))
         nameResolver.leaveScope()
         return Expression.Function(name, requiredArgs, returnType, body)
     }
@@ -149,9 +149,9 @@ class Parser(private val tokens: List<Token>) {
         return Expression.If(logicalExpr, ifBody, elseBranch)
     }
 
-    private fun bodyOrExpr(): Expression {
+    private fun bodyOrExpr(optimise: Boolean = true): Expression {
         if (peek().type == Type.OPEN_CURLY)
-            return body(true)
+            body(true).let { return if (optimise) optimiseExpr(it) else it }
         return parseNext()
     }
 
@@ -163,9 +163,13 @@ class Parser(private val tokens: List<Token>) {
             expressions.add(parseNext())
         expectType(Type.CLOSE_CURLY)
         if (createScope) nameResolver.leaveScope()
-        if (expressions.size == 1)
-            return expressions[0]
         return Expression.ExpressionList(expressions)
+    }
+
+    private fun optimiseExpr(expr: Expression): Expression {
+        if (expr !is Expression.ExpressionList) return expr
+        if (expr.size != 1) return expr
+        return expr.expressions[0]
     }
 
     private fun variableDeclaration(token: Token): Expression {
@@ -173,12 +177,12 @@ class Parser(private val tokens: List<Token>) {
         nameResolver.defineVr(name)
         if (!isNext(Type.COLON)) {
             expectType(Type.ASSIGNMENT)
-            return Expression.AutoVariable(name, parseNext())
+            return Expression.AutoVariable(name, bodyOrExpr(false))
         }
         skip()
         val definition = Expression.DefinitionType(name, expectFlag(Type.CLASS).type)
         expectType(Type.ASSIGNMENT)
-        return Expression.ExplicitVariable(token.type == Type.VAR, definition, parseNext())
+        return Expression.ExplicitVariable(token.type == Type.VAR, definition, bodyOrExpr(false))
     }
 
     private fun parseExpr(minPrecedence: Int): Expression {
@@ -235,7 +239,7 @@ class Parser(private val tokens: List<Token>) {
                 expectType(Type.CLOSE_CURVE)
                 return expr
             }
-            Type.OPEN_CURLY -> return body()
+            Type.OPEN_CURLY -> return optimiseExpr(body())
             else -> { }
         }
         val token = next()
