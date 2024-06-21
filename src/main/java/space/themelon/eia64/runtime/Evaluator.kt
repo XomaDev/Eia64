@@ -121,11 +121,26 @@ class Evaluator : Expression.Visitor<Any> {
         GREATER_THAN_EQUALS -> intExpr(expr.left, ">= GreaterThanEquals") >= intExpr(expr.right, ">= GreaterThanEquals")
         LESSER_THAN_EQUALS -> intExpr(expr.left, "<= LesserThan") <= intExpr(expr.right, "<= LesserThan")
         ASSIGNMENT -> {
-            if (expr.left !is Expression.Alpha)
-                throw RuntimeException("[OP =] expected left type to be a name, but got ${expr.left}")
-            val name = expr.left.value
+            val toUpdate = expr.left
             val value = eval(expr.right)
-            update(expr.left.index, name, value)
+            when (toUpdate) {
+                is Expression.Alpha -> update(toUpdate.index, toUpdate.value, value)
+                is Expression.ElementAccess -> {
+                    val array = unbox(eval(toUpdate.expr))
+                    val index = intExpr(toUpdate.index, "[] ArraySet")
+
+                    @Suppress("UNCHECKED_CAST")
+                    when (getType(array)) {
+                        C_ARRAY -> (array as Array<Any>)[index] = value
+                        C_STRING -> {
+                            if (value !is Char) throw RuntimeException("string[index] requires a Char")
+                            (array as String).replaceRange(index, index, value.toString())
+                        }
+                        else -> throw RuntimeException("Unknown element access of $array")
+                    }
+                }
+                else -> throw RuntimeException("Unknown left operand for [= Assignment]: $toUpdate")
+            }
             value
         }
         BITWISE_AND -> intExpr(expr.left, "& BitwiseAnd") and intExpr(expr.right, "& BitwiseAnd")
@@ -348,11 +363,10 @@ class Evaluator : Expression.Visitor<Any> {
         val index = intExpr(access.index, "[] ArrayAccess")
 
         val type = getType(entity)
-        if (type == C_STRING) {
-            return (entity as String)[index]
-        } else if (type == C_ARRAY) {
-            return (entity as Array<*>)[index]!!
+        return when (type) {
+            C_STRING -> (entity as String)[index]
+            C_ARRAY -> (entity as Array<*>)[index]!!
+            else -> throw RuntimeException("Unknown element access of $entity")
         }
-        throw RuntimeException("Unknown entity type $entity")
     }
 }

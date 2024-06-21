@@ -1,11 +1,5 @@
-var square_result = 0
-var n = 0
-fn square(upto: Int, callback: Unit) {
-    for (n = 0, n < upto, n++) {
-        square_result = n * n
-        ~callback
-    }
-}
-
-let callback = { println(n + " squared is " + square_result) }
-square(5, callback)
+let x = ~{ 1 2 3 }
+x[0] = 5
+println(x[0])
+x = ~{4 5 3}
+println(x[0])
