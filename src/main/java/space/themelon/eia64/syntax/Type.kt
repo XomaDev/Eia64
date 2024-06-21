@@ -14,6 +14,7 @@ enum class Type {
     PLUS, NEGATE,
     NOT, INCREMENT, DECREMENT,
     KITA,
+    DOT,
 
     OPERATOR, LOGICAL, BITWISE, EQUALITY, RELATIONAL, BINARY_PRECEDE, BINARY, NON_COMMUTE,
     UNARY, POSSIBLE_RIGHT_UNARY, ASSIGNMENT_TYPE,
@@ -77,6 +78,8 @@ enum class Type {
                 it["~"] = Token(KITA, arrayOf(UNARY))
                 it["++"] = Token(INCREMENT, arrayOf(UNARY, POSSIBLE_RIGHT_UNARY))
                 it["--"] = Token(DECREMENT, arrayOf(UNARY, POSSIBLE_RIGHT_UNARY))
+
+                it["."] = Token(DOT)
 
                 it["="] = Token(ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
                 it[":"] = Token(COLON)

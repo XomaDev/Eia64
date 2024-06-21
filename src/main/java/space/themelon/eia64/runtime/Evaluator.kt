@@ -158,6 +158,61 @@ class Evaluator : Expression.Visitor<Any> {
         return list
     }
 
+    override fun dot(dot: Expression.Dot): Any {
+        when (dot.type) {
+            Expression.DotType.FORMAT -> {
+                val string = unbox(eval(dot.operand))
+                if (getType(string) != C_STRING)
+                    throw RuntimeException("String format requires a string operand, but got $string")
+                val splits = string
+                // TODO:
+                //  think of a best way to parse it
+            }
+        }
+        throw RuntimeException("Unknown operation ${dot.type}")
+    }
+
+    override fun nativeCall(call: Expression.NativeCall): Any {
+        val argsSize = call.arguments.size
+        when (val type = call.type) {
+            PRINT, PRINTLN -> {
+                var printCount = 0
+                call.arguments.expressions.forEach {
+                    var printable = unbox(eval(it))
+                    printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
+
+                    printCount += printable.length
+                    print(printable)
+                }
+                if (type == PRINTLN) print('\n')
+                return printCount
+            }
+
+            READ, READLN -> {
+                if (argsSize != 0) throw RuntimeException("Expected no arguments for read()/readln(), got $argsSize")
+                return Scanner(System.`in`).let { if (type == READ) it.next() else it.nextLine() }
+            }
+
+            SLEEP -> {
+                if (argsSize != 1) throw RuntimeException("Expected only 1 argument for sleep, got $argsSize")
+                val ms = intExpr(call.arguments.expressions[0], "sleep()")
+                Thread.sleep(ms.toLong())
+                return ms
+            }
+
+            LEN -> {
+                if (argsSize != 1) throw RuntimeException("Expected only 1 argument for len, got $argsSize")
+                return when (val data = unbox(eval(call.arguments.expressions[0]))) {
+                    is String -> data.length
+                    is Array<*> -> data.size
+                    is Expression.ExpressionList -> data.size
+                    else -> throw RuntimeException("Unknown measurable data type $data")
+                }
+            }
+            else -> throw RuntimeException("Unknown native read write $type")
+        }
+    }
+
     override fun methodCall(call: Expression.MethodCall): Any {
         val fnName = call.name
         val fn = memory.getFn(call.atFrame, call.mIndex, fnName)
@@ -317,47 +372,6 @@ class Evaluator : Expression.Visitor<Any> {
 
         memory.leaveScope()
         return loopResult
-    }
-
-    override fun nativeCall(call: Expression.NativeCall): Any {
-        val argsSize = call.arguments.size
-        when (val type = call.type) {
-            PRINT, PRINTLN -> {
-                var printCount = 0
-                call.arguments.expressions.forEach {
-                    var printable = unbox(eval(it))
-                    printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
-
-                    printCount += printable.length
-                    print(printable)
-                }
-                if (type == PRINTLN) print('\n')
-                return printCount
-            }
-
-            READ, READLN -> {
-                if (argsSize != 0) throw RuntimeException("Expected no arguments for read()/readln(), got $argsSize")
-                return Scanner(System.`in`).let { if (type == READ) it.next() else it.nextLine() }
-            }
-
-            SLEEP -> {
-                if (argsSize != 1) throw RuntimeException("Expected only 1 argument for sleep, got $argsSize")
-                val ms = intExpr(call.arguments.expressions[0], "sleep()")
-                Thread.sleep(ms.toLong())
-                return ms
-            }
-
-            LEN -> {
-                if (argsSize != 1) throw RuntimeException("Expected only 1 argument for len, got $argsSize")
-                return when (val data = unbox(eval(call.arguments.expressions[0]))) {
-                    is String -> data.length
-                    is Array<*> -> data.size
-                    is Expression.ExpressionList -> data.size
-                    else -> throw RuntimeException("Unknown measurable data type $data")
-                }
-            }
-            else -> throw RuntimeException("Unknown native read write $type")
-        }
     }
 
     override fun interruption(interruption: Expression.Interruption) = when (val type = eval(interruption.type)) {

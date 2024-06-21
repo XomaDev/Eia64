@@ -1,9 +1,2 @@
-fn avg(nums: Array) {
-    var sum = 0
-    itr (num in nums)
-        sum = sum + num
-    return sum / len(nums)
-}
-
-var nums = ~{5 3 5}
-println(avg(nums))
+let name = "Kumaraswamy"
+println(.f"Hello %name%!")
