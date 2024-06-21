@@ -27,6 +27,7 @@ data class Entity(val name: String, val mutable: Boolean, var value: Any, val ty
             is Boolean -> C_BOOL
             is Char -> C_CHAR
             is Expression -> C_UNIT
+            is Array<*> -> C_ARRAY
             else -> throw RuntimeException("Unknown type of value $value")
         }
     }

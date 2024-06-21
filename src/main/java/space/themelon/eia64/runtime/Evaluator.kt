@@ -70,6 +70,17 @@ class Evaluator : Expression.Visitor<Any> {
                 curr
             }
         }
+        KITA -> {
+            var operand: Any = expr.expr
+            if (operand !is Expression.ExpressionList)
+                operand = unbox(eval(operand as Expression))
+            if (operand !is Expression.ExpressionList)
+                throw RuntimeException("Expected body operand for kita, but got $operand")
+            val evaluated = arrayOfNulls<Any>(operand.size)
+            for ((index, aExpr) in operand.expressions.withIndex())
+                evaluated[index] = unbox(eval(aExpr))
+            evaluated
+        }
         else -> throw RuntimeException("Unknown unary operator $type")
     }
 
@@ -278,11 +289,13 @@ class Evaluator : Expression.Visitor<Any> {
             PRINT, PRINTLN -> {
                 var printCount = 0
                 call.arguments.expressions.forEach {
-                    val obj = unbox(eval(it)).toString()
-                    printCount += obj.length
-                    print(obj)
+                    var printable = unbox(eval(it))
+                    printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
+
+                    printCount += printable.length
+                    print(printable)
                 }
-                if (type == PRINTLN) println()
+                if (type == PRINTLN) print('\n')
                 return printCount
             }
 
@@ -326,16 +339,19 @@ class Evaluator : Expression.Visitor<Any> {
     }
 
     override fun function(function: Expression.Function): Any {
-        println("function: ${function.name}")
         memory.declareFn(function.name, function)
         return function
     }
 
     override fun elementAccess(access: Expression.ElementAccess): Any {
-        val entity = eval(access.expr)
-        if (getType(entity) == C_STRING) {
-            val index = intExpr(access.index, "[] ArrayAccess")
-            return (unbox(entity) as String)[index].toString()
+        val entity = unbox(eval(access.expr))
+        val index = intExpr(access.index, "[] ArrayAccess")
+
+        val type = getType(entity)
+        if (type == C_STRING) {
+            return (entity as String)[index]
+        } else if (type == C_ARRAY) {
+            return (entity as Array<*>)[index]!!
         }
         throw RuntimeException("Unknown entity type $entity")
     }
