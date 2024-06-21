@@ -134,7 +134,7 @@ class Evaluator : Expression.Visitor<Any> {
 
     override fun methodCall(call: Expression.MethodCall): Any {
         val fnName = call.name
-        val fn = memory.getFn(call.scope, fnName)
+        val fn = memory.getFn(call.atFrame, call.mIndex, fnName)
         if (fn !is Expression.Function)
             throw RuntimeException("Unable to find function $fnName")
 

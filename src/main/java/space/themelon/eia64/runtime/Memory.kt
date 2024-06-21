@@ -1,6 +1,7 @@
 package space.themelon.eia64.runtime
 
-import space.themelon.eia64.Expression
+import java.util.*
+import kotlin.collections.ArrayList
 
 class Memory {
 
@@ -16,14 +17,6 @@ class Memory {
             return fSuper?.searchVr(index, name) ?: throw RuntimeException("Unable to find variable '$name'")
         }
 
-        fun searchFn(index: Int, name: String): Any {
-            if (functions.size > index) {
-                val get = functions[index]
-                if (get.first == name) return get.second
-            }
-            return fSuper?.searchFn(index, name) ?: throw RuntimeException("Unable to find function '$name'")
-        }
-
         fun reset(newSuper: Frame) {
             fSuper = newSuper
             functions.clear()
@@ -31,27 +24,37 @@ class Memory {
         }
     }
 
-    private var pool: Frame? = null
-    private var currentFrame = Frame()
+    private var recyclePool: Frame? = null
+
+    private val frameStack = Stack<Frame>()
+    private var currentFrame = Frame().also { frameStack.add(it) }
+
+    private fun createFrame() = if (recyclePool == null) {
+        Frame(currentFrame)
+    } else {
+        val tail = recyclePool
+        recyclePool = tail?.fSuper
+
+        tail!!.reset(currentFrame)
+        tail
+    }
+
+    private fun recycle(reusable: Frame) {
+        reusable.fSuper = recyclePool
+        recyclePool = reusable
+    }
 
     fun enterScope() {
-        if (pool == null) {
-            currentFrame = Frame(currentFrame)
-        } else {
-            val tail = pool
-            pool = tail?.fSuper
-
-            tail!!.reset(currentFrame)
-            currentFrame = tail
-        }
+        currentFrame = createFrame()
+        frameStack.push(currentFrame)
     }
 
     fun leaveScope() {
         val reusable = currentFrame
         currentFrame = reusable.fSuper ?: throw RuntimeException("Already reached super scope")
 
-        reusable.fSuper = pool
-        pool = reusable
+        frameStack.pop()
+        recycle(reusable)
     }
 
     fun declareVar(name: String, value: Any) {
@@ -63,6 +66,11 @@ class Memory {
     }
 
     fun getVar(index: Int, name: String) = currentFrame.searchVr(index, name)
-    fun getFn(index: Int, name: String) = currentFrame.searchFn(index, name)
+
+    fun getFn(atFrame: Int, index: Int, name: String): Any {
+        val fn = frameStack[atFrame].functions[index]
+        if (fn.first != name) throw RuntimeException("Function '$name' does not exist")
+        return fn.second
+    }
 
 }

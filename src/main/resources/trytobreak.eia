@@ -4,8 +4,9 @@ let HAPPY_LEFT = "<(^_^ <)"
 
 fn generateSpaces(n: Int): String {
     var spaces = ""
-    for (var x = 0, x < n, x++)
+    for (var x = 0, x < n, x++) {
         spaces = spaces + " "
+    }
     return spaces
 }
 

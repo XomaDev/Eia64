@@ -136,8 +136,6 @@ class Parser(private val tokens: List<Token>) {
         expectType(Type.OPEN_CURVE)
         val logicalExpr = parseNext()
         expectType(Type.CLOSE_CURVE)
-        // TODO:
-        //  need to handle bodies over here
         val ifBody = bodyOrExpr()
 
         if (isEOF() || peek().type != Type.ELSE)
@@ -280,7 +278,8 @@ class Parser(private val tokens: List<Token>) {
         expectType(Type.OPEN_CURVE)
         val arguments = parseArguments()
         expectType(Type.CLOSE_CURVE)
-        return Expression.MethodCall(nameResolver.resolveFn(name), name, Expression.ExpressionList(arguments))
+        val location = nameResolver.resolveFn(name)
+        return Expression.MethodCall(location.first, location.second, name, Expression.ExpressionList(arguments))
     }
 
     private fun parseArguments(): List<Expression> {

@@ -75,7 +75,8 @@ abstract class Expression {
     }
 
     data class MethodCall(
-        val scope: Int,
+        val atFrame: Int,
+        val mIndex: Int,
         val name: String,
         val arguments: ExpressionList,
     ) : Expression() {

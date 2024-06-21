@@ -2,13 +2,13 @@ package space.themelon.eia64.analysis
 
 class NameResolver {
 
-    class Scope(val before: Scope?) {
+    class Scope(private val depth: Int, val before: Scope? = null) {
         val names = ArrayList<String>()
         val functions = ArrayList<String>()
 
-        fun resolveFn(name: String): Int {
-            functions.indexOf(name).let { if (it != -1) return it }
-            if (before != null) return before.resolveFn(name)
+        fun resolveFn(name: String, travelDepth: Int): Pair<Int, Int> {
+            functions.indexOf(name).let { if (it != -1) return Pair(depth, it) }
+            if (before != null) return before.resolveFn(name, travelDepth + 1)
             throw RuntimeException("Unable to resolve name '$name'")
         }
 
@@ -19,10 +19,11 @@ class NameResolver {
         }
     }
 
-    private var currentScope = Scope(null)
+    private var depth = 0
+    private var currentScope = Scope(depth++)
 
     fun enterScope() {
-        val newScope = Scope(currentScope)
+        val newScope = Scope(depth++, currentScope)
         currentScope = newScope
     }
 
@@ -32,6 +33,7 @@ class NameResolver {
                 throw RuntimeException("Reached super scope")
             currentScope = it
         }
+        depth--
     }
 
     fun defineFn(name: String) {
@@ -42,6 +44,6 @@ class NameResolver {
         currentScope.names += name
     }
 
-    fun resolveFn(name: String): Int = currentScope.resolveFn(name)
-    fun resolveVr(name: String): Int = currentScope.resolveVr(name)
+    fun resolveFn(name: String) = currentScope.resolveFn(name, 0)
+    fun resolveVr(name: String) = currentScope.resolveVr(name)
 }
