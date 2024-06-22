@@ -105,6 +105,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             } else {
                 left = unbox(left)
                 right = unbox(right)
+                println("compare $left && $right")
                 when (left) {
                     is Int, is String, is Char -> if (type == EQUALS) left == right else left != right
                     else -> false
@@ -154,6 +155,10 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         // it is being stored somewhere, like in a variable, etc.
         //   that's why we shouldn't evaluate it
             return list
+        // TODO:
+        //  so there is a problem here, if there are many deep wrappings,
+        //  this mechanism fails and the value does not get returned
+        //  we need to work on such a system where we break out of execution when requested
         for (expression in list.expressions) {
             val result = eval(expression)
             if (result is FlowBlack) {
@@ -422,7 +427,6 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
         val conditional = forLoop.conditional
 
-        var loopResult: Any = forLoop
         while (if (conditional == null) true else booleanExpr(conditional, "ForLoop")) {
             memory.enterScope()
             val result = eval(forLoop.body)
@@ -431,18 +435,14 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 when (result.interrupt) {
                     Interrupt.BREAK -> break
                     Interrupt.CONTINUE -> continue
-                    Interrupt.RETURN -> {
-                        loopResult = result
-                        break
-                    }
+                    Interrupt.RETURN -> return result
                     else -> { }
                 }
             }
             forLoop.operational?.let { eval(it) }
         }
-
         memory.applyStateCount(state)
-        return loopResult
+        return forLoop
     }
 
     override fun interruption(interruption: Expression.Interruption) = when (val type = eval(interruption.type)) {
@@ -454,10 +454,12 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
     override fun ifFunction(ifExpr: Expression.If): Any {
         val body = if (booleanExpr(ifExpr.condition, "If Condition")) ifExpr.thenBody else ifExpr.elseBody
+        println("body is $body")
         if (body != null) {
             val newScope = body is Expression.ExpressionList
             if (newScope) memory.enterScope()
             val result = eval(body)
+            println("if result is $result")
             if (newScope) memory.leaveScope()
             return result
         }
