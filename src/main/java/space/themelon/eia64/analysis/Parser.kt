@@ -249,7 +249,7 @@ class Parser(private val tokens: List<Token>) {
             return if (!isEOF() && peek().type == Type.OPEN_CURVE) funcInvoke(token)
             else parseValue(token)
         } else if (token.hasFlag(Type.UNARY)) {
-            return Expression.UnaryOperation(Expression.Operator(token.type), parseElement(), true)
+            return Expression.UnaryOperation(Expression.Operator(token.type), parseNext(), true)
         } else if (token.hasFlag(Type.NATIVE_CALL)) {
             expectType(Type.OPEN_CURVE)
             val arguments = parseArguments()
@@ -307,8 +307,8 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun readAlpha(token: Token) =
-            if (token.type == Type.ALPHA) token.optionalData as String
-                    else throw RuntimeException("Expected alpha token got $token")
+        if (token.type == Type.ALPHA) token.optionalData as String
+        else throw RuntimeException("Expected alpha token got $token")
 
     private fun expectType(type: Type): Token {
         val next = next()
