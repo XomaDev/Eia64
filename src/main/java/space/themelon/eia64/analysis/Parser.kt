@@ -5,22 +5,23 @@ import space.themelon.eia64.Expression
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 
-class Parser(private val tokens: List<Token>) {
+class Parser {
 
     private val nameResolver = NameResolver()
 
+    private lateinit var tokens: List<Token>
     private var index = 0
-    private val size = tokens.size
+    private var size = 0
 
-    private val expressions = ArrayList<Expression>()
-    val parsedResult: Expression
+    fun parse(tokens: List<Token>): Expression.ExpressionList {
+        index = 0
+        size = tokens.size
+        this.tokens = tokens
 
-    init {
-        while (!isEOF()) {
-            expressions.add(parseNext())
-        }
+        val expressions = ArrayList<Expression>()
+        while (!isEOF()) expressions.add(parseNext())
         if (Config.DEBUG) expressions.forEach { println(it) }
-        parsedResult = Expression.ExpressionList(expressions)
+        return Expression.ExpressionList(expressions)
     }
 
     private fun parseNext(): Expression {

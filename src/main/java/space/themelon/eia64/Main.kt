@@ -13,7 +13,7 @@ object Main {
 
         val evaluator = Evaluator()
         val startTime = System.nanoTime()
-        evaluator.eval(Parser(tokens).parsedResult)
+        evaluator.eval(Parser().parse(tokens))
         println("Took " + (System.nanoTime() - startTime) + " ns")
     }
 }
