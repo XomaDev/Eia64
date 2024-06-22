@@ -13,7 +13,6 @@ abstract class Expression {
         fun unaryOperation(expr: UnaryOperation): R
         fun binaryOperation(expr: BinaryOperation): R
         fun expressions(list: ExpressionList): R
-        fun dot(dot: Dot): R
         fun nativeCall(call: NativeCall): R
         fun methodCall(call: MethodCall): R
         fun until(until: Until): R
@@ -75,17 +74,6 @@ abstract class Expression {
         override fun <R> accept(v: Visitor<R>) = v.autoVariable(this)
     }
 
-    enum class DotType {
-        FORMAT
-    }
-
-    open class Dot(
-        val type: DotType,
-        val operand: Expression
-    ): Expression() {
-        override fun <R> accept(v: Visitor<R>) = v.dot(this)
-    }
-
     data class NativeCall(
         val type: Type,
         val arguments: ExpressionList,
@@ -103,7 +91,8 @@ abstract class Expression {
     }
 
     data class ExpressionList(
-        val expressions: List<Expression>
+        val expressions: List<Expression>,
+        var preserveState: Boolean = false,
     ) : Expression() {
         val size = expressions.size
         override fun <R> accept(v: Visitor<R>) = v.expressions(this)

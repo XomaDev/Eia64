@@ -157,7 +157,7 @@ class Parser(private val tokens: List<Token>) {
         return parseNext()
     }
 
-    private fun body(createScope: Boolean = true): Expression {
+    private fun body(createScope: Boolean = true): Expression.ExpressionList{
         if (createScope) nameResolver.enterScope()
         expectType(Type.OPEN_CURLY)
         val expressions = ArrayList<Expression>()
@@ -179,12 +179,12 @@ class Parser(private val tokens: List<Token>) {
         nameResolver.defineVr(name)
         if (!isNext(Type.COLON)) {
             expectType(Type.ASSIGNMENT)
-            return Expression.AutoVariable(name, bodyOrExpr(false))
+            return Expression.AutoVariable(name, parseNext())
         }
         skip()
         val definition = Expression.DefinitionType(name, expectFlag(Type.CLASS).type)
         expectType(Type.ASSIGNMENT)
-        return Expression.ExplicitVariable(token.type == Type.VAR, definition, bodyOrExpr(false))
+        return Expression.ExplicitVariable(token.type == Type.VAR, definition, parseNext())
     }
 
     private fun parseExpr(minPrecedence: Int): Expression {
@@ -241,11 +241,7 @@ class Parser(private val tokens: List<Token>) {
                 expectType(Type.CLOSE_CURVE)
                 return expr
             }
-            Type.OPEN_CURLY -> return optimiseExpr(body())
-            Type.DOT -> {
-                skip()
-                return dotOperation()
-            }
+            Type.OPEN_CURLY -> return body().also { it.preserveState = true }
             else -> { }
         }
         val token = next()
@@ -261,15 +257,6 @@ class Parser(private val tokens: List<Token>) {
             return Expression.NativeCall(token.type, Expression.ExpressionList(arguments))
         }
         throw RuntimeException("Unexpected token $token")
-    }
-
-    private fun dotOperation(): Expression.Dot {
-        val type = when (val operation = readAlpha()) {
-            "f" -> Expression.DotType.FORMAT
-            else -> throw RuntimeException("Unknown special dot operation $operation")
-        }
-        val operand = parseNext()
-        return Expression.Dot(type, operand)
     }
 
     private fun parseValue(token: Token): Expression {

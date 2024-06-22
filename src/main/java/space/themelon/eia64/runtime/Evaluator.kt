@@ -149,6 +149,10 @@ class Evaluator : Expression.Visitor<Any> {
     }
 
     override fun expressions(list: Expression.ExpressionList): Any {
+        if (list.preserveState)
+            // it is being stored somewhere, like in a variable, etc.
+            //   that's why we shouldn't evaluate it
+            return list
         for (expression in list.expressions) {
             val result = eval(expression)
             if (result is FlowBlack) {
@@ -156,20 +160,6 @@ class Evaluator : Expression.Visitor<Any> {
             }
         }
         return list
-    }
-
-    override fun dot(dot: Expression.Dot): Any {
-        when (dot.type) {
-            Expression.DotType.FORMAT -> {
-                val string = unbox(eval(dot.operand))
-                if (getType(string) != C_STRING)
-                    throw RuntimeException("String format requires a string operand, but got $string")
-                val splits = string
-                // TODO:
-                //  think of a best way to parse it
-            }
-        }
-        throw RuntimeException("Unknown operation ${dot.type}")
     }
 
     override fun nativeCall(call: Expression.NativeCall): Any {
@@ -201,7 +191,7 @@ class Evaluator : Expression.Visitor<Any> {
             }
 
             LEN -> {
-                if (argsSize != 1) throw RuntimeException("Expected only 1 argument for len, got $argsSize")
+                if (argsSize != 1) throw RuntimeException("len() expected only 1 argument, got $argsSize")
                 return when (val data = unbox(eval(call.arguments.expressions[0]))) {
                     is String -> data.length
                     is Array<*> -> data.size
@@ -209,7 +199,23 @@ class Evaluator : Expression.Visitor<Any> {
                     else -> throw RuntimeException("Unknown measurable data type $data")
                 }
             }
-            else -> throw RuntimeException("Unknown native read write $type")
+
+            FORMAT -> {
+                val exprs = call.arguments.expressions
+                val string = unbox(eval(exprs[0]))
+                if (getType(string) != C_STRING)
+                    throw RuntimeException("format() requires a string argument")
+                string as String
+                if (exprs.size > 1) {
+                    val values = arrayOfNulls<Any>(exprs.size - 1)
+                    for (i in 1 until exprs.size) {
+                        values[i - 1] = unbox(eval(exprs[i]))
+                    }
+                    return String.format(string, *values)
+                }
+                return string
+            }
+            else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
     }
 
