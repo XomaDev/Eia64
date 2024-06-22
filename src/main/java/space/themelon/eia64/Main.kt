@@ -7,13 +7,13 @@ import space.themelon.eia64.syntax.SyntaxAnalysis
 object Main {
     @JvmStatic
     fun main(args: Array<String>) {
-        val source = javaClass.classLoader.getResource("types.eia").readText()
+        val source = javaClass.classLoader.getResource("bubblesort.eia").readText()
 
         val tokens = SyntaxAnalysis().tokenize(source)
 
         val evaluator = Evaluator()
         val startTime = System.nanoTime()
-        evaluator.eval(Parser(tokens).parsedResult)
+        evaluator.eval(Parser().parse(tokens))
         println("Took " + (System.nanoTime() - startTime) + " ns")
     }
 }
