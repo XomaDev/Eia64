@@ -8,7 +8,7 @@ import space.themelon.eia64.syntax.Type.*
 import java.util.*
 import kotlin.collections.ArrayList
 
-class Evaluator : Expression.Visitor<Any> {
+class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
     fun eval(expr: Expression) = expr.accept(this)
     private fun unboxEval(expr: Expression) = unbox(eval(expr))
@@ -163,6 +163,11 @@ class Evaluator : Expression.Visitor<Any> {
         return list
     }
 
+    override fun importStdLib(stdLib: Expression.ImportStdLib): Any {
+        executor.loadExternal("${Executor.STD_LIB}/${stdLib.name}.eia", stdLib.name)
+        return true
+    }
+
     override fun nativeCall(call: Expression.NativeCall): Any {
         val argsSize = call.arguments.size
         when (val type = call.type) {
@@ -243,6 +248,22 @@ class Evaluator : Expression.Visitor<Any> {
                 val obj = unboxEval(call.arguments.expressions[0])
                 return getType(obj).toString()
             }
+
+            INCLUDE -> {
+                if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
+                val obj = unboxEval(call.arguments.expressions[0])
+                if (obj !is String)
+                    throw RuntimeException("Expected a string argument for include() but got $obj")
+                val parts = obj.split(":")
+                if (parts.size != 2)
+                    throw RuntimeException("include() received invalid argument: $obj")
+                var group = parts[0]
+                if (group.isEmpty()) group = Executor.STD_LIB
+
+                val name = parts[1]
+                executor.loadExternal("$group/$name.eia", name)
+                return true
+            }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
     }
@@ -250,16 +271,30 @@ class Evaluator : Expression.Visitor<Any> {
     override fun methodCall(call: Expression.MethodCall): Any {
         val fnName = call.name
         val fn = memory.getFn(call.atFrame, call.mIndex, fnName)
-        if (fn !is Expression.Function)
-            throw RuntimeException("Unable to find function $fnName")
+        return fnInvoke(fn, call.arguments)
+    }
+
+    private fun dynamicFnCall(
+        name: String,
+        args: List<Expression>
+    ) = fnInvoke(memory.dynamicFnSearch(name), args)
+
+    override fun classMethodCall(classMethod: Expression.ClassMethodCall): Any {
+        val executor = executor.getExternalExecutor(classMethod.className)
+            ?: throw RuntimeException("Couldn't find external executor ${classMethod.className}")
+        return executor.dynamicFnCall(classMethod.method, classMethod.arguments)
+    }
+
+    private fun fnInvoke(fn: Expression.Function, callArgs: List<Expression>): Any {
+        val fnName = fn.name
 
         val sigArgsSize = fn.arguments.size
-        val callArgsSize = call.arguments.size
+        val callArgsSize = callArgs.size
 
         if (sigArgsSize != callArgsSize)
             reportWrongArguments(fnName, sigArgsSize, callArgsSize)
         val parameters = fn.arguments.iterator()
-        val callExpressions = call.arguments.expressions.iterator()
+        val callExpressions = callArgs.iterator()
 
         val callValues = ArrayList<Pair<Expression.DefinitionType, Any>>()
         while (parameters.hasNext()) {

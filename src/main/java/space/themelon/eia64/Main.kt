@@ -1,19 +1,15 @@
 package space.themelon.eia64
 
-import space.themelon.eia64.analysis.Parser
-import space.themelon.eia64.runtime.Evaluator
-import space.themelon.eia64.syntax.SyntaxAnalysis
+import space.themelon.eia64.runtime.Executor
 
 object Main {
     @JvmStatic
     fun main(args: Array<String>) {
-        val source = javaClass.classLoader.getResource("bubblesort.eia").readText()
+        val source = javaClass.classLoader.getResource("invoketest.eia").file
 
-        val tokens = SyntaxAnalysis().tokenize(source)
-
-        val evaluator = Evaluator()
+        val executor = Executor()
         val startTime = System.nanoTime()
-        evaluator.eval(Parser().parse(tokens))
+        executor.loadFile(source)
         println("Took " + (System.nanoTime() - startTime) + " ns")
     }
 }
