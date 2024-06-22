@@ -11,6 +11,7 @@ import kotlin.collections.ArrayList
 class Evaluator : Expression.Visitor<Any> {
 
     fun eval(expr: Expression) = expr.accept(this)
+    private fun unboxEval(expr: Expression) = unbox(eval(expr))
 
     private fun safeUnbox(expr: Expression, expectedType: Type, operation: String): Any {
         val result = eval(expr)
@@ -79,7 +80,7 @@ class Evaluator : Expression.Visitor<Any> {
             val evaluated = arrayOfNulls<Any>(operand.size)
             for ((index, aExpr) in operand.expressions.withIndex())
                 evaluated[index] = unbox(eval(aExpr))
-            if (evaluated.size == 1) evaluated[0]!! else evaluated
+            evaluated
         }
         else -> throw RuntimeException("Unknown unary operator $type")
     }
@@ -126,7 +127,7 @@ class Evaluator : Expression.Visitor<Any> {
             when (toUpdate) {
                 is Expression.Alpha -> update(toUpdate.index, toUpdate.value, value)
                 is Expression.ElementAccess -> {
-                    val array = unbox(eval(toUpdate.expr))
+                    val array = unboxEval(toUpdate.expr)
                     val index = intExpr(toUpdate.index, "[] ArraySet")
 
                     @Suppress("UNCHECKED_CAST")
@@ -168,7 +169,7 @@ class Evaluator : Expression.Visitor<Any> {
             PRINT, PRINTLN -> {
                 var printCount = 0
                 call.arguments.expressions.forEach {
-                    var printable = unbox(eval(it))
+                    var printable = unboxEval(it)
                     printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
 
                     printCount += printable.length
@@ -179,20 +180,20 @@ class Evaluator : Expression.Visitor<Any> {
             }
 
             READ, READLN -> {
-                if (argsSize != 0) throw RuntimeException("Expected no arguments for read()/readln(), got $argsSize")
+                if (argsSize != 0) reportWrongArguments("read/readln", 0, argsSize)
                 return Scanner(System.`in`).let { if (type == READ) it.next() else it.nextLine() }
             }
 
             SLEEP -> {
-                if (argsSize != 1) throw RuntimeException("Expected only 1 argument for sleep, got $argsSize")
+                if (argsSize != 1) reportWrongArguments("sleep", 1, argsSize)
                 val ms = intExpr(call.arguments.expressions[0], "sleep()")
                 Thread.sleep(ms.toLong())
                 return ms
             }
 
             LEN -> {
-                if (argsSize != 1) throw RuntimeException("len() expected only 1 argument, got $argsSize")
-                return when (val data = unbox(eval(call.arguments.expressions[0]))) {
+                if (argsSize != 1) reportWrongArguments("len", 1, argsSize)
+                return when (val data = unboxEval(call.arguments.expressions[0])) {
                     is String -> data.length
                     is Array<*> -> data.size
                     is Expression.ExpressionList -> data.size
@@ -217,29 +218,29 @@ class Evaluator : Expression.Visitor<Any> {
             }
 
             INT_CAST -> {
-                if (argsSize != 1) throw RuntimeException("int() expected only 1 argument, got $argsSize")
-                val obj = unbox(eval(call.arguments.expressions[0]))
+                if (argsSize != 1) reportWrongArguments("int", 1, argsSize)
+                val obj = unboxEval(call.arguments.expressions[0])
                 if (getType(obj) == C_INT) return obj
                 return Integer.parseInt(obj.toString())
             }
 
             STRING_CAST -> {
-                if (argsSize != 1) throw RuntimeException("str() expected only 1 argument, got $argsSize")
-                val obj = unbox(eval(call.arguments.expressions[0]))
+                if (argsSize != 1) reportWrongArguments("str", 1, argsSize)
+                val obj = unboxEval(call.arguments.expressions[0])
                 if (getType(obj) == C_STRING) return obj
                 return obj.toString()
             }
 
             BOOL_CAST -> {
-                if (argsSize != 1) throw RuntimeException("bool() expected only 1 argument, got $argsSize")
-                val obj = unbox(eval(call.arguments.expressions[0]))
+                if (argsSize != 1) reportWrongArguments("bool", 1, argsSize)
+                val obj = unboxEval(call.arguments.expressions[0])
                 if (getType(obj) == C_INT) return obj
                 return if (obj == "true") true else if (obj == "false") false else throw RuntimeException("Cannot parse boolean value: $obj")
             }
 
             TYPE -> {
-                if (argsSize != 1) throw RuntimeException("type() expected only 1 argument, got $argsSize")
-                val obj = unbox(eval(call.arguments.expressions[0]))
+                if (argsSize != 1) reportWrongArguments("type", 1, argsSize)
+                val obj = unboxEval(call.arguments.expressions[0])
                 return getType(obj).toString()
             }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
@@ -256,8 +257,7 @@ class Evaluator : Expression.Visitor<Any> {
         val callArgsSize = call.arguments.size
 
         if (sigArgsSize != callArgsSize)
-            throw RuntimeException("Expected $sigArgsSize args for function $fnName but got $callArgsSize")
-
+            reportWrongArguments(fnName, sigArgsSize, callArgsSize)
         val parameters = fn.arguments.iterator()
         val callExpressions = call.arguments.expressions.iterator()
 
@@ -294,6 +294,10 @@ class Evaluator : Expression.Visitor<Any> {
         return result
     }
 
+    private fun reportWrongArguments(name: String, expectedArgs: Int, gotArgs: Int) {
+        throw RuntimeException("Fn [$name()] expected $expectedArgs but got $gotArgs")
+    }
+
     override fun until(until: Expression.Until): Any {
         while (booleanExpr(until.expression, "Until Condition")) {
             memory.enterScope()
@@ -315,7 +319,6 @@ class Evaluator : Expression.Visitor<Any> {
 
         var index = 0
         val size:Int
-        val type: Type
 
         val getNext: () -> Any
         when (iterable) {
@@ -379,7 +382,7 @@ class Evaluator : Expression.Visitor<Any> {
     }
 
     override fun forLoop(forLoop: Expression.ForLoop): Any {
-        memory.enterScope()
+        val state = memory.getStateCount()
         forLoop.initializer?.let { eval(it) }
 
         val conditional = forLoop.conditional
@@ -403,7 +406,7 @@ class Evaluator : Expression.Visitor<Any> {
             forLoop.operational?.let { eval(it) }
         }
 
-        memory.leaveScope()
+        memory.applyStateCount(state)
         return loopResult
     }
 

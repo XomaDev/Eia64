@@ -51,7 +51,6 @@ class Parser(private val tokens: List<Token>) {
             }
             Type.FOR -> {
                 expectType(Type.OPEN_CURVE)
-                nameResolver.enterScope()
                 val initializer = if (isNext(Type.COMMA)) null else parseNext()
                 expectType(Type.COMMA)
                 val conditional = if (isNext(Type.COMMA)) null else parseNext()
@@ -59,7 +58,6 @@ class Parser(private val tokens: List<Token>) {
                 val operational = if (isNext(Type.CLOSE_CURVE)) null else parseNext()
                 expectType(Type.CLOSE_CURVE)
                 val body = bodyOrExpr()
-                nameResolver.leaveScope()
                 return Expression.ForLoop(
                     initializer,
                     conditional,
@@ -249,7 +247,7 @@ class Parser(private val tokens: List<Token>) {
             return if (!isEOF() && peek().type == Type.OPEN_CURVE) funcInvoke(token)
             else parseValue(token)
         } else if (token.hasFlag(Type.UNARY)) {
-            return Expression.UnaryOperation(Expression.Operator(token.type), parseNext(), true)
+            return Expression.UnaryOperation(Expression.Operator(token.type), parseElement(), true)
         } else if (token.hasFlag(Type.NATIVE_CALL)) {
             expectType(Type.OPEN_CURVE)
             val arguments = parseArguments()

@@ -22,6 +22,11 @@ class Memory {
             functions.clear()
             values.clear()
         }
+
+        fun applyState(state: Pair<Int, Int>) {
+            values.dropLast(values.size - state.first)
+            functions.dropLast(functions.size - state.second)
+        }
     }
 
     private var recyclePool: Frame? = null
@@ -71,6 +76,12 @@ class Memory {
         val fn = frameStack[atFrame].functions[index]
         if (fn.first != name) throw RuntimeException("Function '$name' does not exist")
         return fn.second
+    }
+
+    // returns count of Pair<Variables, Functions>
+    fun getStateCount(): Pair<Int, Int> = Pair(currentFrame.values.size, currentFrame.functions.size)
+    fun applyStateCount(state: Pair<Int, Int>) {
+        currentFrame.applyState(state)
     }
 
 }

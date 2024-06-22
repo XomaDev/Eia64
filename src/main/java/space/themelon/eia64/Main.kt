@@ -7,7 +7,7 @@ import space.themelon.eia64.syntax.SyntaxAnalysis
 object Main {
     @JvmStatic
     fun main(args: Array<String>) {
-        val source = javaClass.classLoader.getResource("types.eia").readText()
+        val source = javaClass.classLoader.getResource("fixtest.eia").readText()
 
         val tokens = SyntaxAnalysis().tokenize(source)
 
