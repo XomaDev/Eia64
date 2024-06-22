@@ -35,6 +35,9 @@ enum class Type {
     ALPHA,
     E_TRUE, E_FALSE,
 
+    BOOL_CAST, INT_CAST, STRING_CAST,
+    TYPE,
+
     V_KEYWORD, LET, VAR,
     IF, ELSE,
     ITR, TO, IN, BY,
@@ -103,6 +106,12 @@ enum class Type {
 
                 it["true"] = Token(E_TRUE, arrayOf(VALUE, C_BOOL))
                 it["false"] = Token(E_FALSE, arrayOf(VALUE, C_BOOL))
+
+                it["bool"] = Token(BOOL_CAST, arrayOf(NATIVE_CALL))
+                it["int"] = Token(INT_CAST, arrayOf(NATIVE_CALL))
+                it["str"] = Token(STRING_CAST, arrayOf(NATIVE_CALL))
+
+                it["type"] = Token(TYPE, arrayOf(NATIVE_CALL))
 
                 it["print"] = Token(PRINT, arrayOf(NATIVE_CALL))
                 it["println"] = Token(PRINTLN, arrayOf(NATIVE_CALL))

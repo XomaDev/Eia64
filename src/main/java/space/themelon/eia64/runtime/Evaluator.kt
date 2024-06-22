@@ -79,7 +79,7 @@ class Evaluator : Expression.Visitor<Any> {
             val evaluated = arrayOfNulls<Any>(operand.size)
             for ((index, aExpr) in operand.expressions.withIndex())
                 evaluated[index] = unbox(eval(aExpr))
-            evaluated
+            if (evaluated.size == 1) evaluated[0]!! else evaluated
         }
         else -> throw RuntimeException("Unknown unary operator $type")
     }
@@ -150,8 +150,8 @@ class Evaluator : Expression.Visitor<Any> {
 
     override fun expressions(list: Expression.ExpressionList): Any {
         if (list.preserveState)
-            // it is being stored somewhere, like in a variable, etc.
-            //   that's why we shouldn't evaluate it
+        // it is being stored somewhere, like in a variable, etc.
+        //   that's why we shouldn't evaluate it
             return list
         for (expression in list.expressions) {
             val result = eval(expression)
@@ -214,6 +214,33 @@ class Evaluator : Expression.Visitor<Any> {
                     return String.format(string, *values)
                 }
                 return string
+            }
+
+            INT_CAST -> {
+                if (argsSize != 1) throw RuntimeException("int() expected only 1 argument, got $argsSize")
+                val obj = unbox(eval(call.arguments.expressions[0]))
+                if (getType(obj) == C_INT) return obj
+                return Integer.parseInt(obj.toString())
+            }
+
+            STRING_CAST -> {
+                if (argsSize != 1) throw RuntimeException("str() expected only 1 argument, got $argsSize")
+                val obj = unbox(eval(call.arguments.expressions[0]))
+                if (getType(obj) == C_STRING) return obj
+                return obj.toString()
+            }
+
+            BOOL_CAST -> {
+                if (argsSize != 1) throw RuntimeException("bool() expected only 1 argument, got $argsSize")
+                val obj = unbox(eval(call.arguments.expressions[0]))
+                if (getType(obj) == C_INT) return obj
+                return if (obj == "true") true else if (obj == "false") false else throw RuntimeException("Cannot parse boolean value: $obj")
+            }
+
+            TYPE -> {
+                if (argsSize != 1) throw RuntimeException("type() expected only 1 argument, got $argsSize")
+                val obj = unbox(eval(call.arguments.expressions[0]))
+                return getType(obj).toString()
             }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
