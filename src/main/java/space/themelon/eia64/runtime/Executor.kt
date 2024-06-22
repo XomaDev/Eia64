@@ -10,6 +10,8 @@ class Executor {
         const val STD_LIB = "/home/kumaraswamy/Documents/Eia64/stdlib/"
     }
 
+    private val externalEvaluator = HashMap<String, Evaluator>()
+
     private val syntaxAnalysis = SyntaxAnalysis()
     private val parser = Parser()
 
@@ -24,8 +26,13 @@ class Executor {
     }
 
     fun loadExternal(sourceFile: String, name: String) {
-        Evaluator(this).eval(parser.parse(getTokens(sourceFile)))
+        Evaluator(this).apply {
+            externalEvaluator[name] = this
+            eval(parser.parse(getTokens(sourceFile)))
+        }
     }
+
+    fun getExternalExecutor(name: String) = externalEvaluator[name]
 
     private fun getTokens(sourceFile: String) = syntaxAnalysis.tokenize(File(sourceFile).readText())
 }

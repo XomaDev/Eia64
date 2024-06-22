@@ -271,16 +271,30 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     override fun methodCall(call: Expression.MethodCall): Any {
         val fnName = call.name
         val fn = memory.getFn(call.atFrame, call.mIndex, fnName)
-        if (fn !is Expression.Function)
-            throw RuntimeException("Unable to find function $fnName")
+        return fnInvoke(fn, call.arguments)
+    }
+
+    private fun dynamicFnCall(
+        name: String,
+        args: List<Expression>
+    ) = fnInvoke(memory.dynamicFnSearch(name), args)
+
+    override fun classMethodCall(classMethod: Expression.ClassMethodCall): Any {
+        val executor = executor.getExternalExecutor(classMethod.className)
+            ?: throw RuntimeException("Couldn't find external executor ${classMethod.className}")
+        return executor.dynamicFnCall(classMethod.method, classMethod.arguments)
+    }
+
+    private fun fnInvoke(fn: Expression.Function, callArgs: List<Expression>): Any {
+        val fnName = fn.name
 
         val sigArgsSize = fn.arguments.size
-        val callArgsSize = call.arguments.size
+        val callArgsSize = callArgs.size
 
         if (sigArgsSize != callArgsSize)
             reportWrongArguments(fnName, sigArgsSize, callArgsSize)
         val parameters = fn.arguments.iterator()
-        val callExpressions = call.arguments.expressions.iterator()
+        val callExpressions = callArgs.iterator()
 
         val callValues = ArrayList<Pair<Expression.DefinitionType, Any>>()
         while (parameters.hasNext()) {
@@ -313,10 +327,6 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             throw RuntimeException("Expected return type $returnSignature for function $fnName but got $gotReturnSignature")
 
         return result
-    }
-
-    override fun classMethodCall(classClass: Expression.ClassMethodCall): Any {
-        TODO("Not yet implemented")
     }
 
     private fun reportWrongArguments(name: String, expectedArgs: Int, gotArgs: Int) {

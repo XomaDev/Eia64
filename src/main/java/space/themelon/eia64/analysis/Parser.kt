@@ -48,7 +48,7 @@ class Parser {
         expectType(Type.OPEN_CURVE)
         val name = readAlpha()
         expectType(Type.CLOSE_CURVE)
-        nameResolver.defineVr(name)
+        nameResolver.classes.add(name)
         return Expression.ImportStdLib(name)
     }
 
@@ -281,10 +281,11 @@ class Parser {
                     Expression.Alpha(resolved.second, name)
                 else {
                     expectType(Type.DOT)
+                    val method = readAlpha()
                     expectType(Type.OPEN_CURVE)
                     val arguments = parseArguments()
                     expectType(Type.CLOSE_CURVE)
-                    Expression.ClassMethodCall(name, arguments)
+                    Expression.ClassMethodCall(name, method, arguments)
                 }
             }
 
@@ -304,7 +305,7 @@ class Parser {
         val arguments = parseArguments()
         expectType(Type.CLOSE_CURVE)
         val location = nameResolver.resolveFn(name)
-        return Expression.MethodCall(location.first, location.second, name, Expression.ExpressionList(arguments))
+        return Expression.MethodCall(location.first, location.second, name, arguments)
     }
 
     private fun parseArguments(): List<Expression> {

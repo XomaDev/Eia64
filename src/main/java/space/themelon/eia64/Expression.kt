@@ -16,7 +16,7 @@ abstract class Expression {
         fun expressions(list: ExpressionList): R
         fun nativeCall(call: NativeCall): R
         fun methodCall(call: MethodCall): R
-        fun classMethodCall(classClass: ClassMethodCall): R
+        fun classMethodCall(classMethod: ClassMethodCall): R
         fun until(until: Until): R
         fun itr(itr: Itr): R
         fun forEach(forEach: ForEach): R
@@ -91,13 +91,14 @@ abstract class Expression {
         val atFrame: Int,
         val mIndex: Int,
         val name: String,
-        val arguments: ExpressionList,
+        val arguments: List<Expression>,
     ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.methodCall(this)
     }
 
     data class ClassMethodCall(
-        val name: String,
+        val className: String,
+        val method: String,
         val arguments: List<Expression>
     ): Expression() {
         override fun <R> accept(v: Visitor<R>) = v.classMethodCall(this)

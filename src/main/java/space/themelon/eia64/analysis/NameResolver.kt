@@ -19,7 +19,7 @@ class NameResolver {
         }
     }
 
-    private val classes = ArrayList<String>()
+    val classes = ArrayList<String>()
 
     private var depth = 0
     private var currentScope = Scope(depth++)
