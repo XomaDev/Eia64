@@ -8,6 +8,7 @@ abstract class Expression {
         fun literal(literal: Literal): R
         fun alpha(alpha: Alpha): R
         fun operator(operator: Operator): R
+        fun importStdLib(stdLib: ImportStdLib): R
         fun variable(variable: ExplicitVariable): R
         fun autoVariable(autoVariable: AutoVariable): R
         fun unaryOperation(expr: UnaryOperation): R
@@ -15,6 +16,7 @@ abstract class Expression {
         fun expressions(list: ExpressionList): R
         fun nativeCall(call: NativeCall): R
         fun methodCall(call: MethodCall): R
+        fun classMethodCall(classClass: ClassMethodCall): R
         fun until(until: Until): R
         fun itr(itr: Itr): R
         fun forEach(forEach: ForEach): R
@@ -37,6 +39,10 @@ abstract class Expression {
 
     data class Operator(val value: Type) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.operator(this)
+    }
+
+    open class ImportStdLib(val name: String): Expression() {
+        override fun <R> accept(v: Visitor<R>): R = v.importStdLib(this)
     }
 
     data class UnaryOperation(
@@ -88,6 +94,13 @@ abstract class Expression {
         val arguments: ExpressionList,
     ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.methodCall(this)
+    }
+
+    data class ClassMethodCall(
+        val name: String,
+        val arguments: List<Expression>
+    ): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.classMethodCall(this)
     }
 
     data class ExpressionList(

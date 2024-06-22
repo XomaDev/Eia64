@@ -8,7 +8,7 @@ import space.themelon.eia64.syntax.Type.*
 import java.util.*
 import kotlin.collections.ArrayList
 
-class Evaluator : Expression.Visitor<Any> {
+class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
     fun eval(expr: Expression) = expr.accept(this)
     private fun unboxEval(expr: Expression) = unbox(eval(expr))
@@ -163,6 +163,11 @@ class Evaluator : Expression.Visitor<Any> {
         return list
     }
 
+    override fun importStdLib(stdLib: Expression.ImportStdLib): Any {
+        executor.loadExternal("${Executor.STD_LIB}/${stdLib.name}.eia", stdLib.name)
+        return true
+    }
+
     override fun nativeCall(call: Expression.NativeCall): Any {
         val argsSize = call.arguments.size
         when (val type = call.type) {
@@ -243,6 +248,22 @@ class Evaluator : Expression.Visitor<Any> {
                 val obj = unboxEval(call.arguments.expressions[0])
                 return getType(obj).toString()
             }
+
+            INCLUDE -> {
+                if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
+                val obj = unboxEval(call.arguments.expressions[0])
+                if (obj !is String)
+                    throw RuntimeException("Expected a string argument for include() but got $obj")
+                val parts = obj.split(":")
+                if (parts.size != 2)
+                    throw RuntimeException("include() received invalid argument: $obj")
+                var group = parts[0]
+                if (group.isEmpty()) group = Executor.STD_LIB
+
+                val name = parts[1]
+                executor.loadExternal("$group/$name.eia", name)
+                return true
+            }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
     }
@@ -292,6 +313,10 @@ class Evaluator : Expression.Visitor<Any> {
             throw RuntimeException("Expected return type $returnSignature for function $fnName but got $gotReturnSignature")
 
         return result
+    }
+
+    override fun classMethodCall(classClass: Expression.ClassMethodCall): Any {
+        TODO("Not yet implemented")
     }
 
     private fun reportWrongArguments(name: String, expectedArgs: Int, gotArgs: Int) {

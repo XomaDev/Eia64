@@ -1,0 +1,2 @@
+stdlib(math)
+println(math.max(5, 7))

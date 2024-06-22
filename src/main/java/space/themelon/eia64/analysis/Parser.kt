@@ -7,13 +7,15 @@ import space.themelon.eia64.syntax.Type
 
 class Parser {
 
-    private val nameResolver = NameResolver()
+    private lateinit var nameResolver: NameResolver
 
     private lateinit var tokens: List<Token>
     private var index = 0
     private var size = 0
 
     fun parse(tokens: List<Token>): Expression.ExpressionList {
+        nameResolver = NameResolver()
+
         index = 0
         size = tokens.size
         this.tokens = tokens
@@ -31,14 +33,23 @@ class Parser {
             else if (token.flags[0] == Type.V_KEYWORD) return variableDeclaration(token)
             else if (token.flags[0] == Type.INTERRUPTION) return interruption(token)
         }
-        when (token.type) {
-            Type.IF -> return ifDeclaration(token)
-            Type.FUN -> return fnDeclaration()
+        return when (token.type) {
+            Type.IF -> ifDeclaration(token)
+            Type.FUN -> fnDeclaration()
+            Type.STDLIB -> importStdLib()
             else -> {
                 back()
                 return parseExpr(0)
             }
         }
+    }
+
+    private fun importStdLib(): Expression.ImportStdLib {
+        expectType(Type.OPEN_CURVE)
+        val name = readAlpha()
+        expectType(Type.CLOSE_CURVE)
+        nameResolver.defineVr(name)
+        return Expression.ImportStdLib(name)
     }
 
     private fun loop(token: Token): Expression {
@@ -265,7 +276,16 @@ class Parser {
             Type.C_STRING, Type.C_CHAR -> Expression.Literal(token.optionalData!!)
             Type.ALPHA -> {
                 val name = readAlpha(token)
-                Expression.Alpha(nameResolver.resolveVr(name), name)
+                val resolved = nameResolver.resolveVr(name)
+                if (resolved.first)
+                    Expression.Alpha(resolved.second, name)
+                else {
+                    expectType(Type.DOT)
+                    expectType(Type.OPEN_CURVE)
+                    val arguments = parseArguments()
+                    expectType(Type.CLOSE_CURVE)
+                    Expression.ClassMethodCall(name, arguments)
+                }
             }
 
             Type.OPEN_CURVE -> {
