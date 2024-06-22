@@ -123,7 +123,7 @@ class Evaluator : Expression.Visitor<Any> {
         LESSER_THAN_EQUALS -> intExpr(expr.left, "<= LesserThan") <= intExpr(expr.right, "<= LesserThan")
         ASSIGNMENT -> {
             val toUpdate = expr.left
-            val value = eval(expr.right)
+            val value = unboxEval(expr.right)
             when (toUpdate) {
                 is Expression.Alpha -> update(toUpdate.index, toUpdate.value, value)
                 is Expression.ElementAccess -> {
