@@ -210,18 +210,17 @@ class Parser {
         if (!isEOF() && peek().hasFlag(Type.POSSIBLE_RIGHT_UNARY))
             left = Expression.UnaryOperation(Expression.Operator(next().type), left, false)
         while (!isEOF()) {
-            if (!peek().hasFlag(Type.OPERATOR))
-                return left
+            val opToken = peek()
+            if (!opToken.hasFlag(Type.OPERATOR)) return left
 
-            val opToken = next()
             val precedence = operatorPrecedence(opToken.flags[0])
-            if (precedence == -1)
-                return left
+            if (precedence == -1) return left
 
             if (precedence >= minPrecedence) {
-                val right = if (opToken.hasFlag(Type.NON_COMMUTE))
-                    parseElement()
-                else parseExpr(precedence)
+                skip() // operator token
+                val right =
+                    if (opToken.hasFlag(Type.NON_COMMUTE)) parseElement()
+                    else parseExpr(precedence)
                 left = Expression.BinaryOperation(
                     left,
                     right,
@@ -263,6 +262,7 @@ class Parser {
         } else if (token.hasFlag(Type.NATIVE_CALL)) {
             expectType(Type.OPEN_CURVE)
             val arguments = parseArguments()
+            println("arguments = $arguments")
             expectType(Type.CLOSE_CURVE)
             return Expression.NativeCall(token.type, Expression.ExpressionList(arguments))
         }
@@ -271,9 +271,10 @@ class Parser {
 
     private fun parseValue(token: Token): Expression {
         return when (token.type) {
-            Type.E_TRUE, Type.E_FALSE -> Expression.Literal(token.type == Type.E_TRUE)
-            Type.E_INT -> Expression.Literal(token.optionalData.toString().toInt())
-            Type.E_STRING, Type.E_CHAR -> Expression.Literal(token.optionalData!!)
+            Type.E_TRUE, Type.E_FALSE -> Expression.BoolLiteral(token.type == Type.E_TRUE)
+            Type.E_INT -> Expression.IntLiteral(token.optionalData.toString().toInt())
+            Type.E_STRING -> Expression.StringLiteral(token.optionalData as String)
+            Type.E_CHAR -> Expression.CharLiteral(token.optionalData as Char)
             Type.ALPHA -> {
                 val name = readAlpha(token)
                 val resolved = nameResolver.resolveVr(name)

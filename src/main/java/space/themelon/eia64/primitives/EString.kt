@@ -6,9 +6,15 @@ class EString(
 
     private var string = initialValue
 
+    val length: Int get() = string.length
+
+    fun append(value: Any) {
+        string += value.toString()
+    }
+
     override fun getAt(index: Int) = string[index]
 
-    override fun getAt(index: Int, value: Char) {
+    override fun setAt(index: Int, value: Char) {
         string = string.replaceRange(index, index, string)
     }
 

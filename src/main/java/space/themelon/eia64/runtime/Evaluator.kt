@@ -1,10 +1,7 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.primitives.EBool
-import space.themelon.eia64.primitives.EChar
-import space.themelon.eia64.primitives.EInt
-import space.themelon.eia64.primitives.EString
+import space.themelon.eia64.primitives.*
 import space.themelon.eia64.runtime.Entity.Companion.getType
 import space.themelon.eia64.runtime.Entity.Companion.unbox
 import space.themelon.eia64.syntax.Type
@@ -67,13 +64,13 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         NEGATE -> EInt(Math.negateExact(intExpr(expr.expr, "- Negate").get()))
         INCREMENT, DECREMENT -> {
             val eInt = intExpr(expr.expr, "++ Increment")
-            if (expr.left) {
+            EInt(if (expr.left) {
                 if (type == INCREMENT) eInt.incrementAndGet()
                 else eInt.decrementAndGet()
             } else {
                 if (type == INCREMENT) eInt.getAndIncrement()
                 else eInt.getAndDecrement()
-            }
+            })
         }
         KITA -> {
             var operand: Any = expr.expr
@@ -104,27 +101,27 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         EQUALS, NOT_EQUALS -> {
             var left = eval(expr.left)
             var right = eval(expr.right)
-            if (getType(left) != getType(right)) {
+            EBool(if (getType(left) != getType(right)) {
                 type != EQUALS
             } else {
                 left = unbox(left)
                 right = unbox(right)
                 when (left) {
-                    is Int, is String, is Char, is Boolean -> if (type == EQUALS) left == right else left != right
+                    is EInt, is EString, is EChar, is EBool -> if (type == EQUALS) left == right else left != right
                     else -> false
                 }
-            }
+            })
         }
         LOGICAL_AND -> booleanExpr(expr.left, "&& Logical And").and(booleanExpr(expr.right, "&& Logical And"))
         LOGICAL_OR -> booleanExpr(expr.left, "|| Logical Or").or(booleanExpr(expr.right, "|| Logical Or"))
-        GREATER_THAN -> intExpr(expr.left, "> GreaterThan") > intExpr(expr.right, "> GreaterThan")
+        GREATER_THAN -> EBool(intExpr(expr.left, "> GreaterThan") > intExpr(expr.right, "> GreaterThan"))
         LESSER_THAN -> {
             val left = intExpr(expr.left, "< LesserThan")
             val right = intExpr(expr.right, "< LesserThan")
-            left < right
+            EBool(left < right)
         }
-        GREATER_THAN_EQUALS -> intExpr(expr.left, ">= GreaterThanEquals") >= intExpr(expr.right, ">= GreaterThanEquals")
-        LESSER_THAN_EQUALS -> intExpr(expr.left, "<= LesserThan") <= intExpr(expr.right, "<= LesserThan")
+        GREATER_THAN_EQUALS -> EBool(intExpr(expr.left, ">= GreaterThanEquals") >= intExpr(expr.right, ">= GreaterThanEquals"))
+        LESSER_THAN_EQUALS -> EBool(intExpr(expr.left, "<= LesserThan") <= intExpr(expr.right, "<= LesserThan"))
         ASSIGNMENT -> {
             val toUpdate = expr.left
             val value = unboxEval(expr.right)
@@ -138,8 +135,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                     when (getType(array)) {
                         E_ARRAY -> (array as Array<Any>)[index] = value
                         E_STRING -> {
-                            if (value !is Char) throw RuntimeException("string[index] requires a Char")
-                            (array as String).replaceRange(index, index, value.toString())
+                            if (value !is EChar) throw RuntimeException("string[index] requires a Char")
+                            (array as EString).setAt(index, value.get())
                         }
                         else -> throw RuntimeException("Unknown element access of $array")
                     }
@@ -149,16 +146,37 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             value
         }
         ADDITIVE_ASSIGNMENT -> {
-            TODO("Not yet implemented")
+            val element = unboxEval(expr.left)
+            when (element) {
+                is EString -> element.append(unbox(expr.right))
+                is EInt -> element += intExpr(expr.right, "+=")
+                else -> throw RuntimeException("Cannot apply += operator on element $element")
+            }
+            element
         }
         DEDUCTIVE_ASSIGNMENT -> {
-            TODO("Not yet implemented")
+            val element = unboxEval(expr.left)
+            when (element) {
+                is EInt -> element -= intExpr(expr.right, "-=")
+                else -> throw RuntimeException("Cannot apply -= operator on element $element")
+            }
+            element
         }
         MULTIPLICATIVE_ASSIGNMENT -> {
-            TODO("Not yet implemented")
+            val element = unboxEval(expr.left)
+            when (element) {
+                is EInt -> element *= intExpr(expr.right, "*=")
+                else -> throw RuntimeException("Cannot apply *= operator on element $element")
+            }
+            element
         }
         DIVIDIVE_ASSIGNMENT -> {
-            TODO("Not yet implemented")
+            val element = unboxEval(expr.left)
+            when (element) {
+                is EInt -> element /= intExpr(expr.right, "/=")
+                else -> throw RuntimeException("Cannot apply /= operator on element $element")
+            }
+            element
         }
         BITWISE_AND -> intExpr(expr.left, "& BitwiseAnd").and(intExpr(expr.right, "& BitwiseAnd"))
         BITWISE_OR -> intExpr(expr.left, "| BitwiseOr").or(intExpr(expr.right, "| BitwiseOr"))
@@ -185,7 +203,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
     override fun importStdLib(stdLib: Expression.ImportStdLib): Any {
         executor.loadExternal("${Executor.STD_LIB}/${stdLib.name}.eia", stdLib.name)
-        return true
+        return EBool(true)
     }
 
     override fun nativeCall(call: Expression.NativeCall): Any {
@@ -201,29 +219,29 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                     print(printable)
                 }
                 if (type == PRINTLN) print('\n')
-                return printCount
+                return EInt(printCount)
             }
 
             READ, READLN -> {
                 if (argsSize != 0) reportWrongArguments("read/readln", 0, argsSize)
-                return Scanner(System.`in`).let { if (type == READ) it.next() else it.nextLine() }
+                return EString(Scanner(System.`in`).let { if (type == READ) it.next() else it.nextLine() })
             }
 
             SLEEP -> {
                 if (argsSize != 1) reportWrongArguments("sleep", 1, argsSize)
-                val ms = intExpr(call.arguments.expressions[0], "sleep()")
-                Thread.sleep(ms.get().toLong())
-                return ms
+                val millis = intExpr(call.arguments.expressions[0], "sleep()")
+                Thread.sleep(millis.get().toLong())
+                return millis
             }
 
             LEN -> {
                 if (argsSize != 1) reportWrongArguments("len", 1, argsSize)
-                return when (val data = unboxEval(call.arguments.expressions[0])) {
-                    is String -> data.length
+                return EInt(when (val data = unboxEval(call.arguments.expressions[0])) {
+                    is EString -> data.length
                     is Array<*> -> data.size
                     is Expression.ExpressionList -> data.size
                     else -> throw RuntimeException("Unknown measurable data type $data")
-                }
+                })
             }
 
             FORMAT -> {
@@ -231,13 +249,12 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 val string = unbox(eval(exprs[0]))
                 if (getType(string) != E_STRING)
                     throw RuntimeException("format() requires a string argument")
-                string as String
+                string as EString
                 if (exprs.size > 1) {
                     val values = arrayOfNulls<Any>(exprs.size - 1)
-                    for (i in 1 until exprs.size) {
+                    for (i in 1 until exprs.size)
                         values[i - 1] = unbox(eval(exprs[i]))
-                    }
-                    return String.format(string, *values)
+                    return EString(String.format(string.get(), *values))
                 }
                 return string
             }
@@ -246,35 +263,39 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 if (argsSize != 1) reportWrongArguments("int", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
                 if (getType(obj) == E_INT) return obj
-                return Integer.parseInt(obj.toString())
+                return EInt(Integer.parseInt(obj.toString()))
             }
 
             STRING_CAST -> {
                 if (argsSize != 1) reportWrongArguments("str", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
                 if (getType(obj) == E_STRING) return obj
-                return obj.toString()
+                return EString(obj.toString())
             }
 
             BOOL_CAST -> {
                 if (argsSize != 1) reportWrongArguments("bool", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
-                if (getType(obj) == E_INT) return obj
-                return if (obj == "true") true else if (obj == "false") false else throw RuntimeException("Cannot parse boolean value: $obj")
+                if (getType(obj) == E_BOOL) return obj
+                return EBool(when (obj) {
+                    "true" -> true
+                    "false" -> false
+                    else -> throw RuntimeException("Cannot parse boolean value: $obj")
+                })
             }
 
             TYPE -> {
                 if (argsSize != 1) reportWrongArguments("type", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
-                return getType(obj).toString()
+                return EString(getType(obj).toString())
             }
 
             INCLUDE -> {
                 if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
-                if (obj !is String)
+                if (obj !is EString)
                     throw RuntimeException("Expected a string argument for include() but got $obj")
-                val parts = obj.split(":")
+                val parts = obj.get().split(":")
                 if (parts.size != 2)
                     throw RuntimeException("include() received invalid argument: $obj")
                 var group = parts[0]
@@ -282,7 +303,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
                 val name = parts[1]
                 executor.loadExternal("$group/$name.eia", name)
-                return true
+                return EBool(true)
             }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
@@ -377,9 +398,9 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
         val getNext: () -> Any
         when (iterable) {
-            is String -> {
+            is EString -> {
                 size = iterable.length
-                getNext = { iterable[index++] }
+                getNext = { iterable.getAt(index++) }
             }
 
             is Array<*> -> {
@@ -506,11 +527,10 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         val entity = unbox(eval(access.expr))
         val index = intExpr(access.index, "[] ArrayAccess").get()
 
-        val type = getType(entity)
-        return when (type) {
-            E_STRING -> (entity as String)[index]
-            E_ARRAY -> (entity as Array<*>)[index]!!
-            else -> throw RuntimeException("Unknown element access of $entity")
+        when (entity) {
+            is ArrayOperable<*> -> return EChar(entity.getAt(index) as Char)
+            is Array<*> -> entity[index]!!
         }
+        throw RuntimeException("Unknown element access of $entity")
     }
 }

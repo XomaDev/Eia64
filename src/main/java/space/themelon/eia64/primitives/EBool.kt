@@ -15,6 +15,12 @@ class EBool(initialValue: Boolean): Element {
     fun and(other: EBool) = EBool(boolValue && other.boolValue)
     fun or(other: EBool) = EBool(boolValue || other.boolValue)
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is EBool) return false
+        return boolValue == other.boolValue
+    }
 
     override fun toString() = boolValue.toString()
+    override fun hashCode() = boolValue.hashCode()
 }

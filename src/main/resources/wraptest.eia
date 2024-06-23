@@ -1,1 +1,2 @@
-println(true == true)
+fn fib(n: Int) = if (n < 2) n else fib(n - 1) + fib(n - 2)
+println(fib(30) == 832040)
