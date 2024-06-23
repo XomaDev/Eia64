@@ -1,0 +1,9 @@
+fn indexOf(self: String, letter: Char) {
+  let size = len(self)
+  for (var i = 0, i < size, i++) {
+    if (self[i] == letter) return i
+  }
+  return -1
+}
+
+println(indexOf("hello", 'e'))

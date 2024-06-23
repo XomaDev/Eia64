@@ -151,13 +151,17 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
     override fun expressions(list: Expression.ExpressionList): Any {
         if (list.preserveState)
-        // it is being stored somewhere, like in a variable, etc.
-        //   that's why we shouldn't evaluate it
+            // it is being stored somewhere, like in a variable, etc.
+            //   that's why we shouldn't evaluate it
             return list
         for (expression in list.expressions) {
             val result = eval(expression)
-            if (result is FlowBlack) {
-                return if (result.interrupt == Interrupt.RETURN) result.data!! else result
+            if (result is Entity) {
+                // flow interruption is just forwarded
+                when (result.type) {
+                    RETURN, BREAK, CONTINUE -> return result
+                    else -> { }
+                }
             }
         }
         return list
@@ -315,10 +319,9 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             memory.declareVar(definedParameter.name,
                 Entity(definedParameter.name, true, value, definedParameter.type))
         }
-        var result = eval(fn.body)
+        // do not handle return calls here, let it naturally unbox itself
+        val result = eval(fn.body)
         memory.leaveScope()
-        if (result is FlowBlack && result.interrupt == Interrupt.RETURN)
-            result = result.data!!
 
         val returnSignature = fn.returnType
         val gotReturnSignature = getType(result)
@@ -338,13 +341,14 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             memory.enterScope()
             val result = eval(until.body)
             memory.leaveScope()
-            if (result is FlowBlack)
-                when (result.interrupt) {
-                    Interrupt.BREAK -> break
-                    Interrupt.CONTINUE -> continue
-                    Interrupt.RETURN -> return result
+            if (result is Entity) {
+                when (result.type) {
+                    BREAK -> break
+                    CONTINUE -> continue
+                    RETURN -> return result
                     else -> { }
                 }
+            }
         }
         return until
     }
@@ -379,13 +383,14 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             memory.declareVar(named, Entity(named, false, element, getType(element)))
             val result = eval(body)
             memory.leaveScope()
-            if (result is FlowBlack)
-                when (result.interrupt) {
-                    Interrupt.BREAK -> break
-                    Interrupt.CONTINUE -> continue
-                    Interrupt.RETURN -> return result
+            if (result is Entity) {
+                when (result.type) {
+                    BREAK -> break
+                    CONTINUE -> continue
+                    RETURN -> return result
                     else -> { }
                 }
+            }
         }
         return forEach
     }
@@ -404,13 +409,17 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             memory.declareVar(named, Entity(named, false, from, C_INT))
             val result = eval(itr.body)
             memory.leaveScope()
-            if (result is FlowBlack)
-                when (result.interrupt) {
-                    Interrupt.BREAK -> break
-                    Interrupt.CONTINUE -> continue
-                    Interrupt.RETURN -> return result
+            if (result is Entity) {
+                when (result.type) {
+                    BREAK -> break
+                    CONTINUE -> {
+                        from += by
+                        continue
+                    }
+                    RETURN -> return result
                     else -> { }
                 }
+            }
             from += by
         }
         return itr
@@ -422,33 +431,41 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
         val conditional = forLoop.conditional
 
-        var loopResult: Any = forLoop
+        var returnResult: Any = forLoop
+        fun evalOperational() = forLoop.operational?.let { eval(it) }
+
         while (if (conditional == null) true else booleanExpr(conditional, "ForLoop")) {
             memory.enterScope()
             val result = eval(forLoop.body)
             memory.leaveScope()
-            if (result is FlowBlack) {
-                when (result.interrupt) {
-                    Interrupt.BREAK -> break
-                    Interrupt.CONTINUE -> continue
-                    Interrupt.RETURN -> {
-                        loopResult = result
+            if (result is Entity) {
+                when (result.type) {
+                    BREAK -> break
+                    CONTINUE -> {
+                        evalOperational()
+                        continue
+                    }
+                    RETURN -> {
+                        returnResult = result
                         break
                     }
                     else -> { }
                 }
             }
-            forLoop.operational?.let { eval(it) }
+            evalOperational()
         }
-
         memory.applyStateCount(state)
-        return loopResult
+        return returnResult
     }
 
     override fun interruption(interruption: Expression.Interruption) = when (val type = eval(interruption.type)) {
-        RETURN -> FlowBlack(Interrupt.RETURN, eval(interruption.expr!!))
-        BREAK -> FlowBlack(Interrupt.BREAK)
-        CONTINUE -> FlowBlack(Interrupt.CONTINUE)
+        // wrap it as normal entity, this will be naturally unboxed when called unbox()
+        RETURN -> {
+            val value = eval(interruption.expr!!)
+            Entity("FlowReturn", false, value, RETURN)
+        }
+        BREAK -> Entity("FlowBreak", false, 0, BREAK)
+        CONTINUE -> Entity("FlowContinue", false, 0, CONTINUE)
         else -> throw RuntimeException("Unknown interruption type $type")
     }
 
