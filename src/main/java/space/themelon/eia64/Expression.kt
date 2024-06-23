@@ -5,7 +5,10 @@ import space.themelon.eia64.syntax.Type
 abstract class Expression {
 
     interface Visitor<R> {
-        fun literal(literal: Literal): R
+        fun intLiteral(intLiteral: IntLiteral): R
+        fun boolLiteral(boolLiteral: BoolLiteral): R
+        fun stringLiteral(stringLiteral: StringLiteral): R
+        fun charLiteral(charLiteral: CharLiteral): R
         fun alpha(alpha: Alpha): R
         fun operator(operator: Operator): R
         fun importStdLib(stdLib: ImportStdLib): R
@@ -29,8 +32,20 @@ abstract class Expression {
 
     abstract fun <R> accept(v: Visitor<R>): R
 
-    data class Literal(val data: Any): Expression() {
-        override fun <R> accept(v: Visitor<R>) = v.literal(this)
+    data class IntLiteral(val value: Int): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.intLiteral(this)
+    }
+
+    data class BoolLiteral(val value: Boolean): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.boolLiteral(this)
+    }
+
+    data class StringLiteral(val value: String): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.stringLiteral(this)
+    }
+
+    data class CharLiteral(val value: Char): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.charLiteral(this)
     }
 
     data class Alpha(val index: Int, val value: String) : Expression() {

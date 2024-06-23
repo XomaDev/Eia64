@@ -1,6 +1,10 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
+import space.themelon.eia64.primitives.EBool
+import space.themelon.eia64.primitives.EChar
+import space.themelon.eia64.primitives.EInt
+import space.themelon.eia64.primitives.EString
 import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
 
@@ -35,10 +39,10 @@ open class Entity(
                 if (value.type == RETURN) getType(value.value)
                 else value.type
             }
-            is Int -> E_INT
-            is String -> E_STRING
-            is Boolean -> E_BOOL
-            is Char -> E_CHAR
+            is EInt -> E_INT
+            is EString -> E_STRING
+            is EBool -> E_BOOL
+            is EChar -> E_CHAR
             is Expression -> E_UNIT
             is Array<*> -> E_ARRAY
             else -> throw RuntimeException("Unknown type of value $value")

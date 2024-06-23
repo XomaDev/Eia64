@@ -13,14 +13,14 @@ class EString(
     }
 
     override fun set(value: Any) {
-        string = when (value) {
-            is String -> value
-            !is EString -> throw IllegalArgumentException("EString.set() value is not a String")
-            else -> value.string
-        }
+        if (value !is EString)
+            throw IllegalArgumentException("EString.set() value is not a EString")
+        string = value.string
     }
 
     override fun get(): String = string
+
+    override fun toString() = string
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

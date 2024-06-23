@@ -1,1 +1,1 @@
-println(5)
+println(true == true)

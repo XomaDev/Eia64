@@ -1,9 +1,6 @@
 package space.themelon.eia64.syntax
 
 import space.themelon.eia64.Config
-import space.themelon.eia64.primitives.EChar
-import space.themelon.eia64.primitives.EInt
-import space.themelon.eia64.primitives.EString
 import space.themelon.eia64.syntax.Type.Companion.SYMBOLS
 import kotlin.text.StringBuilder
 
@@ -66,7 +63,7 @@ class SyntaxAnalysis {
         val char = next()
         if (next() != '\'')
             throw RuntimeException("Invalid syntax while using single quotes")
-        tokens.add(Token(Type.E_CHAR, arrayOf(Type.VALUE), EChar(char)))
+        tokens.add(Token(Type.E_CHAR, arrayOf(Type.VALUE), char))
     }
 
     private fun parseString() {
@@ -78,7 +75,7 @@ class SyntaxAnalysis {
             }
             content.append(c)
         }
-        tokens.add(Token(Type.E_STRING, arrayOf(Type.VALUE), EString(content.toString())))
+        tokens.add(Token(Type.E_STRING, arrayOf(Type.VALUE), content.toString()))
     }
 
     private fun parseAlpha() {
@@ -108,7 +105,7 @@ class SyntaxAnalysis {
                 skip()
             } else break
         }
-        tokens.add(Token(Type.E_INT, arrayOf(Type.VALUE), EInt(content.toString().toInt())))
+        tokens.add(Token(Type.E_INT, arrayOf(Type.VALUE), content.toString().toInt()))
     }
 
     private fun isNumeric(c: Char) = c in '0'..'9'
