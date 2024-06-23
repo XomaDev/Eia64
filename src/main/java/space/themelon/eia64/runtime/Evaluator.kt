@@ -21,8 +21,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         return unbox(result)
     }
 
-    private fun booleanExpr(expr: Expression, operation: String) = safeUnbox(expr, C_BOOL, operation) as Boolean
-    private fun intExpr(expr: Expression, operation: String) = safeUnbox(expr, C_INT, operation) as Int
+    private fun booleanExpr(expr: Expression, operation: String) = safeUnbox(expr, E_BOOL, operation) as Boolean
+    private fun intExpr(expr: Expression, operation: String) = safeUnbox(expr, E_INT, operation) as Int
 
     private val memory = Memory()
 
@@ -33,7 +33,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     private fun define(mutable: Boolean, def: Expression.DefinitionType, value: Any) {
         // make sure variable type = assigned type
         val valueType = getType(value)
-        if (def.type != C_ANY && def.type != valueType)
+        if (def.type != E_ANY && def.type != valueType)
             throw RuntimeException("Variable ${def.name} has type ${def.type}, but got value type of $valueType")
         memory.declareVar(def.name, Entity(def.name, mutable, value, valueType))
     }
@@ -90,7 +90,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             val left = eval(expr.left)
             val right = eval(expr.right)
 
-            if (getType(left) == C_INT && getType(right) == C_INT)
+            if (getType(left) == E_INT && getType(right) == E_INT)
                 unbox(left) as Int + unbox(right) as Int
             else unbox(left).toString() + unbox(right).toString()
         }
@@ -132,8 +132,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
                     @Suppress("UNCHECKED_CAST")
                     when (getType(array)) {
-                        C_ARRAY -> (array as Array<Any>)[index] = value
-                        C_STRING -> {
+                        E_ARRAY -> (array as Array<Any>)[index] = value
+                        E_STRING -> {
                             if (value !is Char) throw RuntimeException("string[index] requires a Char")
                             (array as String).replaceRange(index, index, value.toString())
                         }
@@ -143,6 +143,18 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 else -> throw RuntimeException("Unknown left operand for [= Assignment]: $toUpdate")
             }
             value
+        }
+        ADDITIVE_ASSIGNMENT -> {
+            TODO("Not yet implemented")
+        }
+        DEDUCTIVE_ASSIGNMENT -> {
+            TODO("Not yet implemented")
+        }
+        MULTIPLICATIVE_ASSIGNMENT -> {
+            TODO("Not yet implemented")
+        }
+        DIVIDIVE_ASSIGNMENT -> {
+            TODO("Not yet implemented")
         }
         BITWISE_AND -> intExpr(expr.left, "& BitwiseAnd") and intExpr(expr.right, "& BitwiseAnd")
         BITWISE_OR -> intExpr(expr.left, "| BitwiseOr") or intExpr(expr.right, "| BitwiseOr")
@@ -213,7 +225,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             FORMAT -> {
                 val exprs = call.arguments.expressions
                 val string = unbox(eval(exprs[0]))
-                if (getType(string) != C_STRING)
+                if (getType(string) != E_STRING)
                     throw RuntimeException("format() requires a string argument")
                 string as String
                 if (exprs.size > 1) {
@@ -229,21 +241,21 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             INT_CAST -> {
                 if (argsSize != 1) reportWrongArguments("int", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
-                if (getType(obj) == C_INT) return obj
+                if (getType(obj) == E_INT) return obj
                 return Integer.parseInt(obj.toString())
             }
 
             STRING_CAST -> {
                 if (argsSize != 1) reportWrongArguments("str", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
-                if (getType(obj) == C_STRING) return obj
+                if (getType(obj) == E_STRING) return obj
                 return obj.toString()
             }
 
             BOOL_CAST -> {
                 if (argsSize != 1) reportWrongArguments("bool", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
-                if (getType(obj) == C_INT) return obj
+                if (getType(obj) == E_INT) return obj
                 return if (obj == "true") true else if (obj == "false") false else throw RuntimeException("Cannot parse boolean value: $obj")
             }
 
@@ -326,7 +338,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         val returnSignature = fn.returnType
         val gotReturnSignature = getType(result)
 
-        if (returnSignature != C_ANY && returnSignature != gotReturnSignature)
+        if (returnSignature != E_ANY && returnSignature != gotReturnSignature)
             throw RuntimeException("Expected return type $returnSignature for function $fnName but got $gotReturnSignature")
 
         return result
@@ -406,7 +418,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
         while (if (reverse) from >= to else from <= to) {
             memory.enterScope()
-            memory.declareVar(named, Entity(named, false, from, C_INT))
+            memory.declareVar(named, Entity(named, false, from, E_INT))
             val result = eval(itr.body)
             memory.leaveScope()
             if (result is Entity) {
@@ -492,8 +504,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
         val type = getType(entity)
         return when (type) {
-            C_STRING -> (entity as String)[index]
-            C_ARRAY -> (entity as Array<*>)[index]!!
+            E_STRING -> (entity as String)[index]
+            E_ARRAY -> (entity as Array<*>)[index]!!
             else -> throw RuntimeException("Unknown element access of $entity")
         }
     }

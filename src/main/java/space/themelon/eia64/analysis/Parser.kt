@@ -135,7 +135,7 @@ class Parser {
         val returnType = if (isNext(Type.COLON)) {
             skip()
             expectFlag(Type.CLASS).type
-        } else Type.C_ANY
+        } else Type.E_ANY
         val body = if (isNext(Type.ASSIGNMENT)) {
             skip()
             parseNext()
@@ -272,8 +272,8 @@ class Parser {
     private fun parseValue(token: Token): Expression {
         return when (token.type) {
             Type.E_TRUE, Type.E_FALSE -> Expression.Literal(token.type == Type.E_TRUE)
-            Type.C_INT -> Expression.Literal(token.optionalData.toString().toInt())
-            Type.C_STRING, Type.C_CHAR -> Expression.Literal(token.optionalData!!)
+            Type.E_INT -> Expression.Literal(token.optionalData.toString().toInt())
+            Type.E_STRING, Type.E_CHAR -> Expression.Literal(token.optionalData!!)
             Type.ALPHA -> {
                 val name = readAlpha(token)
                 val resolved = nameResolver.resolveVr(name)

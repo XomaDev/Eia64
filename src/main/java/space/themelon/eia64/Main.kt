@@ -5,7 +5,7 @@ import space.themelon.eia64.runtime.Executor
 object Main {
     @JvmStatic
     fun main(args: Array<String>) {
-        val source = javaClass.classLoader.getResource("looptesting.eia").file
+        val source = javaClass.classLoader.getResource("wraptest.eia").file
 
         val executor = Executor()
         val startTime = System.nanoTime()
