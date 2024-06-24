@@ -26,6 +26,9 @@ class Executor {
     }
 
     fun loadExternal(sourceFile: String, name: String) {
+        // TODO:
+        //  we have to be careful about circular dependency loading, we'll have to check if it's
+        //  already loaded or not
         Evaluator(this).apply {
             externalEvaluator[name] = this
             eval(parser.parse(getTokens(sourceFile)))

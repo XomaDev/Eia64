@@ -1,3 +1,5 @@
+stdlib(array)
+
 fn indexOfChar(self: String, letter: Char) {
   let size = len(self)
   if (size == 0) return -1
@@ -23,6 +25,8 @@ fn indexOf(self: String, piece: String) {
   }
   return -1
 }
+
+fn contains(self: String, piece: String) = indexOf(self, piece) != -1
 
 fn startsWith(self: String, prefix: String): Bool {
   let selfSize = len(self)
@@ -50,4 +54,26 @@ fn endsWith(self: String, suffix: String): Bool {
     if (suffix[i] != self[selfLastIndex--])
       return false
   return true
+}
+
+let UPPER_CASE = ~{ 'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M'
+                    'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' }
+
+let LOWER_CASE = ~{ 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm'
+                    'n' 'o' 'p' 'q' 'r' 's' 't' 'u' 'v' 'w' 'x' 'y' 'z' }
+
+fn invert(self: String, target: Array, replacement: Array) {
+  let size = len(self)
+  for (var i = 0, i < size, i++) {
+    let index = target.indexOf(self[i])
+    if (index != -1)
+      self[i] = replacement[index]
+  }
+  println("done!")
+}
+
+fn uppercase(self: String) {
+  let copy = self + ""
+  invert(copy, LOWER_CASE, UPPER_CASE)
+  return copy
 }

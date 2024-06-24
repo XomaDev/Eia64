@@ -2,5 +2,7 @@ stdlib(string)
 
 println("hello".indexOfChar('l') == 2)
 println("hello".indexOf("llo") == 2)
+println("melon".contains("lon"))
 println("hello".startsWith("hel"))
 println("hello".endsWith("llo"))
+println("hello".uppercase() == "HELLO")

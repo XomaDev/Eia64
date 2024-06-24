@@ -1,10 +1,7 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.primitives.EBool
-import space.themelon.eia64.primitives.EChar
-import space.themelon.eia64.primitives.EInt
-import space.themelon.eia64.primitives.EString
+import space.themelon.eia64.primitives.*
 import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
 
@@ -43,8 +40,8 @@ open class Entity(
             is EString -> E_STRING
             is EBool -> E_BOOL
             is EChar -> E_CHAR
+            is EArray -> E_ARRAY
             is Expression -> E_UNIT
-            is Array<*> -> E_ARRAY
             else -> throw RuntimeException("Unknown type of value $value")
         }
     }

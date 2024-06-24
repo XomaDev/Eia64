@@ -47,5 +47,9 @@ class NameResolver {
     }
 
     fun resolveFn(name: String) = currentScope.resolveFn(name, 0)
-    fun resolveVr(name: String) = currentScope.resolveVr(name)
+    fun resolveVr(name: String): Int {
+        val index = currentScope.resolveVr(name)
+        println("Resolved $name: $index")
+        return index
+    }
 }

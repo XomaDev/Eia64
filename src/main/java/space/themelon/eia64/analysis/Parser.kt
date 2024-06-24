@@ -214,7 +214,10 @@ class Parser {
                 expectType(Type.OPEN_CURVE)
                 val arguments = parseArguments()
                 expectType(Type.CLOSE_CURVE)
-                left = Expression.ClassMethodCall(left, method, arguments)
+                var static = false
+                if (left is Expression.Alpha)
+                    static = nameResolver.classes.contains(left.value)
+                left = Expression.ClassMethodCall(static, left, method, arguments)
             }
         }
         if (!isEOF() && peek().hasFlag(Type.POSSIBLE_RIGHT_UNARY))

@@ -6,6 +6,8 @@ object Main {
     @JvmStatic
     fun main(args: Array<String>) {
         val source = "/home/kumaraswamy/Documents/Eia64/stdlibtest/stringtest.eia"
+        // lowercase(), uppercase(), replace()
+        // split()
 
         val executor = Executor()
         val startTime = System.nanoTime()

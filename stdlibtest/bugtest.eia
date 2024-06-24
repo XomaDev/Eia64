@@ -1,0 +1,5 @@
+stdlib(string)
+
+fn invert(miw: String) = "e".indexOf(miw)
+
+invert("hello")

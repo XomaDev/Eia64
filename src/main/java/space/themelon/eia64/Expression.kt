@@ -118,6 +118,7 @@ abstract class Expression {
     }
 
     data class ClassMethodCall(
+        val static: Boolean,
         val obj: Expression,
         val method: String,
         val arguments: List<Expression>
