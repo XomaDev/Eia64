@@ -69,11 +69,16 @@ fn invert(self: String, target: Array, replacement: Array) {
     if (index != -1)
       self[i] = replacement[index]
   }
-  println("done!")
 }
 
 fn uppercase(self: String) {
   let copy = self + ""
   invert(copy, LOWER_CASE, UPPER_CASE)
+  return copy
+}
+
+fn lowercase(self: String) {
+  let copy = self + ""
+  invert(copy, UPPER_CASE, LOWER_CASE)
   return copy
 }

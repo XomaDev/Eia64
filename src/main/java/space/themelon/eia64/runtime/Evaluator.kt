@@ -316,23 +316,31 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     override fun classMethodCall(call: Expression.ClassMethodCall): Any {
         val obj = call.obj
         val methodName = call.method
-        val args = call.arguments
+        val args: Array<Any>
         val className: String
 
         // we may need to do a recursive alpha parse
         if (call.static) {
             // static invocation of an included class
             className = (obj as Expression.Alpha).value
+            args = evaluateArgs(call.arguments)
         } else {
            val evaluatedObj = unboxEval(obj)
            if (evaluatedObj !is Element)
                throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
            className = evaluatedObj.stdlibName()
            call.arguments as ArrayList
-           call.arguments.add(0, Expression.GenericLiteral(evaluatedObj))
+            val evaluatedArgs = arrayOfNulls<Any>(call.arguments.size + 1)
+            for ((index, expression) in call.arguments.withIndex())
+                evaluatedArgs[index + 1] = unboxEval(expression)
+            // NOTE: we never should directly modify the original expression list
+            evaluatedArgs[0] = evaluatedObj
+            @Suppress("UNCHECKED_CAST")
+            evaluatedArgs as Array<Any>
+            args = evaluatedArgs
         }
         val executor = executor.getExternalExecutor(className) ?: throw RuntimeException("Could not find class (for) $className")
-        return executor.dynamicFnCall(methodName, evaluateArgs(args))
+        return executor.dynamicFnCall(methodName, args)
     }
 
     private fun evaluateArgs(args: List<Expression>): Array<Any> {

@@ -45,7 +45,7 @@ enum class Type {
     ITR, TO, IN, BY,
     FOR, UNTIL,
     FUN,
-    INCLUDE, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT,
+    INCLUDE, COPY, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT,
     STDLIB,
 
     RETURN, BREAK, CONTINUE,
@@ -119,6 +119,7 @@ enum class Type {
                 it["type"] = Token(TYPE, arrayOf(NATIVE_CALL))
 
                 it["include"] = Token(INCLUDE, arrayOf(NATIVE_CALL))
+                it["copy"] = Token(COPY, arrayOf(NATIVE_CALL))
                 it["print"] = Token(PRINT, arrayOf(NATIVE_CALL))
                 it["println"] = Token(PRINTLN, arrayOf(NATIVE_CALL))
                 it["read"] = Token(READ, arrayOf(NATIVE_CALL))

@@ -1,5 +1,10 @@
 stdlib(string)
 
-fn invert(miw: String) = "e".indexOf(miw)
+fn kat(self: String, target: String) {
+  for (var i = 0, i < 2, i++) {
+    println("iteration set: " + self[i])
+    let index = target.indexOfChar(self[i])
+  }
+}
 
-invert("hello")
+kat("ea", "x")
