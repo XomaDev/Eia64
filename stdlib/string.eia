@@ -1,9 +1,53 @@
-fn indexOf(self: String, letter: Char) {
+fn indexOfChar(self: String, letter: Char) {
   let size = len(self)
-  for (var i = 0, i < size, i++) {
+  if (size == 0) return -1
+  for (var i = 0, i < size, i++)
     if (self[i] == letter) return i
+  return -1
+}
+
+fn indexOf(self: String, piece: String) {
+  let selfSize = len(self)
+  let pieceSize = len(piece)
+
+  if (pieceSize > selfSize) return false
+
+  for (var i = 0, i < selfSize, i++) {
+    if (self[i] == piece[0]) {
+      var matched = true
+      for (var j = 0, j < pieceSize, j++)
+        if (self[j + i] != piece[j])
+          matched = false
+      if (matched) return i
+    }
   }
   return -1
 }
 
-println(indexOf("hello", 'e'))
+fn startsWith(self: String, prefix: String): Bool {
+  let selfSize = len(self)
+  let prefixSize = len(prefix)
+
+  if (prefixSize > selfSize) return false
+
+  for (var i = 0, i < prefixSize, i++)
+    if (self[i] != prefix[i])
+      return false
+  return true
+}
+
+fn endsWith(self: String, suffix: String): Bool {
+  let selfSize = len(self)
+  let suffixSize = len(suffix)
+
+  if (suffixSize > selfSize)
+    return false
+
+  let selfLastIndex = selfSize - 1
+  let suffixLastIndex = suffixSize - 1
+
+  for (var i = suffixLastIndex, i != 0, i--)
+    if (suffix[i] != self[selfLastIndex--])
+      return false
+  return true
+}

@@ -56,9 +56,7 @@ enum class Type {
     NONE,
     ;
 
-    override fun toString(): String {
-        return name.lowercase(Locale.getDefault())
-    }
+    override fun toString() = name.lowercase(Locale.getDefault())
 
     companion object {
         val SYMBOLS = HashMap<String, Token>()

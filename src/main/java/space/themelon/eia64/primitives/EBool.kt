@@ -11,6 +11,7 @@ class EBool(initialValue: Boolean): Element {
     }
 
     override fun get() = boolValue
+    override fun stdlibName() = "bool"
 
     fun and(other: EBool) = EBool(boolValue && other.boolValue)
     fun or(other: EBool) = EBool(boolValue || other.boolValue)

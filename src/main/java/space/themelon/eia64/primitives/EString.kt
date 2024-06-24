@@ -25,6 +25,7 @@ class EString(
     }
 
     override fun get(): String = string
+    override fun stdlibName() = "string"
 
     override fun toString() = string
 

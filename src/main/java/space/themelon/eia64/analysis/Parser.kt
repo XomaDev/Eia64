@@ -201,11 +201,21 @@ class Parser {
         var left = parseElement()
         // a[x][y]
         // {{a, x}, y}
-        while (!isEOF() && peek().type == Type.OPEN_SQUARE) {
+        while (!isEOF()) {
+            val nextOp = peek()
+            if (nextOp.type != Type.DOT && nextOp.type != Type.OPEN_SQUARE) break
             skip()
-            val expr = parseNext()
-            expectType(Type.CLOSE_SQUARE)
-            left = Expression.ElementAccess(left, expr)
+            if (nextOp.type == Type.OPEN_SQUARE) {
+                val expr = parseNext()
+                expectType(Type.CLOSE_SQUARE)
+                left = Expression.ElementAccess(left, expr)
+            } else {
+                val method = readAlpha()
+                expectType(Type.OPEN_CURVE)
+                val arguments = parseArguments()
+                expectType(Type.CLOSE_CURVE)
+                left = Expression.ClassMethodCall(left, method, arguments)
+            }
         }
         if (!isEOF() && peek().hasFlag(Type.POSSIBLE_RIGHT_UNARY))
             left = Expression.UnaryOperation(Expression.Operator(next().type), left, false)
@@ -277,19 +287,8 @@ class Parser {
             Type.E_CHAR -> Expression.CharLiteral(token.optionalData as Char)
             Type.ALPHA -> {
                 val name = readAlpha(token)
-                val resolved = nameResolver.resolveVr(name)
-                if (resolved.first)
-                    Expression.Alpha(resolved.second, name)
-                else {
-                    expectType(Type.DOT)
-                    val method = readAlpha()
-                    expectType(Type.OPEN_CURVE)
-                    val arguments = parseArguments()
-                    expectType(Type.CLOSE_CURVE)
-                    Expression.ClassMethodCall(name, method, arguments)
-                }
+                Expression.Alpha(nameResolver.resolveVr(name), name)
             }
-
             Type.OPEN_CURVE -> {
                 val expr = parseNext()
                 expectType(Type.CLOSE_CURVE)

@@ -27,6 +27,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
     private val memory = Memory()
 
+    override fun genericLiteral(literal: Expression.GenericLiteral) = literal.value
     override fun intLiteral(intLiteral: Expression.IntLiteral) = EInt(intLiteral.value)
     override fun boolLiteral(boolLiteral: Expression.BoolLiteral) = EBool(boolLiteral.value)
     override fun stringLiteral(stringLiteral: Expression.StringLiteral) = EString(stringLiteral.value)
@@ -320,10 +321,26 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         args: List<Expression>
     ) = fnInvoke(memory.dynamicFnSearch(name), args)
 
-    override fun classMethodCall(classMethod: Expression.ClassMethodCall): Any {
-        val executor = executor.getExternalExecutor(classMethod.className)
-            ?: throw RuntimeException("Couldn't find external executor ${classMethod.className}")
-        return executor.dynamicFnCall(classMethod.method, classMethod.arguments)
+    override fun classMethodCall(call: Expression.ClassMethodCall): Any {
+        val obj = call.obj
+        val methodName = call.method
+        val args = call.arguments
+        val className: String
+
+        // we may need to do a recursive alpha parse
+        if (obj is Expression.Alpha) {
+            // static invocation of an included class
+            className = obj.value
+        } else {
+           val evaluatedObj = unboxEval(obj)
+           if (evaluatedObj !is Element)
+               throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
+           className = evaluatedObj.stdlibName()
+           call.arguments as ArrayList
+           call.arguments.add(0, Expression.GenericLiteral(evaluatedObj))
+        }
+        val executor = executor.getExternalExecutor(className) ?: throw RuntimeException("Could not find class $className")
+        return executor.dynamicFnCall(methodName, args)
     }
 
     private fun fnInvoke(fn: Expression.Function, callArgs: List<Expression>): Any {

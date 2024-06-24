@@ -11,6 +11,7 @@ class EChar(initialValue: Char): Element {
     }
 
     override fun get() = charValue
+    override fun stdlibName() = "char"
 
     override fun toString() = charValue.toString()
 

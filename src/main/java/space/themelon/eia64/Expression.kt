@@ -5,6 +5,7 @@ import space.themelon.eia64.syntax.Type
 abstract class Expression {
 
     interface Visitor<R> {
+        fun genericLiteral(literal: GenericLiteral): R
         fun intLiteral(intLiteral: IntLiteral): R
         fun boolLiteral(boolLiteral: BoolLiteral): R
         fun stringLiteral(stringLiteral: StringLiteral): R
@@ -19,7 +20,7 @@ abstract class Expression {
         fun expressions(list: ExpressionList): R
         fun nativeCall(call: NativeCall): R
         fun methodCall(call: MethodCall): R
-        fun classMethodCall(classMethod: ClassMethodCall): R
+        fun classMethodCall(call: ClassMethodCall): R
         fun until(until: Until): R
         fun itr(itr: Itr): R
         fun forEach(forEach: ForEach): R
@@ -31,6 +32,11 @@ abstract class Expression {
     }
 
     abstract fun <R> accept(v: Visitor<R>): R
+
+    // for internal evaluation use
+    data class GenericLiteral(val value: Any): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.genericLiteral(this)
+    }
 
     data class IntLiteral(val value: Int): Expression() {
         override fun <R> accept(v: Visitor<R>) = v.intLiteral(this)
@@ -112,7 +118,7 @@ abstract class Expression {
     }
 
     data class ClassMethodCall(
-        val className: String,
+        val obj: Expression,
         val method: String,
         val arguments: List<Expression>
     ): Expression() {

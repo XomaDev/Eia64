@@ -11,6 +11,7 @@ class EInt(initialValue: Int): Element, Comparable<EInt> {
     }
 
     override fun get() = intValue
+    override fun stdlibName() = "int"
 
     fun getAndIncrement() = intValue++
     fun incrementAndGet() = ++intValue

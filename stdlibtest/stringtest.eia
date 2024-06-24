@@ -1,0 +1,6 @@
+stdlib(string)
+
+println("hello".indexOfChar('l') == 2)
+println("hello".indexOf("llo") == 2)
+println("hello".startsWith("hel"))
+println("hello".endsWith("llo"))

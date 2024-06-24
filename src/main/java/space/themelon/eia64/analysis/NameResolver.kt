@@ -15,7 +15,7 @@ class NameResolver {
         fun resolveVr(name: String): Int {
             names.indexOf(name).let { if (it != -1) return it }
             if (before != null) return before.resolveVr(name)
-            return -1
+            throw RuntimeException("Unable to resolve variable name '$name'")
         }
     }
 
@@ -47,11 +47,5 @@ class NameResolver {
     }
 
     fun resolveFn(name: String) = currentScope.resolveFn(name, 0)
-
-    fun resolveVr(name: String): Pair<Boolean, Int> {
-        val index = currentScope.resolveVr(name)
-        if (index != -1) return Pair(true, index)
-        if (classes.contains(name)) return Pair(false, 0)
-        throw RuntimeException("Unable to resolve name '$name'")
-    }
+    fun resolveVr(name: String) = currentScope.resolveVr(name)
 }
