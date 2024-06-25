@@ -1,11 +1,16 @@
 package space.themelon.eia64
 
+import space.themelon.eia64.analysis.FnElement
 import space.themelon.eia64.syntax.Type
 
 abstract class Expression {
 
     interface Visitor<R> {
-        fun literal(literal: Literal): R
+        fun genericLiteral(literal: GenericLiteral): R
+        fun intLiteral(intLiteral: IntLiteral): R
+        fun boolLiteral(boolLiteral: BoolLiteral): R
+        fun stringLiteral(stringLiteral: StringLiteral): R
+        fun charLiteral(charLiteral: CharLiteral): R
         fun alpha(alpha: Alpha): R
         fun operator(operator: Operator): R
         fun importStdLib(stdLib: ImportStdLib): R
@@ -16,7 +21,7 @@ abstract class Expression {
         fun expressions(list: ExpressionList): R
         fun nativeCall(call: NativeCall): R
         fun methodCall(call: MethodCall): R
-        fun classMethodCall(classMethod: ClassMethodCall): R
+        fun classMethodCall(call: ClassMethodCall): R
         fun until(until: Until): R
         fun itr(itr: Itr): R
         fun forEach(forEach: ForEach): R
@@ -29,8 +34,25 @@ abstract class Expression {
 
     abstract fun <R> accept(v: Visitor<R>): R
 
-    data class Literal(val data: Any): Expression() {
-        override fun <R> accept(v: Visitor<R>) = v.literal(this)
+    // for internal evaluation use
+    data class GenericLiteral(val value: Any): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.genericLiteral(this)
+    }
+
+    data class IntLiteral(val value: Int): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.intLiteral(this)
+    }
+
+    data class BoolLiteral(val value: Boolean): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.boolLiteral(this)
+    }
+
+    data class StringLiteral(val value: String): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.stringLiteral(this)
+    }
+
+    data class CharLiteral(val value: Char): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.charLiteral(this)
     }
 
     data class Alpha(val index: Int, val value: String) : Expression() {
@@ -41,7 +63,7 @@ abstract class Expression {
         override fun <R> accept(v: Visitor<R>) = v.operator(this)
     }
 
-    open class ImportStdLib(val name: String): Expression() {
+    open class ImportStdLib(val names: List<String>): Expression() {
         override fun <R> accept(v: Visitor<R>): R = v.importStdLib(this)
     }
 
@@ -88,16 +110,15 @@ abstract class Expression {
     }
 
     data class MethodCall(
-        val atFrame: Int,
-        val mIndex: Int,
-        val name: String,
+        val fnExpr: FnElement,
         val arguments: List<Expression>,
     ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.methodCall(this)
     }
 
     data class ClassMethodCall(
-        val className: String,
+        val static: Boolean,
+        val obj: Expression,
         val method: String,
         val arguments: List<Expression>
     ): Expression() {

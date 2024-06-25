@@ -22,14 +22,16 @@ enum class Type {
     S_OPERATOR,
     COLON,
     ASSIGNMENT,
+    ADDITIVE_ASSIGNMENT, DEDUCTIVE_ASSIGNMENT,
+    MULTIPLICATIVE_ASSIGNMENT, DIVIDIVE_ASSIGNMENT,
     OPEN_CURVE, CLOSE_CURVE,
     OPEN_SQUARE, CLOSE_SQUARE,
     OPEN_CURLY, CLOSE_CURLY,
     COMMA,
 
     CLASS,
-    C_INT, C_BOOL, C_STRING, C_CHAR,
-    C_ARRAY, C_ANY, C_UNIT,
+    E_INT, E_BOOL, E_STRING, E_CHAR,
+    E_ARRAY, E_ANY, E_UNIT,
 
     VALUE,
     ALPHA,
@@ -43,7 +45,7 @@ enum class Type {
     ITR, TO, IN, BY,
     FOR, UNTIL,
     FUN,
-    INCLUDE, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT,
+    INCLUDE, COPY, ARRALLOC, TIME, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT,
     STDLIB,
 
     RETURN, BREAK, CONTINUE,
@@ -54,9 +56,7 @@ enum class Type {
     NONE,
     ;
 
-    override fun toString(): String {
-        return name.lowercase(Locale.getDefault())
-    }
+    override fun toString() = name.lowercase(Locale.getDefault())
 
     companion object {
         val SYMBOLS = HashMap<String, Token>()
@@ -86,6 +86,10 @@ enum class Type {
                 it["."] = Token(DOT)
 
                 it["="] = Token(ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
+                it["+="] = Token(ADDITIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
+                it["-="] = Token(DEDUCTIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
+                it["*="] = Token(MULTIPLICATIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
+                it["/="] = Token(DIVIDIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
                 it[":"] = Token(COLON)
 
                 it["["] = Token(OPEN_SQUARE, arrayOf(S_OPERATOR))
@@ -97,16 +101,16 @@ enum class Type {
                 it["}"] = Token(CLOSE_CURLY, arrayOf(S_OPERATOR))
                 it[","] = Token(COMMA, arrayOf(S_OPERATOR))
 
-                it["Int"] = Token(C_INT, arrayOf(CLASS))
-                it["Bool"] = Token(C_BOOL, arrayOf(CLASS))
-                it["String"] = Token(C_STRING, arrayOf(CLASS))
-                it["Char"] = Token(C_CHAR, arrayOf(CLASS))
-                it["Any"] = Token(C_ANY, arrayOf(CLASS))
-                it["Array"] = Token(C_ARRAY, arrayOf(CLASS))
-                it["Unit"] = Token(C_UNIT, arrayOf(CLASS))
+                it["Int"] = Token(E_INT, arrayOf(CLASS))
+                it["Bool"] = Token(E_BOOL, arrayOf(CLASS))
+                it["String"] = Token(E_STRING, arrayOf(CLASS))
+                it["Char"] = Token(E_CHAR, arrayOf(CLASS))
+                it["Any"] = Token(E_ANY, arrayOf(CLASS))
+                it["Array"] = Token(E_ARRAY, arrayOf(CLASS))
+                it["Unit"] = Token(E_UNIT, arrayOf(CLASS))
 
-                it["true"] = Token(E_TRUE, arrayOf(VALUE, C_BOOL))
-                it["false"] = Token(E_FALSE, arrayOf(VALUE, C_BOOL))
+                it["true"] = Token(E_TRUE, arrayOf(VALUE, E_BOOL))
+                it["false"] = Token(E_FALSE, arrayOf(VALUE, E_BOOL))
 
                 it["bool"] = Token(BOOL_CAST, arrayOf(NATIVE_CALL))
                 it["int"] = Token(INT_CAST, arrayOf(NATIVE_CALL))
@@ -115,6 +119,9 @@ enum class Type {
                 it["type"] = Token(TYPE, arrayOf(NATIVE_CALL))
 
                 it["include"] = Token(INCLUDE, arrayOf(NATIVE_CALL))
+                it["copy"] = Token(COPY, arrayOf(NATIVE_CALL))
+                it["arralloc"] = Token(ARRALLOC, arrayOf(NATIVE_CALL))
+                it["time"] = Token(TIME, arrayOf(NATIVE_CALL))
                 it["print"] = Token(PRINT, arrayOf(NATIVE_CALL))
                 it["println"] = Token(PRINTLN, arrayOf(NATIVE_CALL))
                 it["read"] = Token(READ, arrayOf(NATIVE_CALL))

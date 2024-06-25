@@ -63,7 +63,7 @@ class SyntaxAnalysis {
         val char = next()
         if (next() != '\'')
             throw RuntimeException("Invalid syntax while using single quotes")
-        tokens.add(Token(Type.C_CHAR, arrayOf(Type.VALUE), char))
+        tokens.add(Token(Type.E_CHAR, arrayOf(Type.VALUE), char))
     }
 
     private fun parseString() {
@@ -75,7 +75,7 @@ class SyntaxAnalysis {
             }
             content.append(c)
         }
-        tokens.add(Token(Type.C_STRING, arrayOf(Type.VALUE), content.toString()))
+        tokens.add(Token(Type.E_STRING, arrayOf(Type.VALUE), content.toString()))
     }
 
     private fun parseAlpha() {
@@ -105,7 +105,7 @@ class SyntaxAnalysis {
                 skip()
             } else break
         }
-        tokens.add(Token(Type.C_INT, arrayOf(Type.VALUE), content.toString()))
+        tokens.add(Token(Type.E_INT, arrayOf(Type.VALUE), content.toString().toInt()))
     }
 
     private fun isNumeric(c: Char) = c in '0'..'9'

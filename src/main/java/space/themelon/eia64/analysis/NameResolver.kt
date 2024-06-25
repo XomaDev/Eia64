@@ -1,15 +1,18 @@
 package space.themelon.eia64.analysis
 
 class NameResolver {
-
-    class Scope(private val depth: Int, val before: Scope? = null) {
+    class Scope(val before: Scope? = null) {
         val names = ArrayList<String>()
         val functions = ArrayList<String>()
 
-        fun resolveFn(name: String, travelDepth: Int): Pair<Int, Int> {
-            functions.indexOf(name).let { if (it != -1) return Pair(depth, it) }
-            if (before != null) return before.resolveFn(name, travelDepth + 1)
-            throw RuntimeException("Unable to resolve name '$name'")
+        val funcObjs = HashMap<String, FnElement>()
+
+        fun resolveFn(name: String, travelDepth: Int): FnElement {
+            functions.indexOf(name).let {
+                if (it != -1) return funcObjs[name]!!
+                if (before != null) return before.resolveFn(name, travelDepth + 1)
+                throw RuntimeException("Unable to resolve name '$name'")
+            }
         }
 
         fun resolveVr(name: String): Int {
@@ -21,11 +24,10 @@ class NameResolver {
 
     val classes = ArrayList<String>()
 
-    private var depth = 0
-    private var currentScope = Scope(depth++)
+    private var currentScope = Scope()
 
     fun enterScope() {
-        val newScope = Scope(depth++, currentScope)
+        val newScope = Scope( currentScope)
         currentScope = newScope
     }
 
@@ -35,23 +37,25 @@ class NameResolver {
                 throw RuntimeException("Reached super scope")
             currentScope = it
         }
-        depth--
     }
 
-    fun defineFn(name: String) {
+    fun defineFn(name: String, fnExpression: FnElement) {
+        if (name in currentScope.functions)
+            throw RuntimeException("Function $name is already defined in the current scope")
         currentScope.functions += name
+        currentScope.funcObjs[name] = fnExpression
     }
 
     fun defineVr(name: String) {
+        if (name in currentScope.names)
+            throw RuntimeException("Variable $name is already defined in the current scope")
         currentScope.names += name
     }
 
     fun resolveFn(name: String) = currentScope.resolveFn(name, 0)
 
-    fun resolveVr(name: String): Pair<Boolean, Int> {
+    fun resolveVr(name: String): Int {
         val index = currentScope.resolveVr(name)
-        if (index != -1) return Pair(true, index)
-        if (classes.contains(name)) return Pair(false, 0)
-        throw RuntimeException("Unable to resolve name '$name'")
+        return index
     }
 }

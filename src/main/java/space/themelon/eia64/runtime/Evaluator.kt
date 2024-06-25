@@ -1,6 +1,7 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
+import space.themelon.eia64.primitives.*
 import space.themelon.eia64.runtime.Entity.Companion.getType
 import space.themelon.eia64.runtime.Entity.Companion.unbox
 import space.themelon.eia64.syntax.Type
@@ -10,30 +11,37 @@ import kotlin.collections.ArrayList
 
 class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
+    private val startupTime = System.currentTimeMillis()
+
     fun eval(expr: Expression) = expr.accept(this)
     private fun unboxEval(expr: Expression) = unbox(eval(expr))
 
     private fun safeUnbox(expr: Expression, expectedType: Type, operation: String): Any {
-        val result = eval(expr)
+        val result = unboxEval(expr)
         val gotType = getType(result)
         if (gotType != expectedType)
             throw RuntimeException("Expected type $expectedType for [$operation] but got $gotType")
-        return unbox(result)
+        return result
     }
 
-    private fun booleanExpr(expr: Expression, operation: String) = safeUnbox(expr, C_BOOL, operation) as Boolean
-    private fun intExpr(expr: Expression, operation: String) = safeUnbox(expr, C_INT, operation) as Int
+    private fun booleanExpr(expr: Expression, operation: String) = safeUnbox(expr, E_BOOL, operation) as EBool
+    private fun intExpr(expr: Expression, operation: String) = safeUnbox(expr, E_INT, operation) as EInt
 
     private val memory = Memory()
 
-    override fun literal(literal: Expression.Literal) = literal.data
+    override fun genericLiteral(literal: Expression.GenericLiteral) = literal.value
+    override fun intLiteral(intLiteral: Expression.IntLiteral) = EInt(intLiteral.value)
+    override fun boolLiteral(boolLiteral: Expression.BoolLiteral) = EBool(boolLiteral.value)
+    override fun stringLiteral(stringLiteral: Expression.StringLiteral) = EString(stringLiteral.value)
+    override fun charLiteral(charLiteral: Expression.CharLiteral) = EChar(charLiteral.value)
+
     override fun alpha(alpha: Expression.Alpha) = memory.getVar(alpha.index, alpha.value)
     override fun operator(operator: Expression.Operator) = operator.value
 
     private fun define(mutable: Boolean, def: Expression.DefinitionType, value: Any) {
         // make sure variable type = assigned type
         val valueType = getType(value)
-        if (def.type != C_ANY && def.type != valueType)
+        if (def.type != E_ANY && def.type != valueType)
             throw RuntimeException("Variable ${def.name} has type ${def.type}, but got value type of $valueType")
         memory.declareVar(def.name, Entity(def.name, mutable, value, valueType))
     }
@@ -43,84 +51,77 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun variable(variable: Expression.ExplicitVariable): Any {
-        val value = eval(variable.expr)
+        val value = unboxEval(variable.expr)
         define(variable.mutable, variable.definition, value)
         return value
     }
 
     override fun autoVariable(autoVariable: Expression.AutoVariable): Any {
-        val value = eval(autoVariable.expr)
+        val value = unboxEval(autoVariable.expr)
         memory.declareVar(autoVariable.name, Entity(autoVariable.name, true, unbox(value), getType(value)))
         return value
     }
 
-    override fun unaryOperation(expr: Expression.UnaryOperation) = when (val type = operator(expr.operator)) {
-        NOT -> !booleanExpr(expr.expr, "! Not")
-        NEGATE -> Math.negateExact(intExpr(expr.expr, "- Negate"))
+    override fun unaryOperation(expr: Expression.UnaryOperation): Any = when (val type = operator(expr.operator)) {
+        NOT -> EBool(!(booleanExpr(expr.expr, "! Not").get()))
+        NEGATE -> EInt(Math.negateExact(intExpr(expr.expr, "- Negate").get()))
         INCREMENT, DECREMENT -> {
-            if (expr.expr !is Expression.Alpha)
-                throw RuntimeException("Expected variable type for ${type.name} operation")
-            val name = expr.expr.value
-            val scope = expr.expr.index
-            var curr = intExpr(expr.expr, "++ Increment")
-            if (expr.left) {
-                update(scope, name, if (type == INCREMENT) ++curr else --curr)
-                curr
+            val eInt = intExpr(expr.expr, "++ Increment")
+            EInt(if (expr.left) {
+                if (type == INCREMENT) eInt.incrementAndGet()
+                else eInt.decrementAndGet()
             } else {
-                update(scope, name, if (type == INCREMENT) curr + 1 else curr - 1)
-                curr
-            }
+                if (type == INCREMENT) eInt.getAndIncrement()
+                else eInt.getAndDecrement()
+            })
         }
         KITA -> {
             var operand: Any = expr.expr
             if (operand !is Expression.ExpressionList)
-                operand = unbox(eval(operand as Expression))
+                operand = unboxEval(operand as Expression)
             if (operand !is Expression.ExpressionList)
                 throw RuntimeException("Expected body operand for kita, but got $operand")
             val evaluated = arrayOfNulls<Any>(operand.size)
             for ((index, aExpr) in operand.expressions.withIndex())
-                evaluated[index] = unbox(eval(aExpr))
-            evaluated
+                evaluated[index] = unboxEval(aExpr)
+            evaluated as Array<Any>
+            EArray(evaluated)
         }
         else -> throw RuntimeException("Unknown unary operator $type")
     }
 
     override fun binaryOperation(expr: Expression.BinaryOperation) = when (val type = operator(expr.operator)) {
         PLUS -> {
-            val left = eval(expr.left)
-            val right = eval(expr.right)
+            val left = unboxEval(expr.left)
+            val right = unboxEval(expr.right)
 
-            if (getType(left) == C_INT && getType(right) == C_INT)
-                unbox(left) as Int + unbox(right) as Int
-            else unbox(left).toString() + unbox(right).toString()
+            if (getType(left) == E_INT && getType(right) == E_INT)
+                left as EInt + right as EInt
+            else EString(left.toString() + right.toString())
         }
         NEGATE -> intExpr(expr.left, "- Subtract") - intExpr(expr.right, "- Subtract")
         ASTERISK -> intExpr(expr.left, "* Multiply") * intExpr(expr.right, "* Multiply")
         SLASH -> intExpr(expr.left, "/ Divide") / intExpr(expr.right, "/ Divide")
         EQUALS, NOT_EQUALS -> {
-            var left = eval(expr.left)
-            var right = eval(expr.right)
-            if (getType(left) != getType(right)) {
+            val left = unboxEval(expr.left)
+            val right = unboxEval(expr.right)
+            EBool(if (getType(left) != getType(right)) {
                 type != EQUALS
-            } else {
-                left = unbox(left)
-                right = unbox(right)
-                when (left) {
-                    is Int, is String, is Char -> if (type == EQUALS) left == right else left != right
-                    else -> false
-                }
-            }
+            } else when (left) {
+                is EInt, is EString, is EChar, is EBool, is EArray -> if (type == EQUALS) left == right else left != right
+                else -> false
+            })
         }
-        LOGICAL_AND -> booleanExpr(expr.left, "&& Logical And") && booleanExpr(expr.right, "&& Logical And")
-        LOGICAL_OR -> booleanExpr(expr.left, "|| Logical Or") || booleanExpr(expr.right, "|| Logical Or")
-        GREATER_THAN -> intExpr(expr.left, "> GreaterThan") > intExpr(expr.right, "> GreaterThan")
+        LOGICAL_AND -> booleanExpr(expr.left, "&& Logical And").and(booleanExpr(expr.right, "&& Logical And"))
+        LOGICAL_OR -> booleanExpr(expr.left, "|| Logical Or").or(booleanExpr(expr.right, "|| Logical Or"))
+        GREATER_THAN -> EBool(intExpr(expr.left, "> GreaterThan") > intExpr(expr.right, "> GreaterThan"))
         LESSER_THAN -> {
             val left = intExpr(expr.left, "< LesserThan")
             val right = intExpr(expr.right, "< LesserThan")
-            left < right
+            EBool(left < right)
         }
-        GREATER_THAN_EQUALS -> intExpr(expr.left, ">= GreaterThanEquals") >= intExpr(expr.right, ">= GreaterThanEquals")
-        LESSER_THAN_EQUALS -> intExpr(expr.left, "<= LesserThan") <= intExpr(expr.right, "<= LesserThan")
+        GREATER_THAN_EQUALS -> EBool(intExpr(expr.left, ">= GreaterThanEquals") >= intExpr(expr.right, ">= GreaterThanEquals"))
+        LESSER_THAN_EQUALS -> EBool(intExpr(expr.left, "<= LesserThan") <= intExpr(expr.right, "<= LesserThan"))
         ASSIGNMENT -> {
             val toUpdate = expr.left
             val value = unboxEval(expr.right)
@@ -128,14 +129,14 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 is Expression.Alpha -> update(toUpdate.index, toUpdate.value, value)
                 is Expression.ElementAccess -> {
                     val array = unboxEval(toUpdate.expr)
-                    val index = intExpr(toUpdate.index, "[] ArraySet")
+                    val index = intExpr(toUpdate.index, "[] ArraySet").get()
 
                     @Suppress("UNCHECKED_CAST")
                     when (getType(array)) {
-                        C_ARRAY -> (array as Array<Any>)[index] = value
-                        C_STRING -> {
-                            if (value !is Char) throw RuntimeException("string[index] requires a Char")
-                            (array as String).replaceRange(index, index, value.toString())
+                        E_ARRAY -> (array as ArrayOperable<Any>).setAt(index, value)
+                        E_STRING -> {
+                            if (value !is EChar) throw RuntimeException("string[index] requires a Char")
+                            (array as EString).setAt(index, value)
                         }
                         else -> throw RuntimeException("Unknown element access of $array")
                     }
@@ -144,8 +145,41 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             }
             value
         }
-        BITWISE_AND -> intExpr(expr.left, "& BitwiseAnd") and intExpr(expr.right, "& BitwiseAnd")
-        BITWISE_OR -> intExpr(expr.left, "| BitwiseOr") or intExpr(expr.right, "| BitwiseOr")
+        ADDITIVE_ASSIGNMENT -> {
+            val element = unboxEval(expr.left)
+            when (element) {
+                is EString -> element.append(unboxEval(expr.right))
+                is EInt -> element += intExpr(expr.right, "+=")
+                else -> throw RuntimeException("Cannot apply += operator on element $element")
+            }
+            element
+        }
+        DEDUCTIVE_ASSIGNMENT -> {
+            val element = unboxEval(expr.left)
+            when (element) {
+                is EInt -> element -= intExpr(expr.right, "-=")
+                else -> throw RuntimeException("Cannot apply -= operator on element $element")
+            }
+            element
+        }
+        MULTIPLICATIVE_ASSIGNMENT -> {
+            val element = unboxEval(expr.left)
+            when (element) {
+                is EInt -> element *= intExpr(expr.right, "*=")
+                else -> throw RuntimeException("Cannot apply *= operator on element $element")
+            }
+            element
+        }
+        DIVIDIVE_ASSIGNMENT -> {
+            val element = unboxEval(expr.left)
+            when (element) {
+                is EInt -> element /= intExpr(expr.right, "/=")
+                else -> throw RuntimeException("Cannot apply /= operator on element $element")
+            }
+            element
+        }
+        BITWISE_AND -> intExpr(expr.left, "& BitwiseAnd").and(intExpr(expr.right, "& BitwiseAnd"))
+        BITWISE_OR -> intExpr(expr.left, "| BitwiseOr").or(intExpr(expr.right, "| BitwiseOr"))
         else -> throw RuntimeException("Unknown binary operator $type")
     }
 
@@ -168,8 +202,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun importStdLib(stdLib: Expression.ImportStdLib): Any {
-        executor.loadExternal("${Executor.STD_LIB}/${stdLib.name}.eia", stdLib.name)
-        return true
+        stdLib.names.forEach { executor.loadExternal("${Executor.STD_LIB}/$it.eia", it) }
+        return EBool(true)
     }
 
     override fun nativeCall(call: Expression.NativeCall): Any {
@@ -185,43 +219,42 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                     print(printable)
                 }
                 if (type == PRINTLN) print('\n')
-                return printCount
+                return EInt(printCount)
             }
 
             READ, READLN -> {
                 if (argsSize != 0) reportWrongArguments("read/readln", 0, argsSize)
-                return Scanner(System.`in`).let { if (type == READ) it.next() else it.nextLine() }
+                return EString(Scanner(System.`in`).let { if (type == READ) it.next() else it.nextLine() })
             }
 
             SLEEP -> {
                 if (argsSize != 1) reportWrongArguments("sleep", 1, argsSize)
-                val ms = intExpr(call.arguments.expressions[0], "sleep()")
-                Thread.sleep(ms.toLong())
-                return ms
+                val millis = intExpr(call.arguments.expressions[0], "sleep()")
+                Thread.sleep(millis.get().toLong())
+                return millis
             }
 
             LEN -> {
                 if (argsSize != 1) reportWrongArguments("len", 1, argsSize)
-                return when (val data = unboxEval(call.arguments.expressions[0])) {
-                    is String -> data.length
-                    is Array<*> -> data.size
+                return EInt(when (val data = unboxEval(call.arguments.expressions[0])) {
+                    is EString -> data.length
+                    is EArray -> data.size
                     is Expression.ExpressionList -> data.size
                     else -> throw RuntimeException("Unknown measurable data type $data")
-                }
+                })
             }
 
             FORMAT -> {
                 val exprs = call.arguments.expressions
-                val string = unbox(eval(exprs[0]))
-                if (getType(string) != C_STRING)
+                val string = unboxEval(exprs[0])
+                if (getType(string) != E_STRING)
                     throw RuntimeException("format() requires a string argument")
-                string as String
+                string as EString
                 if (exprs.size > 1) {
                     val values = arrayOfNulls<Any>(exprs.size - 1)
-                    for (i in 1 until exprs.size) {
-                        values[i - 1] = unbox(eval(exprs[i]))
-                    }
-                    return String.format(string, *values)
+                    for (i in 1 until exprs.size)
+                        values[i - 1] = unboxEval(exprs[i])
+                    return EString(String.format(string.get(), *values))
                 }
                 return string
             }
@@ -229,36 +262,40 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             INT_CAST -> {
                 if (argsSize != 1) reportWrongArguments("int", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
-                if (getType(obj) == C_INT) return obj
-                return Integer.parseInt(obj.toString())
+                if (getType(obj) == E_INT) return obj
+                return EInt(Integer.parseInt(obj.toString()))
             }
 
             STRING_CAST -> {
                 if (argsSize != 1) reportWrongArguments("str", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
-                if (getType(obj) == C_STRING) return obj
-                return obj.toString()
+                if (getType(obj) == E_STRING) return obj
+                return EString(obj.toString())
             }
 
             BOOL_CAST -> {
                 if (argsSize != 1) reportWrongArguments("bool", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
-                if (getType(obj) == C_INT) return obj
-                return if (obj == "true") true else if (obj == "false") false else throw RuntimeException("Cannot parse boolean value: $obj")
+                if (getType(obj) == E_BOOL) return obj
+                return EBool(when (obj) {
+                    "true" -> true
+                    "false" -> false
+                    else -> throw RuntimeException("Cannot parse boolean value: $obj")
+                })
             }
 
             TYPE -> {
                 if (argsSize != 1) reportWrongArguments("type", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
-                return getType(obj).toString()
+                return EString(getType(obj).toString())
             }
 
             INCLUDE -> {
                 if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
-                if (obj !is String)
+                if (obj !is EString)
                     throw RuntimeException("Expected a string argument for include() but got $obj")
-                val parts = obj.split(":")
+                val parts = obj.get().split(":")
                 if (parts.size != 2)
                     throw RuntimeException("include() received invalid argument: $obj")
                 var group = parts[0]
@@ -266,30 +303,75 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
                 val name = parts[1]
                 executor.loadExternal("$group/$name.eia", name)
-                return true
+                return EBool(true)
             }
+
+            COPY -> {
+                if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
+                val obj = unboxEval(call.arguments.expressions[0])
+                if (obj !is Primitive<*> || !obj.isCopyable())
+                    throw RuntimeException("Cannot apply copy() on object type ${getType(obj)} = $obj")
+                return obj.copy()!!
+            }
+
+            ARRALLOC -> {
+                if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
+                val size = intExpr(call.arguments.expressions[0], "arralloc")
+                return EArray(Array(size.get()) { 0 })
+            }
+
+            TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
     }
 
-    override fun methodCall(call: Expression.MethodCall): Any {
-        val fnName = call.name
-        val fn = memory.getFn(call.atFrame, call.mIndex, fnName)
-        return fnInvoke(fn, call.arguments)
+    override fun methodCall(call: Expression.MethodCall) = fnInvoke(call.fnExpr.fnExpression!!, evaluateArgs(call.arguments))
+
+    override fun classMethodCall(call: Expression.ClassMethodCall): Any {
+        val obj = call.obj
+        val methodName = call.method
+        val args: Array<Any>
+        val className: String
+
+        // we may need to do a recursive alpha parse
+        if (call.static) {
+            // static invocation of an included class
+            className = (obj as Expression.Alpha).value
+            args = evaluateArgs(call.arguments)
+        } else {
+           val evaluatedObj = unboxEval(obj)
+           if (evaluatedObj !is Primitive<*>)
+               throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
+           className = evaluatedObj.stdlibName()
+           call.arguments as ArrayList
+            val evaluatedArgs = arrayOfNulls<Any>(call.arguments.size + 1)
+            for ((index, expression) in call.arguments.withIndex())
+                evaluatedArgs[index + 1] = unboxEval(expression)
+            // NOTE: we never should directly modify the original expression list
+            evaluatedArgs[0] = evaluatedObj
+            @Suppress("UNCHECKED_CAST")
+            evaluatedArgs as Array<Any>
+            args = evaluatedArgs
+        }
+        val executor = executor.getExternalExecutor(className) ?: throw RuntimeException("Could not find class (for) $className")
+        return executor.dynamicFnCall(methodName, args)
+    }
+
+    private fun evaluateArgs(args: List<Expression>): Array<Any> {
+        val evaluatedArgs = arrayOfNulls<Any>(args.size)
+        for ((index, expression) in args.withIndex())
+            evaluatedArgs[index] = unboxEval(expression)
+        @Suppress("UNCHECKED_CAST")
+        evaluatedArgs as Array<Any>
+        return evaluatedArgs
     }
 
     private fun dynamicFnCall(
         name: String,
-        args: List<Expression>
+        args: Array<Any>
     ) = fnInvoke(memory.dynamicFnSearch(name), args)
 
-    override fun classMethodCall(classMethod: Expression.ClassMethodCall): Any {
-        val executor = executor.getExternalExecutor(classMethod.className)
-            ?: throw RuntimeException("Couldn't find external executor ${classMethod.className}")
-        return executor.dynamicFnCall(classMethod.method, classMethod.arguments)
-    }
-
-    private fun fnInvoke(fn: Expression.Function, callArgs: List<Expression>): Any {
+    private fun fnInvoke(fn: Expression.Function, callArgs: Array<Any>): Any {
         val fnName = fn.name
 
         val sigArgsSize = fn.arguments.size
@@ -305,10 +387,10 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             val definedParameter = parameters.next()
             val typeSignature = definedParameter.type
 
-            val callValue = unbox(eval(callExpressions.next()))
+            val callValue = callExpressions.next()
             val gotTypeSignature = getType(callValue)
 
-            if (typeSignature != gotTypeSignature)
+            if (typeSignature != E_ANY && typeSignature != gotTypeSignature)
                 throw RuntimeException("Expected type $typeSignature for arg '${definedParameter.name}' for function $fnName but got $gotTypeSignature")
             callValues.add(Pair(definedParameter, callValue))
         }
@@ -326,7 +408,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         val returnSignature = fn.returnType
         val gotReturnSignature = getType(result)
 
-        if (returnSignature != C_ANY && returnSignature != gotReturnSignature)
+        if (returnSignature != E_ANY && returnSignature != gotReturnSignature)
             throw RuntimeException("Expected return type $returnSignature for function $fnName but got $gotReturnSignature")
 
         return result
@@ -337,7 +419,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun until(until: Expression.Until): Any {
-        while (booleanExpr(until.expression, "Until Condition")) {
+        while (booleanExpr(until.expression, "Until Condition").get()) {
             memory.enterScope()
             val result = eval(until.body)
             memory.leaveScope()
@@ -354,21 +436,21 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun forEach(forEach: Expression.ForEach): Any {
-        val iterable = unbox(eval(forEach.entity))
+        val iterable = unboxEval(forEach.entity)
 
         var index = 0
         val size:Int
 
         val getNext: () -> Any
         when (iterable) {
-            is String -> {
+            is EString -> {
                 size = iterable.length
-                getNext = { iterable[index++] }
+                getNext = { iterable.getAt(index++) }
             }
 
-            is Array<*> -> {
+            is EArray -> {
                 size = iterable.size
-                getNext = { iterable[index++]!! }
+                getNext = { iterable.getAt(index++) }
             }
 
             else -> throw RuntimeException("Unknown non-iterable element $iterable")
@@ -399,34 +481,33 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         val named = itr.name
         var from = intExpr(itr.from, "Itr from")
         val to = intExpr(itr.to, "Itr to")
-        var by = if (itr.by == null) 1 else intExpr(itr.by, "Itr by")
+        val by = if (itr.by == null) EInt(1) else intExpr(itr.by, "Itr by")
 
         val reverse = from > to
-        if (reverse) by = -by
+        if (reverse) by.set(-by.get())
 
         while (if (reverse) from >= to else from <= to) {
             memory.enterScope()
-            memory.declareVar(named, Entity(named, false, from, C_INT))
+            memory.declareVar(named, Entity(named, false, from, E_INT))
             val result = eval(itr.body)
             memory.leaveScope()
             if (result is Entity) {
                 when (result.type) {
                     BREAK -> break
                     CONTINUE -> {
-                        from += by
+                        from = from + by
                         continue
                     }
                     RETURN -> return result
                     else -> { }
                 }
             }
-            from += by
+            from = from + by
         }
         return itr
     }
 
     override fun forLoop(forLoop: Expression.ForLoop): Any {
-        val state = memory.getStateCount()
         forLoop.initializer?.let { eval(it) }
 
         val conditional = forLoop.conditional
@@ -434,7 +515,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         var returnResult: Any = forLoop
         fun evalOperational() = forLoop.operational?.let { eval(it) }
 
-        while (if (conditional == null) true else booleanExpr(conditional, "ForLoop")) {
+        while (if (conditional == null) true else booleanExpr(conditional, "ForLoop").get()) {
             memory.enterScope()
             val result = eval(forLoop.body)
             memory.leaveScope()
@@ -454,14 +535,13 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             }
             evalOperational()
         }
-        memory.applyStateCount(state)
         return returnResult
     }
 
     override fun interruption(interruption: Expression.Interruption) = when (val type = eval(interruption.type)) {
         // wrap it as normal entity, this will be naturally unboxed when called unbox()
         RETURN -> {
-            val value = eval(interruption.expr!!)
+            val value = unboxEval(interruption.expr!!)
             Entity("FlowReturn", false, value, RETURN)
         }
         BREAK -> Entity("FlowBreak", false, 0, BREAK)
@@ -470,12 +550,11 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun ifFunction(ifExpr: Expression.If): Any {
-        val body = if (booleanExpr(ifExpr.condition, "If Condition")) ifExpr.thenBody else ifExpr.elseBody
+        val body = if (booleanExpr(ifExpr.condition, "If Condition").get()) ifExpr.thenBody else ifExpr.elseBody
         if (body != null) {
-            val newScope = body is Expression.ExpressionList
-            if (newScope) memory.enterScope()
+            memory.enterScope()
             val result = eval(body)
-            if (newScope) memory.leaveScope()
+            memory.leaveScope()
             return result
         }
         return ifExpr
@@ -487,14 +566,11 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun elementAccess(access: Expression.ElementAccess): Any {
-        val entity = unbox(eval(access.expr))
-        val index = intExpr(access.index, "[] ArrayAccess")
+        val entity = unboxEval(access.expr)
+        val index = intExpr(access.index, "[] ArrayAccess").get()
 
-        val type = getType(entity)
-        return when (type) {
-            C_STRING -> (entity as String)[index]
-            C_ARRAY -> (entity as Array<*>)[index]!!
-            else -> throw RuntimeException("Unknown element access of $entity")
-        }
+        if (entity !is ArrayOperable<*>)
+            throw RuntimeException("Unknown non-array operable element access of $entity")
+        return entity.getAt(index)!!
     }
 }
