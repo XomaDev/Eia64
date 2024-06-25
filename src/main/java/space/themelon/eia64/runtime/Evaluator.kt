@@ -8,6 +8,7 @@ import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.random.Random
 
 class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
@@ -315,12 +316,19 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             }
 
             ARRALLOC -> {
-                if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
-                val size = intExpr(call.arguments.expressions[0], "arralloc")
+                if (argsSize != 1) reportWrongArguments("arralloc", 1, argsSize)
+                val size = intExpr(call.arguments.expressions[0], "arralloc()")
                 return EArray(Array(size.get()) { 0 })
             }
 
             TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())
+
+            RAND -> {
+                if (argsSize != 2) reportWrongArguments("rand", 2, argsSize)
+                val from = intExpr(call.arguments.expressions[0], "rand()")
+                val to = intExpr(call.arguments.expressions[1], "rand()")
+                return EInt(Random.nextInt(from.get(), to.get()))
+            }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
     }

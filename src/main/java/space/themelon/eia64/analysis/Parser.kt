@@ -111,7 +111,7 @@ class Parser {
                     return Expression.ForEach(iName, entity, body)
                 }
             }
-            else -> throw RuntimeException("Unknown loop token ${token.type}")
+            else -> return token.error("Unknown loop type symbol")
         }
     }
 
@@ -293,11 +293,10 @@ class Parser {
         } else if (token.hasFlag(Type.NATIVE_CALL)) {
             expectType(Type.OPEN_CURVE)
             val arguments = parseArguments()
-            println("arguments = $arguments")
             expectType(Type.CLOSE_CURVE)
             return Expression.NativeCall(token.type, Expression.ExpressionList(arguments))
         }
-        throw RuntimeException("Unexpected token $token")
+        return token.error("Unexpected token")
     }
 
     private fun parseValue(token: Token): Expression {
@@ -312,7 +311,7 @@ class Parser {
                 if (vrIndex == -1) {
                     // could be a static invocation, search in dict
                     if (!nameResolver.classes.contains(name))
-                        throw RuntimeException("Could not resolve name $name")
+                        token.error<String>("Could not resolve name $name")
                     Expression.Alpha(-2, name)
                 } else {
                     Expression.Alpha(vrIndex, name)
@@ -324,7 +323,7 @@ class Parser {
                 expr
             }
 
-            else -> throw RuntimeException("Unknown token type: $token")
+            else -> token.error("Unknown token type: $token")
         }
     }
 
@@ -335,9 +334,9 @@ class Parser {
         expectType(Type.CLOSE_CURVE)
         val fnExpr = nameResolver.resolveFn(name)
         if (fnExpr.argsSize == -1)
-            throw RuntimeException("Fn Expr args size not yet set")
+            throw RuntimeException("[Internal] Function args size is not yet set")
         if (fnExpr.argsSize != arguments.size)
-            throw RuntimeException("Fn [$name] expected ${fnExpr.argsSize} but got ${arguments.size}")
+            token.error<String>("Fn [$name] expected ${fnExpr.argsSize} but got ${arguments.size}")
         return Expression.MethodCall(fnExpr, arguments)
     }
 
@@ -355,25 +354,25 @@ class Parser {
 
     private fun readAlpha(): String {
         val token = next()
-        if (token.type != Type.ALPHA) throw RuntimeException("Expected alpha token got $token")
+        if (token.type != Type.ALPHA) return token.error("Expected alpha token got $token")
         return token.optionalData as String
     }
 
     private fun readAlpha(token: Token) =
         if (token.type == Type.ALPHA) token.optionalData as String
-        else throw RuntimeException("Expected alpha token got $token")
+        else token.error("Expected alpha token got $token")
 
     private fun expectType(type: Type): Token {
         val next = next()
         if (next.type != type)
-            throw RuntimeException("Expected token type: $type, got token $next")
+            next.error<String>("Expected token type: $type, got token $next")
         return next
     }
 
     private fun expectFlag(flag: Type): Token {
         val next = next()
         if (!next.hasFlag(flag))
-            throw RuntimeException("Expected flag: $flag, got $next")
+            next.error<String>("Expected flag: $flag, got $next")
         return next
     }
 
@@ -387,7 +386,13 @@ class Parser {
         index++
     }
 
-    private fun next() = tokens[index++]
-    private fun peek() = tokens[index]
+    private fun next(): Token {
+        if (isEOF()) throw RuntimeException("Early EOF")
+        return tokens[index++]
+    }
+    private fun peek(): Token {
+        if (isEOF()) throw RuntimeException("Early EOF")
+        return tokens[index]
+    }
     private fun isEOF() = index == size
 }

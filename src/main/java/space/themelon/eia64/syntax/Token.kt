@@ -1,12 +1,20 @@
 package space.themelon.eia64.syntax
 
+import kotlin.jvm.Throws
+
 data class Token(
+    val lineCount: Int,
     val type: Type,
     val flags: Array<Type> = arrayOf(),
     val optionalData: Any? = null
 ) {
 
     fun hasFlag(type: Type): Boolean = flags.contains(type)
+
+    @Throws(RuntimeException::class)
+    fun <T> error(message: String): T {
+        throw RuntimeException("[line $lineCount] $message")
+    }
 
     override fun toString(): String {
         val flagsString = flags.contentToString()

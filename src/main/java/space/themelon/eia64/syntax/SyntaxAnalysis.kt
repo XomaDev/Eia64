@@ -10,6 +10,8 @@ class SyntaxAnalysis {
     private var iterIndex = 0
     private var sourceSize: Int = 0
 
+    private var lineCount = 0
+
     private lateinit var tokens: ArrayList<Token>
 
     fun tokenize(source: String): ArrayList<Token> {
@@ -30,7 +32,11 @@ class SyntaxAnalysis {
 
     private fun scanTokens() {
         val c = next()
-        if (c == ' ' || c == '\n') {
+        if (c == '\n') {
+            lineCount++
+            return
+        }
+        if (c == ' ') {
             return
         }
         if (c == '"') {
@@ -43,27 +49,27 @@ class SyntaxAnalysis {
         }
         back()
         var match = ""
-        var token: Token? = null
+        var token: StaticToken? = null
         while (!isEOF()) {
             token = SYMBOLS[match + peek()] ?: break
             match += next()
         }
         if (token != null) {
-            tokens.add(token)
+            tokens.add(token.normalToken(lineCount))
         } else {
             if (isAlpha(c)) {
                 parseAlpha()
             } else if (isNumeric(c)) {
                 parseNumeric()
-            } else throw RuntimeException("Unknown character '$c'")
+            } else reportError("Unknown character '$c'")
         }
     }
 
     private fun parseChar() {
         val char = next()
         if (next() != '\'')
-            throw RuntimeException("Invalid syntax while using single quotes")
-        tokens.add(Token(Type.E_CHAR, arrayOf(Type.VALUE), char))
+            reportError("Invalid syntax while using single quotes")
+        tokens.add(Token(lineCount, Type.E_CHAR, arrayOf(Type.VALUE), char))
     }
 
     private fun parseString() {
@@ -75,7 +81,7 @@ class SyntaxAnalysis {
             }
             content.append(c)
         }
-        tokens.add(Token(Type.E_STRING, arrayOf(Type.VALUE), content.toString()))
+        tokens.add(Token(lineCount, Type.E_STRING, arrayOf(Type.VALUE), content.toString()))
     }
 
     private fun parseAlpha() {
@@ -90,9 +96,9 @@ class SyntaxAnalysis {
         val value = content.toString()
         val token = SYMBOLS[value]
         if (token != null) {
-            tokens.add(token)
+            tokens.add(token.normalToken(lineCount,))
         } else {
-            tokens.add(Token(Type.ALPHA, arrayOf(Type.VALUE), value))
+            tokens.add(Token(lineCount, Type.ALPHA, arrayOf(Type.VALUE), value))
         }
     }
 
@@ -105,7 +111,11 @@ class SyntaxAnalysis {
                 skip()
             } else break
         }
-        tokens.add(Token(Type.E_INT, arrayOf(Type.VALUE), content.toString().toInt()))
+        tokens.add(Token(lineCount, Type.E_INT, arrayOf(Type.VALUE), content.toString().toInt()))
+    }
+
+    private fun reportError(message: String) {
+        throw RuntimeException("[line $lineCount] $message")
     }
 
     private fun isNumeric(c: Char) = c in '0'..'9'
