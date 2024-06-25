@@ -11,6 +11,8 @@ import kotlin.collections.ArrayList
 
 class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
+    private val startupTime = System.currentTimeMillis()
+
     fun eval(expr: Expression) = expr.accept(this)
     private fun unboxEval(expr: Expression) = unbox(eval(expr))
 
@@ -200,7 +202,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun importStdLib(stdLib: Expression.ImportStdLib): Any {
-        executor.loadExternal("${Executor.STD_LIB}/${stdLib.name}.eia", stdLib.name)
+        stdLib.names.forEach { executor.loadExternal("${Executor.STD_LIB}/$it.eia", it) }
         return EBool(true)
     }
 
@@ -317,6 +319,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 val size = intExpr(call.arguments.expressions[0], "arralloc")
                 return EArray(Array(size.get()) { 0 })
             }
+
+            TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
     }

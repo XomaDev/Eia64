@@ -46,10 +46,18 @@ class Parser {
 
     private fun importStdLib(): Expression.ImportStdLib {
         expectType(Type.OPEN_CURVE)
-        val name = readAlpha()
-        expectType(Type.CLOSE_CURVE)
-        nameResolver.classes.add(name)
-        return Expression.ImportStdLib(name)
+        val imports = ArrayList<String>()
+        while (true) {
+            val className = readAlpha()
+            imports.add(className)
+            nameResolver.classes.add(className)
+            if (peek().type == Type.CLOSE_CURVE) {
+                skip()
+                break
+            }
+            expectType(Type.COMMA)
+        }
+        return Expression.ImportStdLib(imports)
     }
 
     private fun loop(token: Token): Expression {
@@ -300,7 +308,15 @@ class Parser {
             Type.E_CHAR -> Expression.CharLiteral(token.optionalData as Char)
             Type.ALPHA -> {
                 val name = readAlpha(token)
-                Expression.Alpha(nameResolver.resolveVr(name), name)
+                val vrIndex = nameResolver.resolveVr(name)
+                if (vrIndex == -1) {
+                    // could be a static invocation, search in dict
+                    if (!nameResolver.classes.contains(name))
+                        throw RuntimeException("Could not resolve name $name")
+                    Expression.Alpha(-2, name)
+                } else {
+                    Expression.Alpha(vrIndex, name)
+                }
             }
             Type.OPEN_CURVE -> {
                 val expr = parseNext()

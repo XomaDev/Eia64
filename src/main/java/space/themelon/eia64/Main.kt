@@ -5,9 +5,11 @@ import space.themelon.eia64.runtime.Executor
 object Main {
     @JvmStatic
     fun main(args: Array<String>) {
-        val source = "/home/kumaraswamy/Documents/Eia64/stdlibtest/stringtest.eia"
+        val source = "/home/kumaraswamy/Documents/Eia64/src/main/resources/benchmarking.eia"
         // lowercase(), uppercase(), replace()
         // split()
+
+        Executor.STD_LIB = "/home/kumaraswamy/Documents/Eia64/stdlib/"
 
         val executor = Executor()
         val startTime = System.nanoTime()

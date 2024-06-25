@@ -1,7 +1,6 @@
 package space.themelon.eia64
 
 import space.themelon.eia64.analysis.FnElement
-import space.themelon.eia64.analysis.NameResolver
 import space.themelon.eia64.syntax.Type
 
 abstract class Expression {
@@ -64,7 +63,7 @@ abstract class Expression {
         override fun <R> accept(v: Visitor<R>) = v.operator(this)
     }
 
-    open class ImportStdLib(val name: String): Expression() {
+    open class ImportStdLib(val names: List<String>): Expression() {
         override fun <R> accept(v: Visitor<R>): R = v.importStdLib(this)
     }
 

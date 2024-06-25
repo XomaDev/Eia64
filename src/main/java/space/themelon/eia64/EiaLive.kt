@@ -6,8 +6,9 @@ import java.util.*
 object EiaLive {
     @JvmStatic
     fun main(args: Array<String>) {
-        val scanner = Scanner(System.`in`)
+        Executor.STD_LIB = "/home/kumaraswamy/Documents/Eia64/stdlib/"
 
+        val scanner = Scanner(System.`in`)
         val executor = Executor()
 
         var buffer = StringJoiner("\n")

@@ -7,7 +7,12 @@ import java.io.File
 class Executor {
 
     companion object {
-        const val STD_LIB = "/home/kumaraswamy/Documents/Eia64/stdlib/"
+        var STD_LIB = ""
+    }
+
+    init {
+        if (STD_LIB.isBlank())
+            throw RuntimeException("STD_LIB is not set")
     }
 
     private val externalEvaluator = HashMap<String, Evaluator>()
@@ -26,9 +31,7 @@ class Executor {
     }
 
     fun loadExternal(sourceFile: String, name: String) {
-        // TODO:
-        //  we have to be careful about circular dependency loading, we'll have to check if it's
-        //  already loaded or not
+        if (externalEvaluator[name] != null) return
         Evaluator(this).apply {
             externalEvaluator[name] = this
             eval(parser.parse(getTokens(sourceFile)))

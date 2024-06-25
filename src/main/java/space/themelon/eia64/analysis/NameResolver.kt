@@ -18,7 +18,7 @@ class NameResolver {
         fun resolveVr(name: String): Int {
             names.indexOf(name).let { if (it != -1) return it }
             if (before != null) return before.resolveVr(name)
-            throw RuntimeException("Unable to resolve variable name '$name'")
+            return -1
         }
     }
 
