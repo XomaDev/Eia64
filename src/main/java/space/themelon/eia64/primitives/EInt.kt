@@ -1,6 +1,6 @@
 package space.themelon.eia64.primitives
 
-class EInt(initialValue: Int): Element, Comparable<EInt> {
+class EInt(initialValue: Int): Element<EInt>, Comparable<EInt> {
 
     private var intValue = initialValue
 
@@ -12,6 +12,7 @@ class EInt(initialValue: Int): Element, Comparable<EInt> {
 
     override fun get() = intValue
     override fun stdlibName() = "int"
+    override fun copy() = EInt(intValue)
 
     fun getAndIncrement() = intValue++
     fun incrementAndGet() = ++intValue

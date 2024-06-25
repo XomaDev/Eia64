@@ -65,20 +65,12 @@ let LOWER_CASE = ~{ 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm'
 fn invert(self: String, target: Array, replacement: Array) {
   let size = len(self)
   for (var i = 0, i < size, i++) {
-    let index = target.indexOf(self[i])
-    if (index != -1)
+    if ((let index = target.indexOf(self[i])) != -1)
       self[i] = replacement[index]
   }
+  return self
 }
 
-fn uppercase(self: String) {
-  let copy = self + ""
-  invert(copy, LOWER_CASE, UPPER_CASE)
-  return copy
-}
+fn uppercase(self: String) = invert(copy(self), LOWER_CASE, UPPER_CASE)
 
-fn lowercase(self: String) {
-  let copy = self + ""
-  invert(copy, UPPER_CASE, LOWER_CASE)
-  return copy
-}
+fn lowercase(self: String) = invert(copy(self), UPPER_CASE, LOWER_CASE)

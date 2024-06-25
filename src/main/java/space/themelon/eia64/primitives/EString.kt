@@ -2,7 +2,7 @@ package space.themelon.eia64.primitives
 
 class EString(
     initialValue: String
-): ArrayOperable<EChar>, Element {
+): ArrayOperable<EChar>, Element<EString> {
 
     private var string = initialValue
 
@@ -15,7 +15,7 @@ class EString(
     override fun getAt(index: Int) = EChar(string[index])
 
     override fun setAt(index: Int, value: EChar) {
-        string = string.replaceRange(index, index, value.get().toString())
+        string = string.replaceRange(index, index + 1, value.get().toString())
     }
 
     override fun set(value: Any) {
@@ -26,6 +26,8 @@ class EString(
 
     override fun get(): String = string
     override fun stdlibName() = "string"
+
+    override fun copy() = EString(string)
 
     override fun toString() = string
 

@@ -1,6 +1,6 @@
 package space.themelon.eia64.primitives
 
-class EArray(initialValue: Array<Any>): Element, ArrayOperable<Any> {
+class EArray(initialValue: Array<Any>): Element<EArray>, ArrayOperable<Any> {
 
     private var arrayValue = initialValue
 
@@ -23,6 +23,9 @@ class EArray(initialValue: Array<Any>): Element, ArrayOperable<Any> {
     }
 
     override fun stdlibName() = "array"
+    override fun copy(): EArray {
+        throw RuntimeException("Cannot apply copy() on EArray")
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

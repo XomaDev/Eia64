@@ -1,6 +1,6 @@
 package space.themelon.eia64.primitives
 
-class EBool(initialValue: Boolean): Element {
+class EBool(initialValue: Boolean): Element<EBool> {
 
     private var boolValue = initialValue
 
@@ -12,6 +12,7 @@ class EBool(initialValue: Boolean): Element {
 
     override fun get() = boolValue
     override fun stdlibName() = "bool"
+    override fun copy() = EBool(boolValue)
 
     fun and(other: EBool) = EBool(boolValue && other.boolValue)
     fun or(other: EBool) = EBool(boolValue || other.boolValue)

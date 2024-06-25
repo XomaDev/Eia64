@@ -98,7 +98,7 @@ class Parser {
                     expectType(Type.CLOSE_CURVE)
                     nameResolver.enterScope()
                     nameResolver.defineVr(iName)
-                    val body = bodyOrExpr()
+                    val body = bodyOrExpr(false)
                     nameResolver.leaveScope()
                     return Expression.ForEach(iName, entity, body)
                 }
@@ -161,10 +161,13 @@ class Parser {
         return Expression.If(logicalExpr, ifBody, elseBranch)
     }
 
-    private fun bodyOrExpr(optimise: Boolean = true): Expression {
+    private fun bodyOrExpr(newScope: Boolean = true): Expression {
         if (peek().type == Type.OPEN_CURLY)
-            body(true).let { return if (optimise) optimiseExpr(it) else it }
-        return parseNext()
+            return optimiseExpr(body(newScope))
+        if (newScope) nameResolver.enterScope()
+        val expr = parseNext()
+        if (newScope) nameResolver.leaveScope()
+        return expr
     }
 
     private fun body(createScope: Boolean = true): Expression.ExpressionList{
@@ -307,8 +310,8 @@ class Parser {
         expectType(Type.OPEN_CURVE)
         val arguments = parseArguments()
         expectType(Type.CLOSE_CURVE)
-        val location = nameResolver.resolveFn(name)
-        return Expression.MethodCall(location.first, location.second, name, arguments)
+        val fnExpr = nameResolver.resolveFn(name)
+        return Expression.MethodCall(fnExpr, arguments)
     }
 
     private fun parseArguments(): List<Expression> {

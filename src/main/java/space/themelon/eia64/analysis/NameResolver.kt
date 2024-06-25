@@ -1,15 +1,22 @@
 package space.themelon.eia64.analysis
 
+import space.themelon.eia64.Expression
+
 class NameResolver {
 
-    class Scope(private val depth: Int, val before: Scope? = null) {
+
+    class Scope(val before: Scope? = null) {
         val names = ArrayList<String>()
         val functions = ArrayList<String>()
 
-        fun resolveFn(name: String, travelDepth: Int): Pair<Int, Int> {
-            functions.indexOf(name).let { if (it != -1) return Pair(depth, it) }
-            if (before != null) return before.resolveFn(name, travelDepth + 1)
-            throw RuntimeException("Unable to resolve name '$name'")
+        val funcObjs = HashMap<String, Expression.Function>()
+
+        fun resolveFn(name: String, travelDepth: Int): Expression.Function {
+            functions.indexOf(name).let {
+                if (it != -1) return funcObjs[name]!!
+                if (before != null) return before.resolveFn(name, travelDepth + 1)
+                throw RuntimeException("Unable to resolve name '$name'")
+            }
         }
 
         fun resolveVr(name: String): Int {
@@ -21,11 +28,10 @@ class NameResolver {
 
     val classes = ArrayList<String>()
 
-    private var depth = 0
-    private var currentScope = Scope(depth++)
+    private var currentScope = Scope()
 
     fun enterScope() {
-        val newScope = Scope(depth++, currentScope)
+        val newScope = Scope( currentScope)
         currentScope = newScope
     }
 
@@ -35,21 +41,24 @@ class NameResolver {
                 throw RuntimeException("Reached super scope")
             currentScope = it
         }
-        depth--
     }
 
     fun defineFn(name: String) {
+        if (name in currentScope.functions)
+            throw RuntimeException("Function $name is already defined in the current scope")
         currentScope.functions += name
     }
 
     fun defineVr(name: String) {
+        if (name in currentScope.names)
+            throw RuntimeException("Variable $name is already defined in the current scope")
         currentScope.names += name
     }
 
     fun resolveFn(name: String) = currentScope.resolveFn(name, 0)
+
     fun resolveVr(name: String): Int {
         val index = currentScope.resolveVr(name)
-        println("Resolved $name: $index")
         return index
     }
 }

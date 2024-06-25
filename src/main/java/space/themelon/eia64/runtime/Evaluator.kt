@@ -303,6 +303,14 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 executor.loadExternal("$group/$name.eia", name)
                 return EBool(true)
             }
+
+            COPY -> {
+                if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
+                val obj = unboxEval(call.arguments.expressions[0])
+                if (obj !is Element<*>)
+                    throw RuntimeException("Cannot apply copy() on object type ${getType(obj)} = $obj")
+                return obj.copy()!!
+            }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
     }
@@ -326,7 +334,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             args = evaluateArgs(call.arguments)
         } else {
            val evaluatedObj = unboxEval(obj)
-           if (evaluatedObj !is Element)
+           if (evaluatedObj !is Element<*>)
                throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
            className = evaluatedObj.stdlibName()
            call.arguments as ArrayList
@@ -494,7 +502,6 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun forLoop(forLoop: Expression.ForLoop): Any {
-        val state = memory.getStateCount()
         forLoop.initializer?.let { eval(it) }
 
         val conditional = forLoop.conditional
@@ -522,7 +529,6 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             }
             evalOperational()
         }
-        memory.applyStateCount(state)
         return returnResult
     }
 
@@ -540,10 +546,9 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     override fun ifFunction(ifExpr: Expression.If): Any {
         val body = if (booleanExpr(ifExpr.condition, "If Condition").get()) ifExpr.thenBody else ifExpr.elseBody
         if (body != null) {
-            val newScope = body is Expression.ExpressionList
-            if (newScope) memory.enterScope()
+            memory.enterScope()
             val result = eval(body)
-            if (newScope) memory.leaveScope()
+            memory.leaveScope()
             return result
         }
         return ifExpr

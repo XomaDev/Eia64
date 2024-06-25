@@ -1,10 +1,9 @@
-stdlib(string)
-
-fn kat(self: String, target: String) {
-  for (var i = 0, i < 2, i++) {
-    println("iteration set: " + self[i])
-    let index = target.indexOfChar(self[i])
+fn hello() {
+  println("hello() called")
+  for (var i = 0, , ) {
+  if ((let x = i) == 0) {
+                              println(x)
+                            }
   }
 }
-
-kat("ea", "x")
+hello()

@@ -109,9 +109,7 @@ abstract class Expression {
     }
 
     data class MethodCall(
-        val atFrame: Int,
-        val mIndex: Int,
-        val name: String,
+        val fnExpr: Function,
         val arguments: List<Expression>,
     ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.methodCall(this)
