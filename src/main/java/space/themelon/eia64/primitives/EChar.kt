@@ -1,6 +1,6 @@
 package space.themelon.eia64.primitives
 
-class EChar(initialValue: Char): Element<EChar> {
+class EChar(initialValue: Char): Primitive<EChar> {
 
     private var charValue = initialValue
 
@@ -12,6 +12,8 @@ class EChar(initialValue: Char): Element<EChar> {
 
     override fun get() = charValue
     override fun stdlibName() = "char"
+
+    override fun isCopyable() = true
     override fun copy() = EChar(charValue)
 
     override fun toString() = charValue.toString()

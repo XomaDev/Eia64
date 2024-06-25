@@ -14,21 +14,21 @@ fn indexOfFrom(self: String, piece: String, from: Int) {
 
   if (pieceSize > selfSize) return -1
 
-  for (var i = from, i < selfSize, i++) {
-    if (self[i] == piece[0]) {
-      var matched = false
-      var j = 0
-      var k = i
-      until (true) {
-        if (j < pieceSize) {
-          matched = true
-          break
-        }
-        if (k < selfSize) break
-        if (self[k++] != piece[j++]) break
+  for (var i = copy(from), i < selfSize, i++) {
+    if (self[i] != piece[0]) continue
+
+    var matched = false
+    var j = 0
+    var k = copy(i)
+    until (true) {
+      if (j == pieceSize) {
+        matched = true
+        break
       }
-      if (matched) return i
+      if (k == selfSize) break
+      if (self[k++] != piece[j++]) break
     }
+    if (matched) return i
   }
   return -1
 }
@@ -88,7 +88,7 @@ fn part(self: String, from: Int, till: Int) {
   var result = ""
   let stringSize = len(self)
 
-  for (var i = from, i < till, i++)
+  for (var i = copy(from), i < copy(till), i++)
     result += self[i]
   return result
 }
@@ -106,17 +106,31 @@ fn replace(self: String, match: String, replacement: String) {
   var index = 0
 
   until (index < selfSize) {
-    let nextIndex = indexOfFrom(self, match, copy(index))
-    println("index: " + nextIndex)
+    let nextIndex = indexOfFrom(self, match, index)
     if (nextIndex != -1) {
-      result += part(self, copy(index), copy(nextIndex))
+      result += part(self, copy(index), nextIndex)
       result += replacement
       index = nextIndex + matchSize
     } else {
-      result += substring(self, copy(index))
+      result += substring(self, index)
       break
     }
   }
 
   return result
 }
+
+fn splitOnce(self: String, delimiter: String) {
+  let splitIndex = indexOf(self, delimiter)
+  return ~{ part(self, 0, splitIndex)
+            substring(self, splitIndex + 1) }
+}
+
+fn splitRecursive(self: String, delimiter: String) {
+  if (!contains(self, delimiter)) return self
+  let onceSplit = splitOnce(self, delimiter)
+  onceSplit[1] = splitRecursive(onceSplit[1], delimiter)
+  return onceSplit
+}
+
+fn split(self: String, delimiter: String) = splitRecursive(self, delimiter).flatten()

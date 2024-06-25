@@ -106,7 +106,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             EBool(if (getType(left) != getType(right)) {
                 type != EQUALS
             } else when (left) {
-                is EInt, is EString, is EChar, is EBool -> if (type == EQUALS) left == right else left != right
+                is EInt, is EString, is EChar, is EBool, is EArray -> if (type == EQUALS) left == right else left != right
                 else -> false
             })
         }
@@ -307,9 +307,15 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             COPY -> {
                 if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
                 val obj = unboxEval(call.arguments.expressions[0])
-                if (obj !is Element<*>)
+                if (obj !is Primitive<*> || !obj.isCopyable())
                     throw RuntimeException("Cannot apply copy() on object type ${getType(obj)} = $obj")
                 return obj.copy()!!
+            }
+
+            ARRALLOC -> {
+                if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
+                val size = intExpr(call.arguments.expressions[0], "arralloc")
+                return EArray(Array(size.get()) { 0 })
             }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
@@ -330,7 +336,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             args = evaluateArgs(call.arguments)
         } else {
            val evaluatedObj = unboxEval(obj)
-           if (evaluatedObj !is Element<*>)
+           if (evaluatedObj !is Primitive<*>)
                throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
            className = evaluatedObj.stdlibName()
            call.arguments as ArrayList

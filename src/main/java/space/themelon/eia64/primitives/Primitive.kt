@@ -1,8 +1,9 @@
 package space.themelon.eia64.primitives
 
-interface Element<T> {
+interface Primitive<T> {
     fun set(value: Any)
     fun get(): Any
     fun stdlibName(): String
+    fun isCopyable(): Boolean
     fun copy(): T
 }

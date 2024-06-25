@@ -2,7 +2,7 @@ package space.themelon.eia64.primitives
 
 class EString(
     initialValue: String
-): ArrayOperable<EChar>, Element<EString> {
+): ArrayOperable<EChar>, Primitive<EString> {
 
     private var string = initialValue
 
@@ -27,6 +27,7 @@ class EString(
     override fun get(): String = string
     override fun stdlibName() = "string"
 
+    override fun isCopyable() = true
     override fun copy() = EString(string)
 
     override fun toString() = string
