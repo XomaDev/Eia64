@@ -117,8 +117,12 @@ class Parser {
 
     private fun fnDeclaration(): Expression {
         val name = readAlpha()
-        nameResolver.defineFn(name)
+
+        // create a wrapper object, that can be set to actual value later
+        val fnElement = FnElement()
+        nameResolver.defineFn(name, fnElement)
         nameResolver.enterScope()
+
         expectType(Type.OPEN_CURVE)
         val requiredArgs = ArrayList<Expression.DefinitionType>()
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
@@ -131,6 +135,7 @@ class Parser {
             if (!isNext(Type.COMMA)) break
             skip()
         }
+        fnElement.argsSize = requiredArgs.size
         expectType(Type.CLOSE_CURVE)
         val returnType = if (isNext(Type.COLON)) {
             skip()
@@ -141,7 +146,9 @@ class Parser {
             parseNext()
         } else optimiseExpr(body(false))
         nameResolver.leaveScope()
-        return Expression.Function(name, requiredArgs, returnType, body)
+        val fnExpr = Expression.Function(name, requiredArgs, returnType, body)
+        fnElement.fnExpression = fnExpr
+        return fnExpr
     }
 
     private fun ifDeclaration(token: Token): Expression {
@@ -311,6 +318,10 @@ class Parser {
         val arguments = parseArguments()
         expectType(Type.CLOSE_CURVE)
         val fnExpr = nameResolver.resolveFn(name)
+        if (fnExpr.argsSize == -1)
+            throw RuntimeException("Fn Expr args size not yet set")
+        if (fnExpr.argsSize != arguments.size)
+            throw RuntimeException("Fn [$name] expected ${fnExpr.argsSize} but got ${arguments.size}")
         return Expression.MethodCall(fnExpr, arguments)
     }
 

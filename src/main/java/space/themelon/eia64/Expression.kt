@@ -1,5 +1,7 @@
 package space.themelon.eia64
 
+import space.themelon.eia64.analysis.FnElement
+import space.themelon.eia64.analysis.NameResolver
 import space.themelon.eia64.syntax.Type
 
 abstract class Expression {
@@ -109,7 +111,7 @@ abstract class Expression {
     }
 
     data class MethodCall(
-        val fnExpr: Function,
+        val fnExpr: FnElement,
         val arguments: List<Expression>,
     ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.methodCall(this)

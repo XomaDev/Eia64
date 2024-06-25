@@ -146,7 +146,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         ADDITIVE_ASSIGNMENT -> {
             val element = unboxEval(expr.left)
             when (element) {
-                is EString -> element.append(unbox(expr.right))
+                is EString -> element.append(unboxEval(expr.right))
                 is EInt -> element += intExpr(expr.right, "+=")
                 else -> throw RuntimeException("Cannot apply += operator on element $element")
             }
@@ -315,11 +315,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         }
     }
 
-    override fun methodCall(call: Expression.MethodCall): Any {
-        val fnName = call.name
-        val fn = memory.getFn(call.atFrame, call.mIndex, fnName)
-        return fnInvoke(fn, evaluateArgs(call.arguments))
-    }
+    override fun methodCall(call: Expression.MethodCall) = fnInvoke(call.fnExpr.fnExpression!!, evaluateArgs(call.arguments))
 
     override fun classMethodCall(call: Expression.ClassMethodCall): Any {
         val obj = call.obj

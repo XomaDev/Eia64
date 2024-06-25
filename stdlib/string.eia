@@ -8,23 +8,32 @@ fn indexOfChar(self: String, letter: Char) {
   return -1
 }
 
-fn indexOf(self: String, piece: String) {
+fn indexOfFrom(self: String, piece: String, from: Int) {
   let selfSize = len(self)
   let pieceSize = len(piece)
 
-  if (pieceSize > selfSize) return false
+  if (pieceSize > selfSize) return -1
 
-  for (var i = 0, i < selfSize, i++) {
+  for (var i = from, i < selfSize, i++) {
     if (self[i] == piece[0]) {
-      var matched = true
-      for (var j = 0, j < pieceSize, j++)
-        if (self[j + i] != piece[j])
-          matched = false
+      var matched = false
+      var j = 0
+      var k = i
+      until (true) {
+        if (j < pieceSize) {
+          matched = true
+          break
+        }
+        if (k < selfSize) break
+        if (self[k++] != piece[j++]) break
+      }
       if (matched) return i
     }
   }
   return -1
 }
+
+fn indexOf(self: String, piece: String) = indexOfFrom(self, piece, 0)
 
 fn contains(self: String, piece: String) = indexOf(self, piece) != -1
 
@@ -74,3 +83,40 @@ fn invert(self: String, target: Array, replacement: Array) {
 fn uppercase(self: String) = invert(copy(self), LOWER_CASE, UPPER_CASE)
 
 fn lowercase(self: String) = invert(copy(self), UPPER_CASE, LOWER_CASE)
+
+fn part(self: String, from: Int, till: Int) {
+  var result = ""
+  let stringSize = len(self)
+
+  for (var i = from, i < till, i++)
+    result += self[i]
+  return result
+}
+
+fn substring(self: String, from: Int) = part(self, from, len(self))
+
+fn replace(self: String, match: String, replacement: String) {
+  let matchSize = len(match)
+  let selfSize = len(self)
+
+  if (matchSize > selfSize) return copy(self)
+  let replacementSize = len(replacement)
+
+  var result = ""
+  var index = 0
+
+  until (index < selfSize) {
+    let nextIndex = indexOfFrom(self, match, copy(index))
+    println("index: " + nextIndex)
+    if (nextIndex != -1) {
+      result += part(self, copy(index), copy(nextIndex))
+      result += replacement
+      index = nextIndex + matchSize
+    } else {
+      result += substring(self, copy(index))
+      break
+    }
+  }
+
+  return result
+}
