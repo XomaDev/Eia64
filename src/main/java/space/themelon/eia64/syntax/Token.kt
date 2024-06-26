@@ -13,7 +13,7 @@ data class Token(
 
     @Throws(RuntimeException::class)
     fun <T> error(message: String): T {
-        throw RuntimeException("[line $lineCount] $message")
+        throw RuntimeException("[line $lineCount] [$this] $message")
     }
 
     override fun toString(): String {

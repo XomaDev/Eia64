@@ -10,3 +10,6 @@ println(upper_case[0])
 println(type(upper_case[0]))
 println(upper_case[0] = '5')
 println(upper_case[0])
+
+println(upper_case = upper_case.add(9))
+println(upper_case.removeAt(2))

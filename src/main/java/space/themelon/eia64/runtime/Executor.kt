@@ -18,23 +18,23 @@ class Executor {
     private val externalEvaluator = HashMap<String, Evaluator>()
 
     private val syntaxAnalysis = SyntaxAnalysis()
-    private val parser = Parser()
+    private val mainParser = Parser()
 
     private val mainEvaluator = Evaluator(this)
 
     fun loadFile(sourceFile: String) {
-        mainEvaluator.eval(parser.parse(getTokens(sourceFile)))
+        mainEvaluator.eval(mainParser.parse(getTokens(sourceFile)))
     }
 
     fun loadSource(source: String) {
-        mainEvaluator.eval(parser.parse(getTokens(source)))
+        mainEvaluator.eval(mainParser.parse(syntaxAnalysis.tokenize(source)))
     }
 
     fun loadExternal(sourceFile: String, name: String) {
         if (externalEvaluator[name] != null) return
         Evaluator(this).apply {
             externalEvaluator[name] = this
-            eval(parser.parse(getTokens(sourceFile)))
+            eval(Parser().parse(getTokens(sourceFile)))
         }
     }
 

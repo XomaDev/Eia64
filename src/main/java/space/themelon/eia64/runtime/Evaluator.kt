@@ -78,6 +78,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         }
         KITA -> {
             var operand: Any = expr.expr
+            memory.enterScope()
             if (operand !is Expression.ExpressionList)
                 operand = unboxEval(operand as Expression)
             if (operand !is Expression.ExpressionList)
@@ -85,6 +86,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             val evaluated = arrayOfNulls<Any>(operand.size)
             for ((index, aExpr) in operand.expressions.withIndex())
                 evaluated[index] = unboxEval(aExpr)
+            memory.leaveScope()
             evaluated as Array<Any>
             EArray(evaluated)
         }
@@ -139,7 +141,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                             if (value !is EChar) throw RuntimeException("string[index] requires a Char")
                             (array as EString).setAt(index, value)
                         }
-                        else -> throw RuntimeException("Unknown element access of $array")
+                        else -> throw RuntimeException("Unknown element access of {$array}")
                     }
                 }
                 else -> throw RuntimeException("Unknown left operand for [= Assignment]: $toUpdate")
@@ -253,8 +255,10 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 string as EString
                 if (exprs.size > 1) {
                     val values = arrayOfNulls<Any>(exprs.size - 1)
-                    for (i in 1 until exprs.size)
-                        values[i - 1] = unboxEval(exprs[i])
+                    for (i in 1 until exprs.size) {
+                        val value = unboxEval(exprs[i])
+                        values[i - 1] = if (value is Primitive<*>) value.get() else value
+                    }
                     return EString(String.format(string.get(), *values))
                 }
                 return string

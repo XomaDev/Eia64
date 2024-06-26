@@ -134,3 +134,5 @@ fn splitRecursive(self: String, delimiter: String) {
 }
 
 fn split(self: String, delimiter: String) = splitRecursive(self, delimiter).flatten()
+
+fn size(self: String) = len(self)

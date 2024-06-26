@@ -18,6 +18,7 @@ class SyntaxAnalysis {
         this.source = source
         this.iterIndex = 0
         this.sourceSize = source.length
+        this.lineCount = 0
         tokens = ArrayList()
 
         while (!isEOF()) {

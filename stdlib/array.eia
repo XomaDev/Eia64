@@ -30,3 +30,24 @@ fn flatten(self: Array) {
   fillRecursive(flattened, self, 0)
   return flattened
 }
+
+fn size(self: Array) = len(self)
+
+fn add(self: Array, element: Any) {
+  let oldSize = len(self)
+  let newAlloc = arralloc(oldSize + 1)
+  for (var i = 0, i < oldSize, i++)
+    newAlloc[i] = self[i]
+  newAlloc[oldSize] = element
+  return newAlloc
+}
+
+fn removeAt(self: Array, index: Int) {
+  let oldSize = len(self)
+  let newAlloc = arralloc(oldSize - 1)
+  var j = 0
+  for (var i = 0, i < oldSize, i++)
+    if (i != index)
+      newAlloc[j++] = self[i]
+  return newAlloc
+}

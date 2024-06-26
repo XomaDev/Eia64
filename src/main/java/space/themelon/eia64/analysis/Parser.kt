@@ -7,15 +7,13 @@ import space.themelon.eia64.syntax.Type
 
 class Parser {
 
-    private lateinit var nameResolver: NameResolver
+    private val nameResolver = NameResolver()
 
     private lateinit var tokens: List<Token>
     private var index = 0
     private var size = 0
 
     fun parse(tokens: List<Token>): Expression.ExpressionList {
-        nameResolver = NameResolver()
-
         index = 0
         size = tokens.size
         this.tokens = tokens
@@ -296,7 +294,8 @@ class Parser {
             expectType(Type.CLOSE_CURVE)
             return Expression.NativeCall(token.type, Expression.ExpressionList(arguments))
         }
-        return token.error("Unexpected token")
+        back()
+        return parseNext()
     }
 
     private fun parseValue(token: Token): Expression {
