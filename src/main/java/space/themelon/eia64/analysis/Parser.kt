@@ -273,12 +273,14 @@ class Parser {
 
     private fun operatorPrecedence(type: Type) = when (type) {
         Type.ASSIGNMENT_TYPE -> 1
-        Type.BITWISE -> 2
-        Type.LOGICAL -> 3
-        Type.EQUALITY -> 4
-        Type.RELATIONAL -> 5
-        Type.BINARY -> 6
-        Type.BINARY_PRECEDE -> 7
+        Type.LOGICAL_OR -> 2
+        Type.LOGICAL_AND -> 3
+        Type.BITWISE_OR -> 4
+        Type.BITWISE_AND -> 5
+        Type.EQUALITY -> 6
+        Type.RELATIONAL -> 7
+        Type.BINARY -> 8
+        Type.BINARY_PRECEDE -> 9
         else -> -1
     }
 

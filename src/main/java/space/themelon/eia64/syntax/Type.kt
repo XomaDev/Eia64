@@ -17,8 +17,10 @@ enum class Type {
     USE,
     DOT,
 
-    OPERATOR, LOGICAL, BITWISE, EQUALITY, RELATIONAL, BINARY_PRECEDE, BINARY, NON_COMMUTE,
-    UNARY, POSSIBLE_RIGHT_UNARY, ASSIGNMENT_TYPE,
+
+    ASSIGNMENT_TYPE,
+    OPERATOR, EQUALITY, RELATIONAL, BINARY_PRECEDE, BINARY, NON_COMMUTE,
+    UNARY, POSSIBLE_RIGHT_UNARY,
 
     S_OPERATOR,
     COLON,
@@ -64,21 +66,34 @@ enum class Type {
 
         init {
             SYMBOLS.let {
-                // FLAGS [ PRECEDENCE, .. OPERATOR ]
-                it["&&"] = StaticToken(LOGICAL_AND, arrayOf(LOGICAL, OPERATOR))
-                it["||"] = StaticToken(LOGICAL_OR, arrayOf(LOGICAL, OPERATOR))
-                it["&"] = StaticToken(BITWISE_AND, arrayOf(BITWISE, OPERATOR))
-                it["|"] = StaticToken(BITWISE_OR, arrayOf(BITWISE, OPERATOR))
+                // Binary operators arranged from the lowest precedence to highest
+
+                it["="] = StaticToken(ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
+                it["+="] = StaticToken(ADDITIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
+                it["-="] = StaticToken(DEDUCTIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
+                it["*="] = StaticToken(MULTIPLICATIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
+                it["/="] = StaticToken(DIVIDIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
+
+                it["||"] = StaticToken(LOGICAL_OR, arrayOf(LOGICAL_OR, OPERATOR))
+                it["&&"] = StaticToken(LOGICAL_AND, arrayOf(LOGICAL_AND, OPERATOR))
+
+                it["|"] = StaticToken(BITWISE_OR, arrayOf(BITWISE_OR, OPERATOR))
+                it["&"] = StaticToken(BITWISE_AND, arrayOf(BITWISE_AND, OPERATOR))
+
                 it["=="] = StaticToken(EQUALS, arrayOf(EQUALITY, OPERATOR))
                 it["!="] = StaticToken(NOT_EQUALS, arrayOf(EQUALITY, OPERATOR))
+
                 it[">"] = StaticToken(GREATER_THAN, arrayOf(RELATIONAL, OPERATOR))
                 it["<"] = StaticToken(LESSER_THAN, arrayOf(RELATIONAL, OPERATOR))
                 it[">="] = StaticToken(GREATER_THAN_EQUALS, arrayOf(RELATIONAL, OPERATOR))
                 it["<="] = StaticToken(LESSER_THAN_EQUALS, arrayOf(RELATIONAL, OPERATOR))
+
                 it["/"] = StaticToken(SLASH, arrayOf(BINARY_PRECEDE, NON_COMMUTE, OPERATOR))
                 it["*"] = StaticToken(ASTERISK, arrayOf(BINARY_PRECEDE, NON_COMMUTE, OPERATOR))
+
                 it["+"] = StaticToken(PLUS, arrayOf(BINARY, OPERATOR))
                 it["-"] = StaticToken(NEGATE, arrayOf(BINARY, UNARY, OPERATOR))
+
                 it["!"] = StaticToken(NOT, arrayOf(UNARY))
                 it["~"] = StaticToken(KITA, arrayOf(UNARY))
                 it["++"] = StaticToken(INCREMENT, arrayOf(UNARY, POSSIBLE_RIGHT_UNARY))
@@ -86,11 +101,7 @@ enum class Type {
 
                 it["."] = StaticToken(DOT)
 
-                it["="] = StaticToken(ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
-                it["+="] = StaticToken(ADDITIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
-                it["-="] = StaticToken(DEDUCTIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
-                it["*="] = StaticToken(MULTIPLICATIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
-                it["/="] = StaticToken(DIVIDIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
+
                 it[":"] = StaticToken(COLON)
 
                 it["["] = StaticToken(OPEN_SQUARE, arrayOf(S_OPERATOR))
