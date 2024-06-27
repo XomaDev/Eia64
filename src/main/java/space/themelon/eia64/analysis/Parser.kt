@@ -42,6 +42,16 @@ class Parser {
         }
     }
 
+    private fun canParseNext(): Boolean {
+        val token = peek()
+        if (token.flags.isNotEmpty())
+            return token.flags[0].let { it == Type.LOOP || it == Type.V_KEYWORD || it == Type.INTERRUPTION }
+        return when (token.type) {
+            Type.IF, Type.FUN, Type.STDLIB -> true
+            else -> false
+        }
+    }
+
     private fun importStdLib(): Expression.ImportStdLib {
         expectType(Type.OPEN_CURVE)
         val imports = ArrayList<String>()
@@ -272,6 +282,7 @@ class Parser {
         else -> -1
     }
 
+
     private fun parseElement(): Expression {
         when (peek().type) {
             Type.OPEN_CURVE -> {
@@ -296,7 +307,8 @@ class Parser {
             return Expression.NativeCall(token.type, Expression.ExpressionList(arguments))
         }
         back()
-        return parseNext()
+        if (canParseNext()) return parseNext()
+        return token.error("Unexpected token")
     }
 
     private fun parseValue(token: Token): Expression {
@@ -323,7 +335,7 @@ class Parser {
                 expr
             }
 
-            else -> token.error("Unknown token type: $token")
+            else -> token.error("Unknown token type")
         }
     }
 
@@ -360,19 +372,19 @@ class Parser {
 
     private fun readAlpha(token: Token) =
         if (token.type == Type.ALPHA) token.optionalData as String
-        else token.error("Expected alpha token got $token")
+        else token.error("Was expecting an alpha token")
 
     private fun expectType(type: Type): Token {
         val next = next()
         if (next.type != type)
-            next.error<String>("Expected token type: $type, got token $next")
+            next.error<String>("Expected token type $type")
         return next
     }
 
     private fun expectFlag(flag: Type): Token {
         val next = next()
         if (!next.hasFlag(flag))
-            next.error<String>("Expected flag: $flag, got $next")
+            next.error<String>("Expected flag $flag")
         return next
     }
 
