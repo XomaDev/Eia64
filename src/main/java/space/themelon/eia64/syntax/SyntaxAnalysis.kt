@@ -67,7 +67,19 @@ class SyntaxAnalysis {
     }
 
     private fun parseChar() {
-        val char = next()
+        var char = next()
+        if (char == '\\') {
+            char = when (val n = next()) {
+                'n' -> '\n'
+                's' -> ' '
+                't' -> '\t'
+                '\'', '\"', '\\' -> char
+                else -> {
+                    reportError("Invalid escape character '$n'")
+                    '_'
+                }
+            }
+        }
         if (next() != '\'')
             reportError("Invalid syntax while using single quotes")
         tokens.add(Token(lineCount, Type.E_CHAR, arrayOf(Type.VALUE), char))
@@ -76,9 +88,16 @@ class SyntaxAnalysis {
     private fun parseString() {
         val content = StringBuilder()
         while (!isEOF()) {
-            val c = next()
-            if (c == '"') {
-                break
+            var c = next()
+            if (c == '\"') break
+            else if (c == '\\') {
+                when (val e = next()) {
+                    'n' -> c = '\n'
+                    't' -> c = '\t'
+                    's' -> c = ' '
+                    '\'', '\"', '\\' -> break
+                    else -> reportError("Invalid escape character '$e'")
+                }
             }
             content.append(c)
         }

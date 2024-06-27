@@ -78,22 +78,9 @@ class Memory {
 
     fun getVar(index: Int, name: String) = currentFrame.searchVr(index, name)
 
-    fun getFn(atFrame: Int, index: Int, name: String): Expression.Function {
-        val fn = frameStack[atFrame].functions[index]
-        if (fn.first != name) throw RuntimeException("Function '$name' does not exist")
-        return fn.second
-    }
-
     fun dynamicFnSearch(name: String): Expression.Function {
         if (frameStack.size != 1)
             throw RuntimeException("Dynamic search can only be requested from master scope")
         return currentFrame.searchFn(name)
     }
-
-    // returns count of Pair<Variables, Functions>
-    fun getStateCount(): Pair<Int, Int> = Pair(currentFrame.values.size, currentFrame.functions.size)
-    fun applyStateCount(state: Pair<Int, Int>) {
-        currentFrame.applyState(state)
-    }
-
 }

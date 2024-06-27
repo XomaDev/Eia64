@@ -120,6 +120,14 @@ fn replace(self: String, match: String, replacement: String) {
   return result
 }
 
+fn toCharArray(self: String) {
+  let charCount = len(self)
+  let chars = arralloc(charCount)
+  for (var i = 0, i < charCount, i++)
+    chars[i] = self[i]
+  return chars
+}
+
 fn splitOnce(self: String, delimiter: String) {
   let splitIndex = indexOf(self, delimiter)
   return ~{ part(self, 0, splitIndex)
