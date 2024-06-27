@@ -14,6 +14,7 @@ enum class Type {
     PLUS, NEGATE,
     NOT, INCREMENT, DECREMENT,
     KITA,
+    USE,
     DOT,
 
     OPERATOR, LOGICAL, BITWISE, EQUALITY, RELATIONAL, BINARY_PRECEDE, BINARY, NON_COMMUTE,
@@ -151,6 +152,7 @@ enum class Type {
                 it["return"] = StaticToken(RETURN, arrayOf(INTERRUPTION))
                 it["break"] = StaticToken(BREAK, arrayOf(INTERRUPTION))
                 it["continue"] = StaticToken(CONTINUE, arrayOf(INTERRUPTION))
+                it[":="] = StaticToken(USE, arrayOf(INTERRUPTION))
             }
         }
     }

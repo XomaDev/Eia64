@@ -117,6 +117,7 @@ class Parser {
         Expression.Operator(token.type),
         when (token.type) {
             Type.RETURN -> parseNext()
+            Type.USE -> parseNext()
             else -> null
         }
     )

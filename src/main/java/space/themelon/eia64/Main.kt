@@ -5,7 +5,7 @@ import space.themelon.eia64.runtime.Executor
 object Main {
     @JvmStatic
     fun main(args: Array<String>) {
-        val source = "/home/kumaraswamy/Documents/Eia64/src/main/resources/breakittest.eia"
+        val source = "/home/kumaraswamy/Documents/Eia64/src/main/resources/usesymbol.eia"
         // lowercase(), uppercase(), replace()
         // split()
 

@@ -87,6 +87,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             for ((index, aExpr) in operand.expressions.withIndex())
                 evaluated[index] = unboxEval(aExpr)
             memory.leaveScope()
+            // take a look at this later, implications of using := here
             evaluated as Array<Any>
             EArray(evaluated)
         }
@@ -196,7 +197,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             if (result is Entity) {
                 // flow interruption is just forwarded
                 when (result.type) {
-                    RETURN, BREAK, CONTINUE -> return result
+                    RETURN, BREAK, CONTINUE, USE -> return result
                     else -> { }
                 }
             }
@@ -442,6 +443,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                     BREAK -> break
                     CONTINUE -> continue
                     RETURN -> return result
+                    USE -> result.value
                     else -> { }
                 }
             }
@@ -486,6 +488,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                     BREAK -> break
                     CONTINUE -> continue
                     RETURN -> return result
+                    USE -> return result.value
                     else -> { }
                 }
             }
@@ -517,6 +520,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                         continue
                     }
                     RETURN -> return result
+                    USE -> return result.value
                     else -> { }
                 }
             }
@@ -546,6 +550,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                         continue
                     }
                     RETURN -> return result
+                    USE -> return result.value
                     else -> { }
                 }
             }
@@ -556,12 +561,10 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
     override fun interruption(interruption: Expression.Interruption) = when (val type = eval(interruption.type)) {
         // wrap it as normal entity, this will be naturally unboxed when called unbox()
-        RETURN -> {
-            val value = unboxEval(interruption.expr!!)
-            Entity("FlowReturn", false, value, RETURN)
-        }
+        RETURN -> Entity("FlowReturn", false, unboxEval(interruption.expr!!), RETURN)
         BREAK -> Entity("FlowBreak", false, 0, BREAK)
         CONTINUE -> Entity("FlowContinue", false, 0, CONTINUE)
+        USE -> Entity("FlowUse", false, unboxEval(interruption.expr!!), USE)
         else -> throw RuntimeException("Unknown interruption type $type")
     }
 
