@@ -201,7 +201,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 }
             }
         }
-        return list
+        return EInt(list.size)
     }
 
     override fun importStdLib(stdLib: Expression.ImportStdLib): Any {
@@ -431,7 +431,9 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun until(until: Expression.Until): Any {
+        var numIterations = 0
         while (booleanExpr(until.expression, "Until Condition").get()) {
+            numIterations++
             memory.enterScope()
             val result = eval(until.body)
             memory.leaveScope()
@@ -444,7 +446,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 }
             }
         }
-        return until
+        return EInt(numIterations)
     }
 
     override fun forEach(forEach: Expression.ForEach): Any {
@@ -471,7 +473,9 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         val named = forEach.name
         val body = forEach.body
 
+        var numIterations = 0
         while (index < size) {
+            numIterations++
             memory.enterScope()
             val element = getNext()
             memory.declareVar(named, Entity(named, false, element, getType(element)))
@@ -486,7 +490,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 }
             }
         }
-        return forEach
+        return EInt(numIterations)
     }
 
     override fun itr(itr: Expression.Itr): Any {
@@ -498,7 +502,9 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         val reverse = from > to
         if (reverse) by.set(-by.get())
 
+        var numIterations = 0
         while (if (reverse) from >= to else from <= to) {
+            numIterations++
             memory.enterScope()
             memory.declareVar(named, Entity(named, false, from, E_INT))
             val result = eval(itr.body)
@@ -516,7 +522,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             }
             from = from + by
         }
-        return itr
+        return EInt(numIterations)
     }
 
     override fun forLoop(forLoop: Expression.ForLoop): Any {
@@ -524,10 +530,11 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
         val conditional = forLoop.conditional
 
-        var returnResult: Any = forLoop
+        var numIterations = 0
         fun evalOperational() = forLoop.operational?.let { eval(it) }
 
         while (if (conditional == null) true else booleanExpr(conditional, "ForLoop").get()) {
+            numIterations++
             memory.enterScope()
             val result = eval(forLoop.body)
             memory.leaveScope()
@@ -538,16 +545,13 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                         evalOperational()
                         continue
                     }
-                    RETURN -> {
-                        returnResult = result
-                        break
-                    }
+                    RETURN -> return result
                     else -> { }
                 }
             }
             evalOperational()
         }
-        return returnResult
+        return EInt(numIterations)
     }
 
     override fun interruption(interruption: Expression.Interruption) = when (val type = eval(interruption.type)) {
@@ -562,19 +566,20 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun ifFunction(ifExpr: Expression.If): Any {
-        val body = if (booleanExpr(ifExpr.condition, "If Condition").get()) ifExpr.thenBody else ifExpr.elseBody
+        val conditionSuccess = booleanExpr(ifExpr.condition, "If Condition").get()
+        val body = if (conditionSuccess) ifExpr.thenBody else ifExpr.elseBody
         if (body != null) {
             memory.enterScope()
             val result = eval(body)
             memory.leaveScope()
             return result
         }
-        return ifExpr
+        return EBool(conditionSuccess)
     }
 
     override fun function(function: Expression.Function): Any {
         memory.declareFn(function.name, function)
-        return function
+        return EBool(true)
     }
 
     override fun elementAccess(access: Expression.ElementAccess): Any {
