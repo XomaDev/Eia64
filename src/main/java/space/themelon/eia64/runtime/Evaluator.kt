@@ -9,6 +9,7 @@ import space.themelon.eia64.syntax.Type.*
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.random.Random
+import kotlin.system.exitProcess
 
 class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
@@ -39,21 +40,19 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     override fun alpha(alpha: Expression.Alpha) = memory.getVar(alpha.index, alpha.value)
     override fun operator(operator: Expression.Operator) = operator.value
 
-    private fun define(mutable: Boolean, def: Expression.DefinitionType, value: Any) {
-        // make sure variable type = assigned type
-        val valueType = getType(value)
-        if (def.type != E_ANY && def.type != valueType)
-            throw RuntimeException("Variable ${def.name} has type ${def.type}, but got value type of $valueType")
-        memory.declareVar(def.name, Entity(def.name, mutable, value, valueType))
-    }
-
     private fun update(scope: Int, name: String, value: Any) {
         (memory.getVar(scope, name) as Entity).update(value)
     }
 
     override fun variable(variable: Expression.ExplicitVariable): Any {
         val value = unboxEval(variable.expr)
-        define(variable.mutable, variable.definition, value)
+        val valueType = getType(value)
+        val def = variable.definition
+        val mutable = variable.mutable
+
+        if (def.type != E_ANY && def.type != valueType)
+            throw RuntimeException("Variable ${def.name} has type ${def.type}, but got value type of $valueType")
+        memory.declareVar(def.name, Entity(def.name, mutable, value, def.type))
         return value
     }
 
@@ -333,6 +332,12 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 val from = intExpr(call.arguments.expressions[0], "rand()")
                 val to = intExpr(call.arguments.expressions[1], "rand()")
                 return EInt(Random.nextInt(from.get(), to.get()))
+            }
+
+            EXIT -> {
+                if (argsSize != 1) reportWrongArguments("exit", 1, argsSize)
+                val exitCode = intExpr(call.arguments.expressions[0], "exit()")
+                exitProcess(exitCode.get())
             }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
