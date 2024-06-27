@@ -128,6 +128,14 @@ fn toCharArray(self: String) {
   return chars
 }
 
+fn repeat(self: String, n: Int) {
+  var result = ""
+  let times = copy(n)
+  for (var i = 0, i < times, i++)
+    result += self
+  return result
+}
+
 fn splitOnce(self: String, delimiter: String) {
   let splitIndex = indexOf(self, delimiter)
   return ~{ part(self, 0, splitIndex)
