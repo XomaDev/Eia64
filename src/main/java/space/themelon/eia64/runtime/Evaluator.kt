@@ -322,7 +322,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             ARRALLOC -> {
                 if (argsSize != 1) reportWrongArguments("arralloc", 1, argsSize)
                 val size = intExpr(call.arguments.expressions[0], "arralloc()")
-                return EArray(Array(size.get()) { 0 })
+                return EArray(Array(size.get()) { EInt(0) })
             }
 
             TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())
@@ -514,7 +514,9 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         while (if (reverse) from >= to else from <= to) {
             numIterations++
             memory.enterScope()
-            memory.declareVar(named, Entity(named, false, from, E_INT))
+            // TODO:
+            //  take a look into this later
+            memory.declareVar(named, Entity(named, true, from.get(), E_INT))
             val result = eval(itr.body)
             memory.leaveScope()
             if (result is Entity) {
@@ -535,6 +537,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun forLoop(forLoop: Expression.ForLoop): Any {
+        memory.enterScope()
         forLoop.initializer?.let { eval(it) }
 
         val conditional = forLoop.conditional
@@ -554,13 +557,20 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                         evalOperational()
                         continue
                     }
-                    RETURN -> return result
-                    USE -> return result.value
+                    RETURN -> {
+                        memory.leaveScope()
+                        return result
+                    }
+                    USE -> {
+                        memory.leaveScope()
+                        return result.value
+                    }
                     else -> { }
                 }
             }
             evalOperational()
         }
+        memory.leaveScope()
         return EInt(numIterations)
     }
 

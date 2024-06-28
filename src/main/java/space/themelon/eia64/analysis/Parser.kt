@@ -78,6 +78,8 @@ class Parser {
                 return Expression.Until(expr, body)
             }
             Type.FOR -> {
+                // we cannot expose initializers outside the for loop
+                nameResolver.enterScope()
                 expectType(Type.OPEN_CURVE)
                 val initializer = if (isNext(Type.COMMA)) null else parseNext()
                 expectType(Type.COMMA)
@@ -86,6 +88,7 @@ class Parser {
                 val operational = if (isNext(Type.CLOSE_CURVE)) null else parseNext()
                 expectType(Type.CLOSE_CURVE)
                 val body = bodyOrExpr()
+                nameResolver.leaveScope()
                 return Expression.ForLoop(
                     initializer,
                     conditional,
