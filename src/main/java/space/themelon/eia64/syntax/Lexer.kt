@@ -1,45 +1,9 @@
 package space.themelon.eia64.syntax
 
 import space.themelon.eia64.syntax.Type.*
+import space.themelon.eia64.syntax.Type.Companion.KEYWORDS
 
 class Lexer(private val source: String) {
-
-    private class Metadata(val type: Type, vararg val flags: Type)
-
-    companion object {
-        private val characterMapping = mapOf(
-            Pair("=", Metadata(ASSIGNMENT, ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR)),
-            Pair("+=", Metadata(ADDITIVE_ASSIGNMENT, ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR)),
-            Pair("-=", Metadata(DEDUCTIVE_ASSIGNMENT, ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR)),
-            Pair("*=", Metadata(MULTIPLICATIVE_ASSIGNMENT, ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR)),
-            Pair("/=", Metadata(DIVIDIVE_ASSIGNMENT, ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR)),
-
-            Pair("||", Metadata(LOGICAL_OR, LOGICAL_OR, OPERATOR)),
-            Pair("&&", Metadata(LOGICAL_AND, LOGICAL_AND, OPERATOR)),
-
-            Pair("==", Metadata(EQUALS, EQUALITY, OPERATOR)),
-            Pair("!=", Metadata(NOT_EQUALS, EQUALITY, OPERATOR)),
-
-            Pair(">", Metadata(GREATER_THAN, RELATIONAL, OPERATOR)),
-            Pair("<", Metadata(LESSER_THAN, RELATIONAL, OPERATOR)),
-            Pair(">=", Metadata(GREATER_THAN_EQUALS, RELATIONAL, OPERATOR)),
-            Pair("<=", Metadata(LESSER_THAN_EQUALS, RELATIONAL, OPERATOR)),
-
-            // TODO:
-            //   cleanup a lot of stuff
-            Pair("*", Metadata(ASTERISK, BINARY_PRECEDE, NON_COMMUTE, OPERATOR)),
-            Pair("/", Metadata(SLASH, BINARY_PRECEDE, NON_COMMUTE, OPERATOR)),
-
-            Pair("+", Metadata(PLUS, BINARY, OPERATOR)),
-            Pair("-", Metadata(NEGATE, BINARY, UNARY, OPERATOR)),
-
-            Pair("!", Metadata(NOT, UNARY)),
-            Pair("~", Metadata(KITA, UNARY)),
-
-
-        )
-
-    }
 
     private var index = 0
     private var line = 1
@@ -48,35 +12,137 @@ class Lexer(private val source: String) {
 
     init {
         while (!isEOF()) parseNext()
+        tokens.forEach { println(it) }
     }
 
     private fun parseNext() {
         val char = next()
+        if (char == '\n') {
+            line++
+            return
+        }
+        if (char == ' ' || char == ' ') return
+        if (char == ';') {
+            while (!isEOF() && peek() != '\n') index++
+            return
+        }
         tokens.add(when (char) {
-            '=' -> if (consumeNext('=')) createToken(EQUALS, arrayOf(EQUALITY, OPERATOR))
-                   else createToken(ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
+            '=' -> if (consumeNext('=')) createOp("==") else createOp("=")
 
-            '*' -> if (consumeNext('=')) createToken(MULTIPLICATIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
-                   else createToken(ASTERISK, arrayOf(BINARY_PRECEDE, NON_COMMUTE, OPERATOR))
-
-            '/' -> if (consumeNext('=')) createToken(DIVIDIVE_ASSIGNMENT, arrayOf(ASSIGNMENT_TYPE, OPERATOR, S_OPERATOR))
-                   else createToken(SLASH, arrayOf(BINARY_PRECEDE, NON_COMMUTE, OPERATOR))
+            '*' -> if (consumeNext('=')) createOp("*=") else createOp("*")
+            '/' -> if (consumeNext('=')) createOp("/=") else createOp("/")
 
             '+' ->
-                if (consumeNext('+')) createToken(INCREMENT, arrayOf(UNARY, POSSIBLE_RIGHT_UNARY))
-                else createToken(PLUS, arrayOf(BINARY, OPERATOR))
-            '-' ->
-                if (consumeNext('-')) createToken(DECREMENT, arrayOf(UNARY, POSSIBLE_RIGHT_UNARY))
-                else createToken(NEGATE, arrayOf(BINARY, UNARY, OPERATOR))
+                if (consumeNext('+')) createOp("++")
+                else if (consumeNext('=')) createOp("+=")
+                else createOp("+")
+            '-' -> if (consumeNext('-')) createOp("--")
+                  else if (consumeNext('=')) createOp("-=")
+                  else createOp("-")
 
-            '!' -> createToken(NOT, arrayOf(UNARY))
-            '~' -> createToken(KITA, arrayOf(UNARY))
+            '|' -> if (consumeNext('|')) createOp("||") else createOp("|")
+            '&' -> if (consumeNext('&')) createOp("&&") else createOp("&")
 
-            else -> throw RuntimeException("Unknown operator at line $line: '$char'")
+            '!' -> if (consumeNext('=')) createOp("!=") else createOp("!")
+
+            '>' -> if (consumeNext('=')) createOp(">=") else createOp(">")
+            '<' -> if (consumeNext('=')) createOp("<=") else createOp("<")
+
+            '~' -> createOp("~")
+            '.' -> createOp(".")
+            ':' -> if (consumeNext('=')) createOp(":=") else createOp(":")
+            ',' -> createOp(",")
+            '(' -> createOp("(")
+            ')' -> createOp(")")
+            '[' -> createOp("[")
+            ']' -> createOp("]")
+            '{' -> createOp("{")
+            '}' -> createOp("}")
+            '\'' -> parseChar()
+            '"' -> parseString()
+            else -> {
+                if (isAlpha(char)) parseAlpha(char)
+                else if (isNumeric(char)) parseNumeric(char)
+                else throw RuntimeException("Unknown operator at line $line: '$char'")
+            }
         })
     }
 
-    private fun createToken(type: Type, flags: Array<Type>) = Token(line, type, flags)
+    private fun createOp(operator: String): Token {
+        val op = Type.SYMBOLS[operator] ?: throw RuntimeException("Cannot find operator '$operator'")
+        return op.normalToken(line)
+    }
+
+    private fun parseChar(): Token {
+        var char = next()
+        if (char == '\\') {
+            char = when (val n = next()) {
+                'n' -> '\n'
+                's' -> ' '
+                't' -> '\t'
+                '\'', '\"', '\\' -> char
+                else -> {
+                    reportError("Invalid escape character '$n'")
+                    '_'
+                }
+            }
+        }
+        if (next() != '\'')
+            reportError("Invalid syntax while using single quotes")
+        return Token(line, E_CHAR, arrayOf(VALUE), char)
+    }
+
+    private fun parseString(): Token {
+        val content = StringBuilder()
+        while (!isEOF()) {
+            var c = next()
+            if (c == '\"') break
+            else if (c == '\\') {
+                when (val e = next()) {
+                    'n' -> c = '\n'
+                    't' -> c = '\t'
+                    's' -> c = ' '
+                    '\'', '\"', '\\' -> break
+                    else -> reportError("Invalid escape character '$e'")
+                }
+            }
+            content.append(c)
+        }
+        return Token(line, E_STRING, arrayOf(VALUE), content.toString())
+    }
+
+    private fun parseAlpha(c: Char): Token {
+        val content = StringBuilder()
+        content.append(c)
+        while (!isEOF()) {
+            val p = peek()
+            if (isAlpha(p) || isNumeric(p)) {
+                content.append(next())
+            } else break
+        }
+        val value = content.toString()
+        val token = KEYWORDS[value]
+        return token?.normalToken(line) ?: Token(line, ALPHA, arrayOf(VALUE), value)
+    }
+
+    private fun parseNumeric(c: Char): Token {
+        val content = StringBuilder()
+        content.append(c)
+        while (!isEOF()) {
+            val p = peek()
+            if (isNumeric(p)) {
+                content.append(next())
+            } else break
+        }
+        return Token(line, E_INT, arrayOf(VALUE), content.toString().toInt())
+    }
+
+    private fun isNumeric(c: Char) = c in '0'..'9'
+    private fun isAlpha(c: Char) = (c in 'a'..'z' || c in 'A'..'Z') || c == '_'
+
+    private fun reportError(message: String) {
+        println("[line $line] $message")
+    }
 
     private fun isEOF() = index == source.length
 

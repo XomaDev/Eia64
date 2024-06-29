@@ -63,6 +63,7 @@ enum class Type {
 
     companion object {
         val SYMBOLS = HashMap<String, StaticToken>()
+        val KEYWORDS = HashMap<String, StaticToken>()
 
         init {
             SYMBOLS.let {
@@ -113,6 +114,10 @@ enum class Type {
                 it["}"] = StaticToken(CLOSE_CURLY, arrayOf(S_OPERATOR))
                 it[","] = StaticToken(COMMA, arrayOf(S_OPERATOR))
 
+                it[":="] = StaticToken(USE, arrayOf(INTERRUPTION))
+            }
+
+            KEYWORDS.let {
                 it["Int"] = StaticToken(E_INT, arrayOf(CLASS))
                 it["Bool"] = StaticToken(E_BOOL, arrayOf(CLASS))
                 it["String"] = StaticToken(E_STRING, arrayOf(CLASS))
@@ -164,7 +169,6 @@ enum class Type {
                 it["return"] = StaticToken(RETURN, arrayOf(INTERRUPTION))
                 it["break"] = StaticToken(BREAK, arrayOf(INTERRUPTION))
                 it["continue"] = StaticToken(CONTINUE, arrayOf(INTERRUPTION))
-                it[":="] = StaticToken(USE, arrayOf(INTERRUPTION))
             }
         }
     }

@@ -1,3 +1,6 @@
+; a rock-paper-scissor game written in Eia, you pick 'rock', 'paper' or a 'scissor'
+; robot picks it's option randomly
+
 stdlib(string)
 
 let choices = ~{ "rock" "paper" "scissor" }

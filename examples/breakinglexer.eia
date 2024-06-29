@@ -1,3 +1,0 @@
-let len123 = "hello world"
-println(len123 == "hello world")
-// it is never reached over here, the lexer breaks

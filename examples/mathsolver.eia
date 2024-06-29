@@ -1,3 +1,8 @@
+; a simple math interpreter that takes in basic expressions and evaluates them in order
+; supports +, -, * and /.
+; * and / are evaluated first, then + and -
+; does not yet support brackets
+
 stdlib(string, array)
 
 let PLUS = "+"

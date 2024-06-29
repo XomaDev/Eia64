@@ -1,7 +1,7 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.analysis.Parser
-import space.themelon.eia64.syntax.SyntaxAnalysis
+import space.themelon.eia64.syntax.Lexer
 import java.io.File
 
 class Executor {
@@ -17,7 +17,6 @@ class Executor {
 
     private val externalEvaluator = HashMap<String, Evaluator>()
 
-    private val syntaxAnalysis = SyntaxAnalysis()
     private val mainParser = Parser()
 
     private val mainEvaluator = Evaluator(this)
@@ -27,7 +26,7 @@ class Executor {
     }
 
     fun loadSource(source: String) {
-        mainEvaluator.eval(mainParser.parse(syntaxAnalysis.tokenize(source)))
+        mainEvaluator.eval(mainParser.parse(Lexer(source).tokens))
     }
 
     fun loadExternal(sourceFile: String, name: String) {
@@ -40,5 +39,5 @@ class Executor {
 
     fun getExternalExecutor(name: String) = externalEvaluator[name]
 
-    private fun getTokens(sourceFile: String) = syntaxAnalysis.tokenize(File(sourceFile).readText())
+    private fun getTokens(sourceFile: String) = Lexer(File(sourceFile).readText()).tokens
 }
