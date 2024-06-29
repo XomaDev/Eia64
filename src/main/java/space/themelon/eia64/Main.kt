@@ -14,14 +14,18 @@ object Main {
         }
         Executor.STD_LIB = stdlib.absolutePath
 
-        if (args.size != 1) throw RuntimeException("eia <full_source_path> or eia live")
+        if (args.size != 1) throw RuntimeException("eia <source_path> or eia live")
         if (args[0] == "live") {
             EiaLive.main(emptyArray<String>())
         } else {
             val executor = Executor()
             val startTime = System.nanoTime()
 
-            val file = File(args[0])
+            var sourceFile = args[0]
+            if (!sourceFile.startsWith('/')) {
+                sourceFile = directory.absolutePath + "/" + sourceFile
+            }
+            val file = File(sourceFile)
             if (!file.isFile || !file.exists()) {
                 println("Cannot find source file '$file', make sure it is a full valid path")
                 return
