@@ -514,9 +514,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         while (if (reverse) from >= to else from <= to) {
             numIterations++
             memory.enterScope()
-            // TODO:
-            //  take a look into this later
-            memory.declareVar(named, Entity(named, true, from.get(), E_INT))
+            memory.declareVar(named, Entity(named, true, from, E_INT))
             val result = eval(itr.body)
             memory.leaveScope()
             if (result is Entity) {

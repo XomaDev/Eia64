@@ -1,3 +1,6 @@
+; calculates levenshtein distance between two strings
+; also an example demonstrating use of arrays
+
 stdlib(math)
 
 fn compute(first: String, second: String) {

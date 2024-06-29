@@ -1,4 +1,8 @@
-let TRASH = "🗑️"
+; TrashGuy Animation written in Eia64!
+; You type in some text in the terminal and he steals them! 👀
+; https://zac.cy/trashguy/
+
+let TRASH = "🗑"
 let HAPPY_RIGHT = "(> ^_^)>"
 let HAPPY_LEFT = "<(^_^ <)"
 let INTERVAL = 500

@@ -9,5 +9,6 @@ until (true) {
     x++
   } else {
     println(format("Eh you only lasted %d rounds", x - 1))
+    x = 2
   }
 }
