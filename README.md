@@ -2,7 +2,7 @@
 
 Eia64 is an interpreted language that draws inspiration from the lovely syntax of Kotlin and many other languages like Go.
 
-Language is extensively documented at [themelon.space/eia](themelon.space/eia)
+Language is extensively documented at [themelon.space/eia](https://themelon.space/eia)
 
 `/stdlib` is where the standard library of Eia is located, it supports `string`, `array` and some `math`.\
 `/examples` are some really cool codes written in Eia 👀
