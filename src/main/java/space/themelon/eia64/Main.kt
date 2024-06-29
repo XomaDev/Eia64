@@ -1,19 +1,33 @@
 package space.themelon.eia64
 
 import space.themelon.eia64.runtime.Executor
+import java.io.File
 
 object Main {
     @JvmStatic
     fun main(args: Array<String>) {
-        val source = "/home/kumaraswamy/Documents/Eia64/examples/trashguy.eia"
-        // lowercase(), uppercase(), replace()
-        // split()
+        val directory = File(System.getProperty("user.dir"))
+        val stdlib = File("$directory/stdlib")
+        if (!stdlib.isDirectory || !stdlib.exists()) {
+            println("Cannot find stdlib/ in the local directory")
+            return
+        }
+        Executor.STD_LIB = stdlib.absolutePath
 
-        Executor.STD_LIB = "/home/kumaraswamy/Documents/Eia64/stdlib/"
+        if (args.size != 1) throw RuntimeException("eia <full_source_path> or eia live")
+        if (args[0] == "live") {
+            EiaLive.main(emptyArray<String>())
+        } else {
+            val executor = Executor()
+            val startTime = System.nanoTime()
 
-        val executor = Executor()
-        val startTime = System.nanoTime()
-        executor.loadFile(source)
-        println("Took " + (System.nanoTime() - startTime) + " ns")
+            val file = File(args[0])
+            if (!file.isFile || !file.exists()) {
+                println("Cannot find source file '$file', make sure it is a full valid path")
+                return
+            }
+            executor.loadFile(file.absolutePath)
+            println("Took " + (System.nanoTime() - startTime) + " ns")
+        }
     }
 }
