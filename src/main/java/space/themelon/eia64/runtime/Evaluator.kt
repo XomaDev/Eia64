@@ -37,12 +37,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     override fun stringLiteral(stringLiteral: Expression.StringLiteral) = EString(stringLiteral.value)
     override fun charLiteral(charLiteral: Expression.CharLiteral) = EChar(charLiteral.value)
 
-    override fun alpha(alpha: Expression.Alpha): Any {
-        val value = memory.getVar(alpha.index, alpha.value)
-        if (value == SHADO)
-            throw RuntimeException("Shado variable '${alpha.value}' is not yet set")
-        return value
-    }
+    override fun alpha(alpha: Expression.Alpha) = memory.getVar(alpha.index, alpha.value)
     override fun operator(operator: Expression.Operator) = operator.value
 
     private fun update(scope: Int, name: String, value: Any) {
@@ -79,23 +74,6 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 if (type == INCREMENT) eInt.getAndIncrement()
                 else eInt.getAndDecrement()
             })
-        }
-        KITA -> {
-            var operand: Any = expr.expr
-            memory.enterScope()
-            // TODO:
-            //  im not sure if entering scope early any good
-            if (operand !is Expression.ExpressionList)
-                operand = unboxEval(operand as Expression)
-            if (operand !is Expression.ExpressionList)
-                throw RuntimeException("Expected body operand for kita, but got $operand")
-            val evaluated = arrayOfNulls<Any>(operand.size)
-            for ((index, aExpr) in operand.expressions.withIndex())
-                evaluated[index] = unboxEval(aExpr)
-            memory.leaveScope()
-            // take a look at this later, implications of using := here
-            evaluated as Array<Any>
-            EArray(evaluated)
         }
         else -> throw RuntimeException("Unknown unary operator $type")
     }
@@ -332,13 +310,13 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 return EArray(Array(size.get()) { EInt(0) })
             }
 
-            ARRAY -> {
+            ARRAYOF -> {
                 val arguments = call.arguments.expressions
                 val evaluated = arrayOfNulls<Any>(arguments.size)
                 for ((index, aExpr) in arguments.withIndex())
                     evaluated[index] = unboxEval(aExpr)
-                arguments as Array<Any>
-                return EArray(arguments)
+                evaluated as Array<Any>
+                return EArray(evaluated)
             }
 
             TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())

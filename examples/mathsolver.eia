@@ -10,7 +10,7 @@ let MINUS = "-"
 let DIVIDE = "/"
 let MULTIPLY = "*"
 
-let SUPPORTED_OPERATORS = ~{ PLUS MINUS DIVIDE MULTIPLY }
+let SUPPORTED_OPERATORS = arrayOf(PLUS, MINUS, DIVIDE, MULTIPLY)
 
 fn isNumeric(token: String) {
   if (len(token) == 0) return false
@@ -28,7 +28,7 @@ fn tokenize(expr: String) {
   return expr.split(" ")
 }
 
-var tokens: Array = ~{ }
+var tokens: Array = arrayOf()
 var i = 0
 var size = 0
 
@@ -58,13 +58,13 @@ fn parse() {
   until (!isEOF()) {
     var op = eatOperator()
     until (op == DIVIDE || op == MULTIPLY) {
-      left = ~{ left op eatNumeric() }
+      left = arrayOf(left, op, eatNumeric())
       if (isEOF()) break
       else op = next()
     }
     if (isEOF()) break
     let right = parse()
-    left = ~{ left op right }
+    left = arrayOf(left, op, right)
   }
 
   return left

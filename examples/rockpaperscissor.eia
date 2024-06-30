@@ -3,7 +3,7 @@
 
 stdlib(string)
 
-let choices = ~{ "rock" "paper" "scissor" }
+let choices = arrayOf("rock", "paper", "scissor")
 
 fn robotChoose(user: String): Array {
   let robot = choices[rand(0, 2)]
@@ -12,10 +12,10 @@ fn robotChoose(user: String): Array {
   if ((user == "rock" && robot == "scissor")
         || (user == "paper" && robot == "rock")
         || (user == "scissor" && robot == "paper")) {
-    return ~{robot 1}
+    return arrayOf(robot, 1)
   }
 
-  return ~{robot 2}
+  return arrayOf(robot, 2)
 }
 
 until (true) {

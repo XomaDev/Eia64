@@ -65,11 +65,11 @@ fn endsWith(self: String, suffix: String): Bool {
   return true
 }
 
-let UPPER_CASE = ~{ 'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M'
-                    'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' }
+let UPPER_CASE = arrayOf( 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+                    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' )
 
-let LOWER_CASE = ~{ 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm'
-                    'n' 'o' 'p' 'q' 'r' 's' 't' 'u' 'v' 'w' 'x' 'y' 'z' }
+let LOWER_CASE = arrayOf( 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+                    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' )
 
 fn invert(self: String, target: Array, replacement: Array) {
   let size = len(self)
@@ -138,8 +138,8 @@ fn repeat(self: String, n: Int) {
 
 fn splitOnce(self: String, delimiter: String) {
   let splitIndex = indexOf(self, delimiter)
-  return ~{ part(self, 0, splitIndex)
-            substring(self, splitIndex + 1) }
+  return arrayOf( part(self, 0, splitIndex),
+            substring(self, splitIndex + 1) )
 }
 
 fn splitRecursive(self: String, delimiter: String) {

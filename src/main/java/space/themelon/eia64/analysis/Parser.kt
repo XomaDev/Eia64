@@ -234,6 +234,7 @@ class Parser {
         while (!isEOF() && peek().type != Type.CLOSE_CURLY)
             expressions.add(parseNext())
         expectType(Type.CLOSE_CURLY)
+        if (createScope) nameResolver.leaveScope()
         return Expression.ExpressionList(expressions)
     }
 
@@ -261,14 +262,18 @@ class Parser {
                 nextOp.type != Type.OPEN_SQUARE) break
 
             when (nextOp.type) {
+                // calling shadow funcs
                 Type.OPEN_CURVE -> left = unitCall(left)
                 Type.OPEN_SQUARE -> {
+                    // array access
                     skip()
                     val expr = parseNext()
                     expectType(Type.CLOSE_SQUARE)
                     left = Expression.ElementAccess(left, expr)
                 }
                 else -> {
+                    // calling a method in another class
+                    // string.contains("melon")
                     skip()
 
                     val method = readAlpha()
@@ -320,7 +325,6 @@ class Parser {
         else -> -1
     }
 
-
     private fun parseElement(): Expression {
         when (peek().type) {
             Type.OPEN_CURVE -> {
@@ -336,7 +340,10 @@ class Parser {
         }
         val token = next()
         if (token.hasFlag(Type.VALUE)) {
-            return parseValue(token)
+            val alpha = parseValue(token)
+            if (!isEOF() && peek().type == Type.OPEN_CURVE)
+                return unitCall(alpha)
+            return alpha
         } else if (token.hasFlag(Type.UNARY)) {
             return Expression.UnaryOperation(Expression.Operator(token.type), parseElement(), true)
         } else if (token.hasFlag(Type.NATIVE_CALL)) {
@@ -360,10 +367,10 @@ class Parser {
                 val name = readAlpha(token)
                 val vrIndex = nameResolver.resolveVr(name)
                 if (vrIndex == -1) {
-                    // could be a static invocation, search in dict
-                    if (!nameResolver.classes.contains(name))
-                        token.error<String>("Could not resolve name $name")
-                    Expression.Alpha(-2, name)
+                    // could be a function call or static invocation
+                    if (nameResolver.resolveFn(name) != null || nameResolver.classes.contains(name))
+                        Expression.Alpha(-2, name)
+                    else token.error<Expression>("Could not resolve name $name")
                 } else {
                     Expression.Alpha(vrIndex, name)
                 }

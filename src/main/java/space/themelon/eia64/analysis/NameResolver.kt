@@ -55,6 +55,9 @@ class NameResolver {
     fun resolveFn(name: String) = currentScope.resolveFn(name, 0)
 
     fun resolveVr(name: String): Int {
+        if (name == "LOWER_CASE") {
+            println("Found: " + currentScope.names)
+        }
         val index = currentScope.resolveVr(name)
         return index
     }

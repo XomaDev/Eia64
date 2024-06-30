@@ -1,4 +1,2 @@
-fn sayHello(name: String) {
-  println(format("Hello %s!", name))
-}
-sayHello("Kumaraswamy")
+fn getXX() = true
+println(!getX())
