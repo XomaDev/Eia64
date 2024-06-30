@@ -120,6 +120,25 @@ fn replace(self: String, match: String, replacement: String) {
   return result
 }
 
+fn isAlpha(self: String) {
+  itr (char in self) {
+    if (!(UPPER_CASE.contains(char) || LOWER_CASE.contains(char))) {
+     return false
+    }
+  }
+  return true
+}
+
+fn isNumeric(self: String) {
+  if (startsWith(self, "-")) {
+    self = substring(self, 1)
+  }
+  itr (char in self) {
+    if (!contains("1234567890.", str(char))) return false
+  }
+ return true
+}
+
 fn toCharArray(self: String) {
   let charCount = len(self)
   let chars = arralloc(charCount)

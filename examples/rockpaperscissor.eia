@@ -7,7 +7,7 @@ let choices = arrayOf("rock", "paper", "scissor")
 
 fn robotChoose(user: String): Array {
   let robot = choices[rand(0, 2)]
-  if (user == robot) return ~{robot 0}
+  if (user == robot) return arrayOf(robot, 0)
 
   if ((user == "rock" && robot == "scissor")
         || (user == "paper" && robot == "rock")

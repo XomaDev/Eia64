@@ -600,7 +600,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun interruption(interruption: Expression.Interruption) = when (val type = eval(interruption.type)) {
-        // wrap it as normal entity, this will be naturally unboxed when called unbox()
+        // wrap it as a normal entity, this will be naturally unboxed when called unbox()
         RETURN -> Entity("FlowReturn", false, unboxEval(interruption.expr!!), RETURN)
         BREAK -> Entity("FlowBreak", false, 0, BREAK)
         CONTINUE -> Entity("FlowContinue", false, 0, CONTINUE)

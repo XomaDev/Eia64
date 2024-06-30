@@ -1,2 +1,2 @@
-fn getXX() = true
+fn getX() = true
 println(!getX())

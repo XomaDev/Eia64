@@ -2,6 +2,7 @@ package space.themelon.eia64.analysis
 
 import space.themelon.eia64.Config
 import space.themelon.eia64.Expression
+import space.themelon.eia64.syntax.Flag
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 
@@ -27,12 +28,12 @@ class Parser {
     private fun parseNext(): Expression {
         val token = next()
         if (token.flags.isNotEmpty()) {
-            if (token.flags[0] == Type.LOOP) return loop(token)
-            else if (token.flags[0] == Type.V_KEYWORD) return variableDeclaration(token)
-            else if (token.flags[0] == Type.INTERRUPTION) return interruption(token)
+            if (token.flags[0] == Flag.LOOP) return loop(token)
+            else if (token.flags[0] == Flag.V_KEYWORD) return variableDeclaration(token)
+            else if (token.flags[0] == Flag.INTERRUPTION) return interruption(token)
         }
         return when (token.type) {
-            Type.IF -> ifDeclaration(token)
+            Type.IF -> ifDeclaration()
             Type.FUN -> fnDeclaration()
             Type.SHADO -> shadoDeclaration()
             Type.STDLIB -> importStdLib()
@@ -46,7 +47,7 @@ class Parser {
     private fun canParseNext(): Boolean {
         val token = peek()
         if (token.flags.isNotEmpty())
-            return token.flags[0].let { it == Type.LOOP || it == Type.V_KEYWORD || it == Type.INTERRUPTION }
+            return token.flags[0].let { it == Flag.LOOP || it == Flag.V_KEYWORD || it == Flag.INTERRUPTION }
         return when (token.type) {
             Type.IF, Type.FUN, Type.STDLIB -> true
             else -> false
@@ -150,7 +151,7 @@ class Parser {
             val parameterName = readAlpha()
             nameResolver.defineVr(parameterName)
             expectType(Type.COLON)
-            val clazz = expectFlag(Type.CLASS).type
+            val clazz = expectFlag(Flag.CLASS).type
 
             requiredArgs.add(Expression.DefinitionType(parameterName, clazz))
             if (!isNext(Type.COMMA)) break
@@ -160,7 +161,7 @@ class Parser {
         expectType(Type.CLOSE_CURVE)
         val returnType = if (isNext(Type.COLON)) {
             skip()
-            expectFlag(Type.CLASS).type
+            expectFlag(Flag.CLASS).type
         } else Type.E_ANY
         val body = if (isNext(Type.ASSIGNMENT)) {
             skip()
@@ -193,7 +194,7 @@ class Parser {
         return Expression.Shadow(names, body)
     }
 
-    private fun ifDeclaration(token: Token): Expression {
+    private fun ifDeclaration(): Expression {
         expectType(Type.OPEN_CURVE)
         val logicalExpr = parseNext()
         expectType(Type.CLOSE_CURVE)
@@ -204,7 +205,10 @@ class Parser {
         skip()
 
         val elseBranch = when (peek().type) {
-            Type.IF -> ifDeclaration(next())
+            Type.IF -> {
+                skip()
+                ifDeclaration()
+            }
             else -> bodyOrExpr()
         }
         return Expression.If(logicalExpr, ifBody, elseBranch)
@@ -246,7 +250,7 @@ class Parser {
             return Expression.AutoVariable(name, parseNext())
         }
         skip()
-        val definition = Expression.DefinitionType(name, expectFlag(Type.CLASS).type)
+        val definition = Expression.DefinitionType(name, expectFlag(Flag.CLASS).type)
         expectType(Type.ASSIGNMENT)
         return Expression.ExplicitVariable(token.type == Type.VAR, definition, parseNext())
     }
@@ -287,12 +291,12 @@ class Parser {
                 }
             }
         }
-        if (!isEOF() && peek().hasFlag(Type.POSSIBLE_RIGHT_UNARY)) {
+        if (!isEOF() && peek().hasFlag(Flag.POSSIBLE_RIGHT_UNARY)) {
             left = Expression.UnaryOperation(Expression.Operator(next().type), left, false)
         }
         while (!isEOF()) {
             val opToken = peek()
-            if (!opToken.hasFlag(Type.OPERATOR)) return left
+            if (!opToken.hasFlag(Flag.OPERATOR)) return left
 
             val precedence = operatorPrecedence(opToken.flags[0])
             if (precedence == -1) return left
@@ -300,7 +304,7 @@ class Parser {
             if (precedence >= minPrecedence) {
                 skip() // operator token
                 val right =
-                    if (opToken.hasFlag(Type.NON_COMMUTE)) parseElement()
+                    if (opToken.hasFlag(Flag.PRESERVE_ORDER)) parseElement()
                     else parseExpr(precedence)
                 left = Expression.BinaryOperation(
                     left,
@@ -312,16 +316,16 @@ class Parser {
         return left
     }
 
-    private fun operatorPrecedence(type: Type) = when (type) {
-        Type.ASSIGNMENT_TYPE -> 1
-        Type.LOGICAL_OR -> 2
-        Type.LOGICAL_AND -> 3
-        Type.BITWISE_OR -> 4
-        Type.BITWISE_AND -> 5
-        Type.EQUALITY -> 6
-        Type.RELATIONAL -> 7
-        Type.BINARY -> 8
-        Type.BINARY_PRECEDE -> 9
+    private fun operatorPrecedence(type: Flag) = when (type) {
+        Flag.ASSIGNMENT_TYPE -> 1
+        Flag.LOGICAL_OR -> 2
+        Flag.LOGICAL_AND -> 3
+        Flag.BITWISE_OR -> 4
+        Flag.BITWISE_AND -> 5
+        Flag.EQUALITY -> 6
+        Flag.RELATIONAL -> 7
+        Flag.BINARY -> 8
+        Flag.BINARY_PRECEDE -> 9
         else -> -1
     }
 
@@ -339,14 +343,14 @@ class Parser {
             else -> { }
         }
         val token = next()
-        if (token.hasFlag(Type.VALUE)) {
+        if (token.hasFlag(Flag.VALUE)) {
             val alpha = parseValue(token)
             if (!isEOF() && peek().type == Type.OPEN_CURVE)
                 return unitCall(alpha)
             return alpha
-        } else if (token.hasFlag(Type.UNARY)) {
+        } else if (token.hasFlag(Flag.UNARY)) {
             return Expression.UnaryOperation(Expression.Operator(token.type), parseElement(), true)
-        } else if (token.hasFlag(Type.NATIVE_CALL)) {
+        } else if (token.hasFlag(Flag.NATIVE_CALL)) {
             expectType(Type.OPEN_CURVE)
             val arguments = parseArguments()
             expectType(Type.CLOSE_CURVE)
@@ -429,11 +433,11 @@ class Parser {
     private fun expectType(type: Type): Token {
         val next = next()
         if (next.type != type)
-            next.error<String>("Expected token type $type")
+            next.error<String>("Expected token type $type but got $next")
         return next
     }
 
-    private fun expectFlag(flag: Type): Token {
+    private fun expectFlag(flag: Flag): Token {
         val next = next()
         if (!next.hasFlag(flag))
             next.error<String>("Expected flag $flag")

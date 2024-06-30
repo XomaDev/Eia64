@@ -1,6 +1,6 @@
 package space.themelon.eia64.syntax
 
-data class StaticToken(val type: Type, val flags: Array<Type> = emptyArray()) {
+data class StaticToken(val type: Type, val flags: Array<Flag> = emptyArray()) {
 
     fun normalToken(lineCount: Int) = Token(lineCount, type, flags)
 
