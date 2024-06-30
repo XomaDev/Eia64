@@ -1,0 +1,4 @@
+let sayHello = shado(name) {
+  println("Hello: " + name)
+}
+sayHello("Kumaraswamy")

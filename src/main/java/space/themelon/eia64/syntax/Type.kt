@@ -43,7 +43,7 @@ enum class Type {
     BOOL_CAST, INT_CAST, STRING_CAST,
     TYPE,
 
-    V_KEYWORD, LET, VAR,
+    V_KEYWORD, LET, VAR, SHADO,
     IF, ELSE,
     ITR, TO, IN, BY,
     FOR, UNTIL,
@@ -165,6 +165,7 @@ enum class Type {
                 it["else"] = StaticToken(ELSE, arrayOf(NONE))
 
                 it["fn"] = StaticToken(FUN, arrayOf(NONE))
+                it["shado"] = StaticToken(SHADO, arrayOf(NONE))
 
                 it["return"] = StaticToken(RETURN, arrayOf(INTERRUPTION))
                 it["break"] = StaticToken(BREAK, arrayOf(INTERRUPTION))

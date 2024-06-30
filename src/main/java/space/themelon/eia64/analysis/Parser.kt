@@ -34,6 +34,7 @@ class Parser {
         return when (token.type) {
             Type.IF -> ifDeclaration(token)
             Type.FUN -> fnDeclaration()
+            Type.SHADO -> shadoDeclaration()
             Type.STDLIB -> importStdLib()
             else -> {
                 back()
@@ -171,6 +172,10 @@ class Parser {
         return fnExpr
     }
 
+    private fun shadoDeclaration(): Shado {
+
+    }
+
     private fun ifDeclaration(token: Token): Expression {
         expectType(Type.OPEN_CURVE)
         val logicalExpr = parseNext()
@@ -233,25 +238,35 @@ class Parser {
         // {{a, x}, y}
         while (!isEOF()) {
             val nextOp = peek()
-            if (nextOp.type != Type.DOT && nextOp.type != Type.OPEN_SQUARE) break
-            skip()
-            if (nextOp.type == Type.OPEN_SQUARE) {
-                val expr = parseNext()
-                expectType(Type.CLOSE_SQUARE)
-                left = Expression.ElementAccess(left, expr)
-            } else {
-                val method = readAlpha()
-                expectType(Type.OPEN_CURVE)
-                val arguments = parseArguments()
-                expectType(Type.CLOSE_CURVE)
-                var static = false
-                if (left is Expression.Alpha)
-                    static = nameResolver.classes.contains(left.value)
-                left = Expression.ClassMethodCall(static, left, method, arguments)
+            if (nextOp.type != Type.DOT
+                && nextOp.type != Type.OPEN_CURVE &&
+                nextOp.type != Type.OPEN_SQUARE) break
+
+            when (nextOp.type) {
+                Type.OPEN_CURVE -> left = unitCall(left)
+                Type.OPEN_SQUARE -> {
+                    skip()
+                    val expr = parseNext()
+                    expectType(Type.CLOSE_SQUARE)
+                    left = Expression.ElementAccess(left, expr)
+                }
+                else -> {
+                    skip()
+
+                    val method = readAlpha()
+                    expectType(Type.OPEN_CURVE)
+                    val arguments = parseArguments()
+                    expectType(Type.CLOSE_CURVE)
+                    var static = false
+                    if (left is Expression.Alpha)
+                        static = nameResolver.classes.contains(left.value)
+                    left = Expression.ClassMethodCall(static, left, method, arguments)
+                }
             }
         }
-        if (!isEOF() && peek().hasFlag(Type.POSSIBLE_RIGHT_UNARY))
+        if (!isEOF() && peek().hasFlag(Type.POSSIBLE_RIGHT_UNARY)) {
             left = Expression.UnaryOperation(Expression.Operator(next().type), left, false)
+        }
         while (!isEOF()) {
             val opToken = peek()
             if (!opToken.hasFlag(Type.OPERATOR)) return left
@@ -301,8 +316,7 @@ class Parser {
         }
         val token = next()
         if (token.hasFlag(Type.VALUE)) {
-            return if (!isEOF() && peek().type == Type.OPEN_CURVE) funcInvoke(token)
-            else parseValue(token)
+            return parseValue(token)
         } else if (token.hasFlag(Type.UNARY)) {
             return Expression.UnaryOperation(Expression.Operator(token.type), parseElement(), true)
         } else if (token.hasFlag(Type.NATIVE_CALL)) {
@@ -344,17 +358,23 @@ class Parser {
         }
     }
 
-    private fun funcInvoke(token: Token): Expression {
-        val name = readAlpha(token)
-        expectType(Type.OPEN_CURVE)
+    private fun unitCall(unitExpr: Expression): Expression {
+        val at = expectType(Type.OPEN_CURVE)
         val arguments = parseArguments()
         expectType(Type.CLOSE_CURVE)
-        val fnExpr = nameResolver.resolveFn(name)
-        if (fnExpr.argsSize == -1)
-            throw RuntimeException("[Internal] Function args size is not yet set")
-        if (fnExpr.argsSize != arguments.size)
-            token.error<String>("Fn [$name] expected ${fnExpr.argsSize} but got ${arguments.size}")
-        return Expression.MethodCall(fnExpr, arguments)
+
+        if (unitExpr is Expression.Alpha) {
+            val name = unitExpr.value
+            val fnExpr = nameResolver.resolveFn(name)
+            if (fnExpr != null) {
+                if (fnExpr.argsSize == -1)
+                    throw RuntimeException("[Internal] Function args size is not yet set")
+                if (fnExpr.argsSize != arguments.size)
+                    at.error<String>("Fn [$name] expected ${fnExpr.argsSize} but got ${arguments.size}")
+                return Expression.MethodCall(fnExpr, arguments)
+            }
+        }
+        return Expression.UnitInvoke(unitExpr, arguments)
     }
 
     private fun parseArguments(): List<Expression> {

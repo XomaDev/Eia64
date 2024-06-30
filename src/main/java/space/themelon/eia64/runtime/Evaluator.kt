@@ -37,7 +37,12 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     override fun stringLiteral(stringLiteral: Expression.StringLiteral) = EString(stringLiteral.value)
     override fun charLiteral(charLiteral: Expression.CharLiteral) = EChar(charLiteral.value)
 
-    override fun alpha(alpha: Expression.Alpha) = memory.getVar(alpha.index, alpha.value)
+    override fun alpha(alpha: Expression.Alpha): Any {
+        val value = memory.getVar(alpha.index, alpha.value)
+        if (value == SHADO)
+            throw RuntimeException("Shado variable '${alpha.value}' is not yet set")
+        return value
+    }
     override fun operator(operator: Expression.Operator) = operator.value
 
     private fun update(scope: Int, name: String, value: Any) {
@@ -60,6 +65,13 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         val value = unboxEval(autoVariable.expr)
         memory.declareVar(autoVariable.name, Entity(autoVariable.name, true, unbox(value), getType(value)))
         return value
+    }
+
+    override fun shadoVariable(shadow: Expression.Shadow): Any {
+        shadow.names.forEach {
+            memory.declareVar(it, SHADO)
+        }
+        return 0
     }
 
     override fun unaryOperation(expr: Expression.UnaryOperation): Any = when (val type = operator(expr.operator)) {
@@ -434,6 +446,23 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
     private fun reportWrongArguments(name: String, expectedArgs: Int, gotArgs: Int) {
         throw RuntimeException("Fn [$name()] expected $expectedArgs but got $gotArgs")
+    }
+
+    override fun unitInvoke(unitInvoke: Expression.UnitInvoke): Any {
+        var operand: Any = unitInvoke.expr
+        memory.enterScope()
+        if (operand !is Expression.ExpressionList)
+            operand = unboxEval(operand as Expression)
+        if (operand !is Expression.ExpressionList)
+            throw RuntimeException("Expected body operand for kita, but got $operand")
+
+        val evaluated = arrayOfNulls<Any>(operand.size)
+        for ((index, aExpr) in operand.expressions.withIndex())
+            evaluated[index] = unboxEval(aExpr)
+        memory.leaveScope()
+        // take a look at this later, implications of using := here
+        evaluated as Array<Any>
+        return EArray(evaluated)
     }
 
     override fun until(until: Expression.Until): Any {
