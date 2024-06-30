@@ -48,7 +48,7 @@ enum class Type {
     ITR, TO, IN, BY,
     FOR, UNTIL,
     FUN,
-    INCLUDE, COPY, ARRALLOC, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT,
+    INCLUDE, COPY, ARRALLOC, ARRAY, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT,
     STDLIB,
 
     RETURN, BREAK, CONTINUE,
@@ -138,6 +138,7 @@ enum class Type {
                 it["include"] = StaticToken(INCLUDE, arrayOf(NATIVE_CALL))
                 it["copy"] = StaticToken(COPY, arrayOf(NATIVE_CALL))
                 it["arralloc"] = StaticToken(ARRALLOC, arrayOf(NATIVE_CALL))
+                it["array"] = StaticToken(ARRAY, arrayOf(NATIVE_CALL))
                 it["time"] = StaticToken(TIME, arrayOf(NATIVE_CALL))
                 it["rand"] = StaticToken(RAND, arrayOf(NATIVE_CALL))
                 it["print"] = StaticToken(PRINT, arrayOf(NATIVE_CALL))

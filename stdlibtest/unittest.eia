@@ -1,4 +1,4 @@
-let sayHello = shado(name) {
-  println("Hello: " + name)
+fn sayHello(name: String) {
+  println(format("Hello %s!", name))
 }
 sayHello("Kumaraswamy")

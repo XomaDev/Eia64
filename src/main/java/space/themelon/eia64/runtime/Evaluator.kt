@@ -67,13 +67,6 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         return value
     }
 
-    override fun shadoVariable(shadow: Expression.Shadow): Any {
-        shadow.names.forEach {
-            memory.declareVar(it, SHADO)
-        }
-        return 0
-    }
-
     override fun unaryOperation(expr: Expression.UnaryOperation): Any = when (val type = operator(expr.operator)) {
         NOT -> EBool(!(booleanExpr(expr.expr, "! Not").get()))
         NEGATE -> EInt(Math.negateExact(intExpr(expr.expr, "- Negate").get()))
@@ -90,6 +83,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         KITA -> {
             var operand: Any = expr.expr
             memory.enterScope()
+            // TODO:
+            //  im not sure if entering scope early any good
             if (operand !is Expression.ExpressionList)
                 operand = unboxEval(operand as Expression)
             if (operand !is Expression.ExpressionList)
@@ -337,6 +332,15 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 return EArray(Array(size.get()) { EInt(0) })
             }
 
+            ARRAY -> {
+                val arguments = call.arguments.expressions
+                val evaluated = arrayOfNulls<Any>(arguments.size)
+                for ((index, aExpr) in arguments.withIndex())
+                    evaluated[index] = unboxEval(aExpr)
+                arguments as Array<Any>
+                return EArray(arguments)
+            }
+
             TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())
 
             RAND -> {
@@ -444,25 +448,41 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         return result
     }
 
-    private fun reportWrongArguments(name: String, expectedArgs: Int, gotArgs: Int) {
-        throw RuntimeException("Fn [$name()] expected $expectedArgs but got $gotArgs")
+    override fun unitInvoke(shadoInvoke: Expression.ShadoInvoke): Any {
+        var operand: Any = shadoInvoke.expr
+
+        if (operand !is Expression.Shadow)
+            operand = unboxEval(operand as Expression)
+
+        if (operand !is Expression.Shadow)
+            throw RuntimeException("Expected shadow element for call, but got $operand")
+
+        val expectedArgs = operand.names.size
+        val gotArgs = shadoInvoke.arguments.size
+        if (expectedArgs != gotArgs) {
+            reportWrongArguments("AnonShado", expectedArgs, gotArgs, "Shado")
+        }
+
+        val namesIterator = operand.names.iterator()
+        val exprIterator = evaluateArgs(shadoInvoke.arguments).iterator()
+
+        memory.enterScope()
+        while (exprIterator.hasNext()) memory.declareVar(namesIterator.next(), exprIterator.next())
+
+        val result = eval(operand.body)
+        memory.leaveScope()
+
+        if (result is Entity) {
+            when (result.type) {
+                RETURN, USE -> return result
+                else -> { }
+            }
+        }
+        return result
     }
 
-    override fun unitInvoke(unitInvoke: Expression.UnitInvoke): Any {
-        var operand: Any = unitInvoke.expr
-        memory.enterScope()
-        if (operand !is Expression.ExpressionList)
-            operand = unboxEval(operand as Expression)
-        if (operand !is Expression.ExpressionList)
-            throw RuntimeException("Expected body operand for kita, but got $operand")
-
-        val evaluated = arrayOfNulls<Any>(operand.size)
-        for ((index, aExpr) in operand.expressions.withIndex())
-            evaluated[index] = unboxEval(aExpr)
-        memory.leaveScope()
-        // take a look at this later, implications of using := here
-        evaluated as Array<Any>
-        return EArray(evaluated)
+    private fun reportWrongArguments(name: String, expectedArgs: Int, gotArgs: Int, type: String = "Fn") {
+        throw RuntimeException("$type [$name()] expected $expectedArgs but got $gotArgs")
     }
 
     override fun until(until: Expression.Until): Any {
@@ -626,6 +646,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         memory.declareFn(function.name, function)
         return EBool(true)
     }
+
+    override fun shado(shadow: Expression.Shadow) = shadow
 
     override fun elementAccess(access: Expression.ElementAccess): Any {
         val entity = unboxEval(access.expr)

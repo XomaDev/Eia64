@@ -165,15 +165,32 @@ class Parser {
         val body = if (isNext(Type.ASSIGNMENT)) {
             skip()
             parseNext()
-        } else optimiseExpr(body(false))
+        } else optimiseExpr(normalBody(false))
         nameResolver.leaveScope()
         val fnExpr = Expression.Function(name, requiredArgs, returnType, body)
         fnElement.fnExpression = fnExpr
         return fnExpr
     }
 
-    private fun shadoDeclaration(): Shado {
+    private fun shadoDeclaration(): Expression.Shadow {
+        val names = ArrayList<String>()
 
+        nameResolver.enterScope()
+        expectType(Type.OPEN_CURVE)
+        while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
+            val name = readAlpha()
+            nameResolver.defineVr(name)
+            names.add(name)
+            if (!isNext(Type.COMMA)) break
+            skip()
+        }
+        expectType(Type.CLOSE_CURVE)
+        val body = if (isNext(Type.ASSIGNMENT)) {
+            skip()
+            parseNext()
+        } else optimiseExpr(normalBody(false))
+        nameResolver.leaveScope()
+        return Expression.Shadow(names, body)
     }
 
     private fun ifDeclaration(token: Token): Expression {
@@ -194,29 +211,30 @@ class Parser {
     }
 
     private fun bodyOrExpr(newScope: Boolean = true): Expression {
+        // function used by if, until, for, itr, normal body
         if (peek().type == Type.OPEN_CURLY)
-            return optimiseExpr(body(newScope))
+            return optimiseExpr(normalBody(newScope))
         if (newScope) nameResolver.enterScope()
         val expr = parseNext()
         if (newScope) nameResolver.leaveScope()
         return expr
     }
 
-    private fun body(createScope: Boolean = true): Expression.ExpressionList{
+    private fun optimiseExpr(expr: Expression): Expression {
+        // if an expr list has just one element, it directly returns that element
+        if (expr !is Expression.ExpressionList) return expr
+        if (expr.size != 1) return expr
+        return expr.expressions[0]
+    }
+
+    private fun normalBody(createScope: Boolean = true): Expression.ExpressionList {
         if (createScope) nameResolver.enterScope()
         expectType(Type.OPEN_CURLY)
         val expressions = ArrayList<Expression>()
         while (!isEOF() && peek().type != Type.CLOSE_CURLY)
             expressions.add(parseNext())
         expectType(Type.CLOSE_CURLY)
-        if (createScope) nameResolver.leaveScope()
         return Expression.ExpressionList(expressions)
-    }
-
-    private fun optimiseExpr(expr: Expression): Expression {
-        if (expr !is Expression.ExpressionList) return expr
-        if (expr.size != 1) return expr
-        return expr.expressions[0]
     }
 
     private fun variableDeclaration(token: Token): Expression {
@@ -311,7 +329,9 @@ class Parser {
                 expectType(Type.CLOSE_CURVE)
                 return expr
             }
-            Type.OPEN_CURLY -> return body().also { it.preserveState = true }
+            Type.OPEN_CURLY -> {
+                return Expression.Shadow(emptyList(), normalBody())
+            }
             else -> { }
         }
         val token = next()
@@ -374,7 +394,7 @@ class Parser {
                 return Expression.MethodCall(fnExpr, arguments)
             }
         }
-        return Expression.UnitInvoke(unitExpr, arguments)
+        return Expression.ShadoInvoke(unitExpr, arguments)
     }
 
     private fun parseArguments(): List<Expression> {
