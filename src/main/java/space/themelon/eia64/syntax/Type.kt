@@ -145,8 +145,8 @@ enum class Type {
                 it["by"] = StaticToken(BY)
                 it["for"] = StaticToken(FOR, arrayOf(Flag.LOOP))
 
-                it["let"] = StaticToken(LET, arrayOf(Flag.V_KEYWORD))
-                it["var"] = StaticToken(VAR, arrayOf(Flag.V_KEYWORD))
+                it["let"] = StaticToken(LET, arrayOf(Flag.VARIABLE))
+                it["var"] = StaticToken(VAR, arrayOf(Flag.VARIABLE))
 
                 it["if"] = StaticToken(IF, arrayOf(Flag.NONE))
                 it["else"] = StaticToken(ELSE, arrayOf(Flag.NONE))
