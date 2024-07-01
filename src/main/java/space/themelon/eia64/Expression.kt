@@ -26,6 +26,7 @@ abstract class Expression {
         fun unitInvoke(shadoInvoke: ShadoInvoke): R
         fun until(until: Until): R
         fun itr(itr: Itr): R
+        fun whenExpr(whenExpr: When): R
         fun forEach(forEach: ForEach): R
         fun forLoop(forLoop: ForLoop): R
         fun interruption(interruption: Interruption): R
@@ -167,6 +168,14 @@ abstract class Expression {
         val body: Expression,
     ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.itr(this)
+    }
+
+    data class When(
+        val expr: Expression,
+        val matches: List<Pair<Expression, Expression>>,
+        val defaultBranch: Expression,
+    ): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.whenExpr(this)
     }
 
     data class Until(

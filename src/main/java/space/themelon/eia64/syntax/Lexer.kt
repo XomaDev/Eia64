@@ -41,6 +41,7 @@ class Lexer(private val source: String) {
                 else createOp("+")
             '-' -> if (consumeNext('-')) createOp("--")
                   else if (consumeNext('=')) createOp("-=")
+                  else if (consumeNext('>')) createOp("->")
                   else createOp("-")
 
             '|' -> if (consumeNext('|')) createOp("||") else createOp("|")

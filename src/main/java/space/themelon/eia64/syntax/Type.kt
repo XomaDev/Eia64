@@ -15,6 +15,7 @@ enum class Type {
     NOT, INCREMENT, DECREMENT,
     USE,
     DOT,
+    RIGHT_ARROW,
 
     COLON,
     ASSIGNMENT,
@@ -34,7 +35,7 @@ enum class Type {
     BOOL_CAST, INT_CAST, STRING_CAST,
     TYPE,
 
-    LET, VAR, SHADO,
+    LET, VAR, SHADO, WHEN,
     IF, ELSE,
     ITR, TO, IN, BY,
     FOR, UNTIL,
@@ -86,7 +87,7 @@ enum class Type {
                 it["--"] = StaticToken(DECREMENT, arrayOf(Flag.UNARY, Flag.POSSIBLE_RIGHT_UNARY))
 
                 it["."] = StaticToken(DOT)
-
+                it["->"] = StaticToken(RIGHT_ARROW)
 
                 it[":"] = StaticToken(COLON)
 
@@ -151,7 +152,8 @@ enum class Type {
                 it["else"] = StaticToken(ELSE, arrayOf(Flag.NONE))
 
                 it["fn"] = StaticToken(FUN, arrayOf(Flag.NONE))
-                it["shado"] = StaticToken(SHADO, arrayOf(Flag.NONE))
+                it["shado"] = StaticToken(SHADO)
+                it["when"] = StaticToken(WHEN)
 
                 it["return"] = StaticToken(RETURN, arrayOf(Flag.INTERRUPTION))
                 it["break"] = StaticToken(BREAK, arrayOf(Flag.INTERRUPTION))

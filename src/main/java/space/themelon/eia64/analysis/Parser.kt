@@ -25,6 +25,7 @@ class Parser {
         return Expression.ExpressionList(expressions)
     }
 
+    // make sure to update canParseNext() when we add stuff here!
     private fun parseNext(): Expression {
         val token = next()
         if (token.flags.isNotEmpty()) {
@@ -37,6 +38,7 @@ class Parser {
             Type.FUN -> fnDeclaration()
             Type.SHADO -> shadoDeclaration()
             Type.STDLIB -> importStdLib()
+            Type.WHEN -> whenStatement(token)
             else -> {
                 back()
                 return parseExpr(0)
@@ -47,9 +49,12 @@ class Parser {
     private fun canParseNext(): Boolean {
         val token = peek()
         if (token.flags.isNotEmpty())
-            return token.flags[0].let { it == Flag.LOOP || it == Flag.V_KEYWORD || it == Flag.INTERRUPTION }
+            token.flags[0].let {
+                if (it == Flag.LOOP || it == Flag.V_KEYWORD || it == Flag.INTERRUPTION)
+                    return true
+            }
         return when (token.type) {
-            Type.IF, Type.FUN, Type.STDLIB -> true
+            Type.IF, Type.FUN, Type.STDLIB, Type.SHADO, Type.WHEN -> true
             else -> false
         }
     }
@@ -68,6 +73,46 @@ class Parser {
             expectType(Type.COMMA)
         }
         return Expression.ImportStdLib(imports)
+    }
+
+    private fun whenStatement(token: Token): Expression {
+        expectType(Type.OPEN_CURVE)
+        val expr = parseNext()
+        expectType(Type.CLOSE_CURVE)
+
+        expectType(Type.OPEN_CURLY)
+
+        fun readBody(): Expression {
+            expectType(Type.RIGHT_ARROW)
+            expectType(Type.OPEN_CURLY)
+            if (peek().type == Type.CLOSE_CURLY) {
+                skip()
+                return Expression.BoolLiteral(false)
+            }
+            nameResolver.enterScope()
+            val body = parseNext()
+            expectType(Type.CLOSE_CURLY)
+            nameResolver.leaveScope()
+            return body
+        }
+        val matches = ArrayList<Pair<Expression, Expression>>()
+        while (true) {
+            val p = peek()
+            if (p.type == Type.ELSE) break
+            if (p.type == Type.CLOSE_CURLY) {
+                token.error<String>("Expected else branch for the when statement")
+            }
+            val match = parseNext()
+            matches.add(match to readBody())
+        }
+        expectType(Type.ELSE)
+        val elseBranch = readBody()
+        expectType(Type.CLOSE_CURLY)
+
+        if (matches.isEmpty()) {
+            token.error<String>("When statement cannot be empty")
+        }
+        return Expression.When(expr, matches, elseBranch)
     }
 
     private fun loop(token: Token): Expression {
@@ -246,13 +291,24 @@ class Parser {
         val name = readAlpha()
         nameResolver.defineVr(name)
         if (!isNext(Type.COLON)) {
-            expectType(Type.ASSIGNMENT)
-            return Expression.AutoVariable(name, parseNext())
+            return Expression.AutoVariable(name, readVariableExpr())
         }
         skip()
         val definition = Expression.DefinitionType(name, expectFlag(Flag.CLASS).type)
-        expectType(Type.ASSIGNMENT)
-        return Expression.ExplicitVariable(token.type == Type.VAR, definition, parseNext())
+        return Expression.ExplicitVariable(token.type == Type.VAR, definition, readVariableExpr())
+    }
+
+    private fun readVariableExpr(): Expression {
+        val nextToken = peek()
+        return when (nextToken.type) {
+            Type.ASSIGNMENT -> {
+                skip()
+                parseNext()
+            }
+            Type.OPEN_CURVE -> shadoDeclaration()
+            Type.OPEN_CURLY -> parseNext()
+            else -> nextToken.error("Unexpected variable expression")
+        }
     }
 
     private fun parseExpr(minPrecedence: Int): Expression {

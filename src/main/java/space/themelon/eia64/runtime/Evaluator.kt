@@ -78,6 +78,18 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         else -> throw RuntimeException("Unknown unary operator $type")
     }
 
+    private fun valueEquals(left: Any, right: Any): Boolean {
+        if (getType(left) != getType(right)) return false
+        when (left) {
+            is EInt,
+            is EString,
+            is EChar,
+            is EBool,
+            is EArray -> return left == right
+        }
+        return false
+    }
+
     override fun binaryOperation(expr: Expression.BinaryOperation) = when (val type = operator(expr.operator)) {
         PLUS -> {
             val left = unboxEval(expr.left)
@@ -93,12 +105,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         EQUALS, NOT_EQUALS -> {
             val left = unboxEval(expr.left)
             val right = unboxEval(expr.right)
-            EBool(if (getType(left) != getType(right)) {
-                type != EQUALS
-            } else when (left) {
-                is EInt, is EString, is EChar, is EBool, is EArray -> if (type == EQUALS) left == right else left != right
-                else -> false
-            })
+
+            EBool(if (type == EQUALS) valueEquals(left, right) else !valueEquals(left, right))
         }
         LOGICAL_AND -> booleanExpr(expr.left, "&& Logical And").and(booleanExpr(expr.right, "&& Logical And"))
         LOGICAL_OR -> booleanExpr(expr.left, "|| Logical Or").or(booleanExpr(expr.right, "|| Logical Or"))
@@ -606,6 +614,17 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         CONTINUE -> Entity("FlowContinue", false, 0, CONTINUE)
         USE -> Entity("FlowUse", false, unboxEval(interruption.expr!!), USE)
         else -> throw RuntimeException("Unknown interruption type $type")
+    }
+
+    override fun whenExpr(whenExpr: Expression.When): Any {
+        val matchExpr = unboxEval(whenExpr.expr)
+        for (match in whenExpr.matches) {
+            val right = unboxEval(match.first)
+            // TODO:
+            //  we have to evaluate it inside a body
+            if (valueEquals(matchExpr, right)) return unboxEval(match.second)
+        }
+        return unboxEval(whenExpr.defaultBranch)
     }
 
     override fun ifFunction(ifExpr: Expression.If): Any {
