@@ -30,7 +30,7 @@ class Parser {
         val token = next()
         if (token.flags.isNotEmpty()) {
             if (token.flags[0] == Flag.LOOP) return loop(token)
-            else if (token.flags[0] == Flag.V_KEYWORD) return variableDeclaration(token)
+            else if (token.flags[0] == Flag.VARIABLE) return variableDeclaration(token)
             else if (token.flags[0] == Flag.INTERRUPTION) return interruption(token)
         }
         return when (token.type) {
@@ -50,7 +50,7 @@ class Parser {
         val token = peek()
         if (token.flags.isNotEmpty())
             token.flags[0].let {
-                if (it == Flag.LOOP || it == Flag.V_KEYWORD || it == Flag.INTERRUPTION)
+                if (it == Flag.LOOP || it == Flag.VARIABLE || it == Flag.INTERRUPTION)
                     return true
             }
         return when (token.type) {

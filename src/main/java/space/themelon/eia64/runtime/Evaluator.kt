@@ -620,11 +620,17 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         val matchExpr = unboxEval(whenExpr.expr)
         for (match in whenExpr.matches) {
             val right = unboxEval(match.first)
-            // TODO:
-            //  we have to evaluate it inside a body
-            if (valueEquals(matchExpr, right)) return unboxEval(match.second)
+            if (valueEquals(matchExpr, right)) {
+                memory.enterScope()
+                val result = unboxEval(match.second)
+                memory.leaveScope()
+                return result
+            }
         }
-        return unboxEval(whenExpr.defaultBranch)
+        memory.enterScope()
+        val result = unboxEval(whenExpr.defaultBranch)
+        memory.leaveScope()
+        return result
     }
 
     override fun ifFunction(ifExpr: Expression.If): Any {

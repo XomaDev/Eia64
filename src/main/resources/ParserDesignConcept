@@ -1,0 +1,20 @@
+We need to build a system to parse the syntax in a smart way
+```
+when (x) {
+  7 -> time()
+  (2 * 4) -> name
+}
+```
+
+Block(n=1) {
+  WHEN, OPEN_CURVE, ALPHA(x), CLOSE_CURVE, OPEN_CURLY
+}
+Block(n=2) {
+  Int(7), RIGHT_ARROW, TIME, OPEN_CURVE, CLOSE_CURVE
+}
+Block(n=3) {
+  OPEN_CURVE, Int(2), MUL, Int(4), RIGHT_ARROW, Alpha(name)
+}
+Block(n=4) {
+  CLOSE_CURLY
+}
