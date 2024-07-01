@@ -7,11 +7,11 @@ class NameResolver {
 
         val funcObjs = HashMap<String, FnElement>()
 
-        fun resolveFn(name: String, travelDepth: Int): FnElement {
+        fun resolveFn(name: String, travelDepth: Int): FnElement? {
             functions.indexOf(name).let {
                 if (it != -1) return funcObjs[name]!!
                 if (before != null) return before.resolveFn(name, travelDepth + 1)
-                throw RuntimeException("Unable to resolve name '$name'")
+                return null
             }
         }
 
@@ -55,6 +55,9 @@ class NameResolver {
     fun resolveFn(name: String) = currentScope.resolveFn(name, 0)
 
     fun resolveVr(name: String): Int {
+        if (name == "LOWER_CASE") {
+            println("Found: " + currentScope.names)
+        }
         val index = currentScope.resolveVr(name)
         return index
     }

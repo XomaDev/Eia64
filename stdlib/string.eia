@@ -65,11 +65,11 @@ fn endsWith(self: String, suffix: String): Bool {
   return true
 }
 
-let UPPER_CASE = ~{ 'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M'
-                    'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z' }
+let UPPER_CASE = arrayOf( 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+                    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z' )
 
-let LOWER_CASE = ~{ 'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm'
-                    'n' 'o' 'p' 'q' 'r' 's' 't' 'u' 'v' 'w' 'x' 'y' 'z' }
+let LOWER_CASE = arrayOf( 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
+                    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' )
 
 fn invert(self: String, target: Array, replacement: Array) {
   let size = len(self)
@@ -120,6 +120,25 @@ fn replace(self: String, match: String, replacement: String) {
   return result
 }
 
+fn isAlpha(self: String) {
+  itr (char in self) {
+    if (!(UPPER_CASE.contains(char) || LOWER_CASE.contains(char))) {
+     return false
+    }
+  }
+  return true
+}
+
+fn isNumeric(self: String) {
+  if (startsWith(self, "-")) {
+    self = substring(self, 1)
+  }
+  itr (char in self) {
+    if (!contains("1234567890.", str(char))) return false
+  }
+ return true
+}
+
 fn toCharArray(self: String) {
   let charCount = len(self)
   let chars = arralloc(charCount)
@@ -138,8 +157,8 @@ fn repeat(self: String, n: Int) {
 
 fn splitOnce(self: String, delimiter: String) {
   let splitIndex = indexOf(self, delimiter)
-  return ~{ part(self, 0, splitIndex)
-            substring(self, splitIndex + 1) }
+  return arrayOf( part(self, 0, splitIndex),
+            substring(self, splitIndex + 1) )
 }
 
 fn splitRecursive(self: String, delimiter: String) {

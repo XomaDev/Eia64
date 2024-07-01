@@ -51,7 +51,6 @@ class Lexer(private val source: String) {
             '>' -> if (consumeNext('=')) createOp(">=") else createOp(">")
             '<' -> if (consumeNext('=')) createOp("<=") else createOp("<")
 
-            '~' -> createOp("~")
             '.' -> createOp(".")
             ':' -> if (consumeNext('=')) createOp(":=") else createOp(":")
             ',' -> createOp(",")
@@ -92,7 +91,7 @@ class Lexer(private val source: String) {
         }
         if (next() != '\'')
             reportError("Invalid syntax while using single quotes")
-        return Token(line, E_CHAR, arrayOf(VALUE), char)
+        return Token(line, E_CHAR, arrayOf(Flag.VALUE), char)
     }
 
     private fun parseString(): Token {
@@ -111,7 +110,7 @@ class Lexer(private val source: String) {
             }
             content.append(c)
         }
-        return Token(line, E_STRING, arrayOf(VALUE), content.toString())
+        return Token(line, E_STRING, arrayOf(Flag.VALUE), content.toString())
     }
 
     private fun parseAlpha(c: Char): Token {
@@ -125,7 +124,7 @@ class Lexer(private val source: String) {
         }
         val value = content.toString()
         val token = KEYWORDS[value]
-        return token?.normalToken(line) ?: Token(line, ALPHA, arrayOf(VALUE), value)
+        return token?.normalToken(line) ?: Token(line, ALPHA, arrayOf(Flag.VALUE), value)
     }
 
     private fun parseNumeric(c: Char): Token {
@@ -137,7 +136,7 @@ class Lexer(private val source: String) {
                 content.append(next())
             } else break
         }
-        return Token(line, E_INT, arrayOf(VALUE), content.toString().toInt())
+        return Token(line, E_INT, arrayOf(Flag.VALUE), content.toString().toInt())
     }
 
     private fun isNumeric(c: Char) = c in '0'..'9'

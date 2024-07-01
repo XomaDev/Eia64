@@ -5,11 +5,11 @@ import kotlin.jvm.Throws
 data class Token(
     val lineCount: Int,
     val type: Type,
-    val flags: Array<Type> = arrayOf(),
+    val flags: Array<Flag> = arrayOf(),
     val optionalData: Any? = null
 ) {
 
-    fun hasFlag(type: Type): Boolean = flags.contains(type)
+    fun hasFlag(type: Flag): Boolean = flags.contains(type)
 
     @Throws(RuntimeException::class)
     fun <T> error(message: String): T {

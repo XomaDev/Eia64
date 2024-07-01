@@ -16,12 +16,14 @@ abstract class Expression {
         fun importStdLib(stdLib: ImportStdLib): R
         fun variable(variable: ExplicitVariable): R
         fun autoVariable(autoVariable: AutoVariable): R
+        fun shado(shadow: Shadow): R
         fun unaryOperation(expr: UnaryOperation): R
         fun binaryOperation(expr: BinaryOperation): R
         fun expressions(list: ExpressionList): R
         fun nativeCall(call: NativeCall): R
         fun methodCall(call: MethodCall): R
         fun classMethodCall(call: ClassMethodCall): R
+        fun unitInvoke(shadoInvoke: ShadoInvoke): R
         fun until(until: Until): R
         fun itr(itr: Itr): R
         fun forEach(forEach: ForEach): R
@@ -125,6 +127,13 @@ abstract class Expression {
         override fun <R> accept(v: Visitor<R>) = v.classMethodCall(this)
     }
 
+    data class ShadoInvoke(
+        val expr: Expression,
+        val arguments: List<Expression>
+    ): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.unitInvoke(this)
+    }
+
     data class ExpressionList(
         val expressions: List<Expression>,
         var preserveState: Boolean = false,
@@ -187,6 +196,13 @@ abstract class Expression {
         val body: Expression
     ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.function(this)
+    }
+
+    data class Shadow(
+        val names: List<String>,
+        val body: Expression
+    ): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.shado(this)
     }
 
     data class ElementAccess(

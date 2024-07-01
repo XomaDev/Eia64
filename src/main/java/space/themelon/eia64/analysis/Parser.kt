@@ -2,6 +2,7 @@ package space.themelon.eia64.analysis
 
 import space.themelon.eia64.Config
 import space.themelon.eia64.Expression
+import space.themelon.eia64.syntax.Flag
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 
@@ -27,13 +28,14 @@ class Parser {
     private fun parseNext(): Expression {
         val token = next()
         if (token.flags.isNotEmpty()) {
-            if (token.flags[0] == Type.LOOP) return loop(token)
-            else if (token.flags[0] == Type.V_KEYWORD) return variableDeclaration(token)
-            else if (token.flags[0] == Type.INTERRUPTION) return interruption(token)
+            if (token.flags[0] == Flag.LOOP) return loop(token)
+            else if (token.flags[0] == Flag.V_KEYWORD) return variableDeclaration(token)
+            else if (token.flags[0] == Flag.INTERRUPTION) return interruption(token)
         }
         return when (token.type) {
-            Type.IF -> ifDeclaration(token)
+            Type.IF -> ifDeclaration()
             Type.FUN -> fnDeclaration()
+            Type.SHADO -> shadoDeclaration()
             Type.STDLIB -> importStdLib()
             else -> {
                 back()
@@ -45,7 +47,7 @@ class Parser {
     private fun canParseNext(): Boolean {
         val token = peek()
         if (token.flags.isNotEmpty())
-            return token.flags[0].let { it == Type.LOOP || it == Type.V_KEYWORD || it == Type.INTERRUPTION }
+            return token.flags[0].let { it == Flag.LOOP || it == Flag.V_KEYWORD || it == Flag.INTERRUPTION }
         return when (token.type) {
             Type.IF, Type.FUN, Type.STDLIB -> true
             else -> false
@@ -149,7 +151,7 @@ class Parser {
             val parameterName = readAlpha()
             nameResolver.defineVr(parameterName)
             expectType(Type.COLON)
-            val clazz = expectFlag(Type.CLASS).type
+            val clazz = expectFlag(Flag.CLASS).type
 
             requiredArgs.add(Expression.DefinitionType(parameterName, clazz))
             if (!isNext(Type.COMMA)) break
@@ -159,19 +161,40 @@ class Parser {
         expectType(Type.CLOSE_CURVE)
         val returnType = if (isNext(Type.COLON)) {
             skip()
-            expectFlag(Type.CLASS).type
+            expectFlag(Flag.CLASS).type
         } else Type.E_ANY
         val body = if (isNext(Type.ASSIGNMENT)) {
             skip()
             parseNext()
-        } else optimiseExpr(body(false))
+        } else optimiseExpr(normalBody(false))
         nameResolver.leaveScope()
         val fnExpr = Expression.Function(name, requiredArgs, returnType, body)
         fnElement.fnExpression = fnExpr
         return fnExpr
     }
 
-    private fun ifDeclaration(token: Token): Expression {
+    private fun shadoDeclaration(): Expression.Shadow {
+        val names = ArrayList<String>()
+
+        nameResolver.enterScope()
+        expectType(Type.OPEN_CURVE)
+        while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
+            val name = readAlpha()
+            nameResolver.defineVr(name)
+            names.add(name)
+            if (!isNext(Type.COMMA)) break
+            skip()
+        }
+        expectType(Type.CLOSE_CURVE)
+        val body = if (isNext(Type.ASSIGNMENT)) {
+            skip()
+            parseNext()
+        } else optimiseExpr(normalBody(false))
+        nameResolver.leaveScope()
+        return Expression.Shadow(names, body)
+    }
+
+    private fun ifDeclaration(): Expression {
         expectType(Type.OPEN_CURVE)
         val logicalExpr = parseNext()
         expectType(Type.CLOSE_CURVE)
@@ -182,22 +205,33 @@ class Parser {
         skip()
 
         val elseBranch = when (peek().type) {
-            Type.IF -> ifDeclaration(next())
+            Type.IF -> {
+                skip()
+                ifDeclaration()
+            }
             else -> bodyOrExpr()
         }
         return Expression.If(logicalExpr, ifBody, elseBranch)
     }
 
     private fun bodyOrExpr(newScope: Boolean = true): Expression {
+        // function used by if, until, for, itr, normal body
         if (peek().type == Type.OPEN_CURLY)
-            return optimiseExpr(body(newScope))
+            return optimiseExpr(normalBody(newScope))
         if (newScope) nameResolver.enterScope()
         val expr = parseNext()
         if (newScope) nameResolver.leaveScope()
         return expr
     }
 
-    private fun body(createScope: Boolean = true): Expression.ExpressionList{
+    private fun optimiseExpr(expr: Expression): Expression {
+        // if an expr list has just one element, it directly returns that element
+        if (expr !is Expression.ExpressionList) return expr
+        if (expr.size != 1) return expr
+        return expr.expressions[0]
+    }
+
+    private fun normalBody(createScope: Boolean = true): Expression.ExpressionList {
         if (createScope) nameResolver.enterScope()
         expectType(Type.OPEN_CURLY)
         val expressions = ArrayList<Expression>()
@@ -208,12 +242,6 @@ class Parser {
         return Expression.ExpressionList(expressions)
     }
 
-    private fun optimiseExpr(expr: Expression): Expression {
-        if (expr !is Expression.ExpressionList) return expr
-        if (expr.size != 1) return expr
-        return expr.expressions[0]
-    }
-
     private fun variableDeclaration(token: Token): Expression {
         val name = readAlpha()
         nameResolver.defineVr(name)
@@ -222,7 +250,7 @@ class Parser {
             return Expression.AutoVariable(name, parseNext())
         }
         skip()
-        val definition = Expression.DefinitionType(name, expectFlag(Type.CLASS).type)
+        val definition = Expression.DefinitionType(name, expectFlag(Flag.CLASS).type)
         expectType(Type.ASSIGNMENT)
         return Expression.ExplicitVariable(token.type == Type.VAR, definition, parseNext())
     }
@@ -233,28 +261,42 @@ class Parser {
         // {{a, x}, y}
         while (!isEOF()) {
             val nextOp = peek()
-            if (nextOp.type != Type.DOT && nextOp.type != Type.OPEN_SQUARE) break
-            skip()
-            if (nextOp.type == Type.OPEN_SQUARE) {
-                val expr = parseNext()
-                expectType(Type.CLOSE_SQUARE)
-                left = Expression.ElementAccess(left, expr)
-            } else {
-                val method = readAlpha()
-                expectType(Type.OPEN_CURVE)
-                val arguments = parseArguments()
-                expectType(Type.CLOSE_CURVE)
-                var static = false
-                if (left is Expression.Alpha)
-                    static = nameResolver.classes.contains(left.value)
-                left = Expression.ClassMethodCall(static, left, method, arguments)
+            if (nextOp.type != Type.DOT
+                && nextOp.type != Type.OPEN_CURVE &&
+                nextOp.type != Type.OPEN_SQUARE) break
+
+            when (nextOp.type) {
+                // calling shadow funcs
+                Type.OPEN_CURVE -> left = unitCall(left)
+                Type.OPEN_SQUARE -> {
+                    // array access
+                    skip()
+                    val expr = parseNext()
+                    expectType(Type.CLOSE_SQUARE)
+                    left = Expression.ElementAccess(left, expr)
+                }
+                else -> {
+                    // calling a method in another class
+                    // string.contains("melon")
+                    skip()
+
+                    val method = readAlpha()
+                    expectType(Type.OPEN_CURVE)
+                    val arguments = parseArguments()
+                    expectType(Type.CLOSE_CURVE)
+                    var static = false
+                    if (left is Expression.Alpha)
+                        static = nameResolver.classes.contains(left.value)
+                    left = Expression.ClassMethodCall(static, left, method, arguments)
+                }
             }
         }
-        if (!isEOF() && peek().hasFlag(Type.POSSIBLE_RIGHT_UNARY))
+        if (!isEOF() && peek().hasFlag(Flag.POSSIBLE_RIGHT_UNARY)) {
             left = Expression.UnaryOperation(Expression.Operator(next().type), left, false)
+        }
         while (!isEOF()) {
             val opToken = peek()
-            if (!opToken.hasFlag(Type.OPERATOR)) return left
+            if (!opToken.hasFlag(Flag.OPERATOR)) return left
 
             val precedence = operatorPrecedence(opToken.flags[0])
             if (precedence == -1) return left
@@ -262,7 +304,7 @@ class Parser {
             if (precedence >= minPrecedence) {
                 skip() // operator token
                 val right =
-                    if (opToken.hasFlag(Type.NON_COMMUTE)) parseElement()
+                    if (opToken.hasFlag(Flag.PRESERVE_ORDER)) parseElement()
                     else parseExpr(precedence)
                 left = Expression.BinaryOperation(
                     left,
@@ -274,19 +316,18 @@ class Parser {
         return left
     }
 
-    private fun operatorPrecedence(type: Type) = when (type) {
-        Type.ASSIGNMENT_TYPE -> 1
-        Type.LOGICAL_OR -> 2
-        Type.LOGICAL_AND -> 3
-        Type.BITWISE_OR -> 4
-        Type.BITWISE_AND -> 5
-        Type.EQUALITY -> 6
-        Type.RELATIONAL -> 7
-        Type.BINARY -> 8
-        Type.BINARY_PRECEDE -> 9
+    private fun operatorPrecedence(type: Flag) = when (type) {
+        Flag.ASSIGNMENT_TYPE -> 1
+        Flag.LOGICAL_OR -> 2
+        Flag.LOGICAL_AND -> 3
+        Flag.BITWISE_OR -> 4
+        Flag.BITWISE_AND -> 5
+        Flag.EQUALITY -> 6
+        Flag.RELATIONAL -> 7
+        Flag.BINARY -> 8
+        Flag.BINARY_PRECEDE -> 9
         else -> -1
     }
-
 
     private fun parseElement(): Expression {
         when (peek().type) {
@@ -296,16 +337,20 @@ class Parser {
                 expectType(Type.CLOSE_CURVE)
                 return expr
             }
-            Type.OPEN_CURLY -> return body().also { it.preserveState = true }
+            Type.OPEN_CURLY -> {
+                return Expression.Shadow(emptyList(), normalBody())
+            }
             else -> { }
         }
         val token = next()
-        if (token.hasFlag(Type.VALUE)) {
-            return if (!isEOF() && peek().type == Type.OPEN_CURVE) funcInvoke(token)
-            else parseValue(token)
-        } else if (token.hasFlag(Type.UNARY)) {
+        if (token.hasFlag(Flag.VALUE)) {
+            val alpha = parseValue(token)
+            if (!isEOF() && peek().type == Type.OPEN_CURVE)
+                return unitCall(alpha)
+            return alpha
+        } else if (token.hasFlag(Flag.UNARY)) {
             return Expression.UnaryOperation(Expression.Operator(token.type), parseElement(), true)
-        } else if (token.hasFlag(Type.NATIVE_CALL)) {
+        } else if (token.hasFlag(Flag.NATIVE_CALL)) {
             expectType(Type.OPEN_CURVE)
             val arguments = parseArguments()
             expectType(Type.CLOSE_CURVE)
@@ -326,10 +371,10 @@ class Parser {
                 val name = readAlpha(token)
                 val vrIndex = nameResolver.resolveVr(name)
                 if (vrIndex == -1) {
-                    // could be a static invocation, search in dict
-                    if (!nameResolver.classes.contains(name))
-                        token.error<String>("Could not resolve name $name")
-                    Expression.Alpha(-2, name)
+                    // could be a function call or static invocation
+                    if (nameResolver.resolveFn(name) != null || nameResolver.classes.contains(name))
+                        Expression.Alpha(-2, name)
+                    else token.error<Expression>("Could not resolve name $name")
                 } else {
                     Expression.Alpha(vrIndex, name)
                 }
@@ -344,17 +389,23 @@ class Parser {
         }
     }
 
-    private fun funcInvoke(token: Token): Expression {
-        val name = readAlpha(token)
-        expectType(Type.OPEN_CURVE)
+    private fun unitCall(unitExpr: Expression): Expression {
+        val at = expectType(Type.OPEN_CURVE)
         val arguments = parseArguments()
         expectType(Type.CLOSE_CURVE)
-        val fnExpr = nameResolver.resolveFn(name)
-        if (fnExpr.argsSize == -1)
-            throw RuntimeException("[Internal] Function args size is not yet set")
-        if (fnExpr.argsSize != arguments.size)
-            token.error<String>("Fn [$name] expected ${fnExpr.argsSize} but got ${arguments.size}")
-        return Expression.MethodCall(fnExpr, arguments)
+
+        if (unitExpr is Expression.Alpha) {
+            val name = unitExpr.value
+            val fnExpr = nameResolver.resolveFn(name)
+            if (fnExpr != null) {
+                if (fnExpr.argsSize == -1)
+                    throw RuntimeException("[Internal] Function args size is not yet set")
+                if (fnExpr.argsSize != arguments.size)
+                    at.error<String>("Fn [$name] expected ${fnExpr.argsSize} but got ${arguments.size}")
+                return Expression.MethodCall(fnExpr, arguments)
+            }
+        }
+        return Expression.ShadoInvoke(unitExpr, arguments)
     }
 
     private fun parseArguments(): List<Expression> {
@@ -382,11 +433,11 @@ class Parser {
     private fun expectType(type: Type): Token {
         val next = next()
         if (next.type != type)
-            next.error<String>("Expected token type $type")
+            next.error<String>("Expected token type $type but got $next")
         return next
     }
 
-    private fun expectFlag(flag: Type): Token {
+    private fun expectFlag(flag: Flag): Token {
         val next = next()
         if (!next.hasFlag(flag))
             next.error<String>("Expected flag $flag")
