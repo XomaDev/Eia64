@@ -76,9 +76,9 @@ enum class Type {
                 it[">="] = StaticToken(GREATER_THAN_EQUALS, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
                 it["<="] = StaticToken(LESSER_THAN_EQUALS, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
 
-                it["/"] = StaticToken(SLASH, arrayOf(Flag.BINARY_PRECEDE, Flag.PRESERVE_ORDER, Flag.OPERATOR))
-                it["*"] = StaticToken(TIMES, arrayOf(Flag.BINARY_PRECEDE, Flag.PRESERVE_ORDER, Flag.OPERATOR))
-                it["**"] = StaticToken(POWER, arrayOf(Flag.BINARY_PRECEDE, Flag.PRESERVE_ORDER, Flag.OPERATOR))
+                it["/"] = StaticToken(SLASH, arrayOf(Flag.BINARY_L2, Flag.PRESERVE_ORDER, Flag.OPERATOR))
+                it["*"] = StaticToken(TIMES, arrayOf(Flag.BINARY_L2, Flag.PRESERVE_ORDER, Flag.OPERATOR))
+                it["^"] = StaticToken(POWER, arrayOf(Flag.BINARY_L3, Flag.PRESERVE_ORDER, Flag.OPERATOR))
 
                 it["+"] = StaticToken(PLUS, arrayOf(Flag.BINARY, Flag.OPERATOR))
                 it["-"] = StaticToken(NEGATE, arrayOf(Flag.BINARY, Flag.UNARY, Flag.OPERATOR))
@@ -139,22 +139,22 @@ enum class Type {
 
                 it["stdlib"] = StaticToken(STDLIB)
 
-                it["until"] = StaticToken(UNTIL, arrayOf(Flag.LOOP))
-                it["itr"] = StaticToken(ITR, arrayOf(Flag.LOOP))
+                it["until"] = StaticToken(UNTIL, arrayOf(Flag.LOOP)) // auto scope
+                it["itr"] = StaticToken(ITR, arrayOf(Flag.LOOP)) // TODO check this later
                 it["to"] = StaticToken(TO)
                 it["in"] = StaticToken(IN)
                 it["by"] = StaticToken(BY)
-                it["for"] = StaticToken(FOR, arrayOf(Flag.LOOP))
+                it["for"] = StaticToken(FOR, arrayOf(Flag.LOOP)) // auto scope
 
                 it["let"] = StaticToken(LET, arrayOf(Flag.V_KEYWORD))
                 it["var"] = StaticToken(VAR, arrayOf(Flag.V_KEYWORD))
 
-                it["if"] = StaticToken(IF, arrayOf(Flag.NONE))
+                it["if"] = StaticToken(IF, arrayOf(Flag.NONE)) // auto scope
                 it["else"] = StaticToken(ELSE, arrayOf(Flag.NONE))
 
-                it["fn"] = StaticToken(FUN, arrayOf(Flag.NONE))
-                it["shado"] = StaticToken(SHADO)
-                it["when"] = StaticToken(WHEN)
+                it["fn"] = StaticToken(FUN, arrayOf(Flag.NONE)) // manual scope
+                it["shado"] = StaticToken(SHADO) // manual scope
+                it["when"] = StaticToken(WHEN) // auto scope
 
                 it["return"] = StaticToken(RETURN, arrayOf(Flag.INTERRUPTION))
                 it["break"] = StaticToken(BREAK, arrayOf(Flag.INTERRUPTION))

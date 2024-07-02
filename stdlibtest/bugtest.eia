@@ -1,1 +1,6 @@
-println(5 ** 42)
+fn robotChoose(user: String) {
+  if (user == "rock") return "yes"
+  return "no"
+}
+
+println(robotChoose("rock"))

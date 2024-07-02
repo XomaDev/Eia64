@@ -1,7 +1,6 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.Scope
 import space.themelon.eia64.primitives.*
 import space.themelon.eia64.runtime.Entity.Companion.getType
 import space.themelon.eia64.runtime.Entity.Companion.unbox
@@ -351,8 +350,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
     }
-    
-    private fun evaluateScope(scope: Scope): Any {
+
+    override fun scope(scope: Expression.Scope): Any {
         if (scope.imaginary) return eval(scope.expr)
         memory.enterScope()
         val result = eval(scope.expr)
@@ -407,6 +406,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     ) = fnInvoke(memory.dynamicFnSearch(name), args)
 
     private fun fnInvoke(fn: Expression.Function, callArgs: Array<Any>): Any {
+        // Fully Manual Scopped!
         val fnName = fn.name
 
         val sigArgsSize = fn.arguments.size
@@ -452,6 +452,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     override fun unitInvoke(shadoInvoke: Expression.ShadoInvoke): Any {
         var operand: Any = shadoInvoke.expr
 
+        // Fully Manual Scopped
         if (operand !is Expression.Shadow)
             operand = unboxEval(operand as Expression)
 
@@ -487,12 +488,11 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun until(until: Expression.Until): Any {
+        // Auto Scopped
         var numIterations = 0
         while (booleanExpr(until.expression, "Until Condition").get()) {
             numIterations++
-            memory.enterScope()
             val result = eval(until.body)
-            memory.leaveScope()
             if (result is Entity) {
                 when (result.type) {
                     BREAK -> break
@@ -533,6 +533,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         var numIterations = 0
         while (index < size) {
             numIterations++
+            // Manual Scopped
             memory.enterScope()
             val element = getNext()
             memory.declareVar(named, Entity(named, false, element, getType(element)))
@@ -563,6 +564,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         var numIterations = 0
         while (if (reverse) from >= to else from <= to) {
             numIterations++
+            // Manual Scopped
             memory.enterScope()
             memory.declareVar(named, Entity(named, true, from, E_INT))
             val result = eval(itr.body)
@@ -595,9 +597,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
         while (if (conditional == null) true else booleanExpr(conditional, "ForLoop").get()) {
             numIterations++
-            memory.enterScope()
+            // Auto Scopped
             val result = eval(forLoop.body)
-            memory.leaveScope()
             if (result is Entity) {
                 when (result.type) {
                     BREAK -> break
@@ -632,25 +633,19 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun whenExpr(whenExpr: Expression.When): Any {
+        // Fully Auto Scopped
         val matchExpr = unboxEval(whenExpr.expr)
-        for (match in whenExpr.matches) {
-            val right = unboxEval(match.first)
-            if (valueEquals(matchExpr, right)) {
-                return unbox(evaluateScope(match.second))
-            }
-        }
-        return unbox(evaluateScope(whenExpr.defaultBranch))
+        for (match in whenExpr.matches)
+            if (valueEquals(matchExpr, unboxEval(match.first)))
+                return unboxEval(match.second)
+        return unboxEval(whenExpr.defaultBranch)
     }
 
     override fun ifFunction(ifExpr: Expression.If): Any {
         val conditionSuccess = booleanExpr(ifExpr.condition, "If Condition").get()
         val body = if (conditionSuccess) ifExpr.thenBody else ifExpr.elseBody
-        if (body != null) {
-            memory.enterScope()
-            val result = eval(body)
-            memory.leaveScope()
-            return result
-        }
+        // Auto Scopped
+        if (body != null) return eval(body)
         return EBool(conditionSuccess)
     }
 

@@ -83,22 +83,14 @@ class Parser {
         val expr = parseNext()
         expectType(Type.CLOSE_CURVE)
 
-        expectType(Type.OPEN_CURLY)
-
-        fun readBody(): Scope {
+        // Scope: Automatic
+        fun readStatement(): Expression.Scope {
             expectType(Type.RIGHT_ARROW)
-            expectType(Type.OPEN_CURLY)
-            if (peek().type == Type.CLOSE_CURLY) {
-                skip()
-                return Scope(Expression.BoolLiteral(false), true)
-            }
-            nameResolver.enterScope()
-            val body = parseNext()
-            expectType(Type.CLOSE_CURLY)
-            return Scope(body, nameResolver.leaveScope())
+            return autoScopeBody()
         }
 
-        val matches = ArrayList<Pair<Expression, Scope>>()
+        expectType(Type.OPEN_CURLY)
+        val matches = ArrayList<Pair<Expression, Expression.Scope>>()
         while (true) {
             val p = peek()
             if (p.type == Type.ELSE) break
@@ -106,10 +98,10 @@ class Parser {
                 token.error<String>("Expected else branch for the when statement")
             }
             val match = parseNext()
-            matches.add(match to readBody())
+            matches.add(match to readStatement())
         }
         expectType(Type.ELSE)
-        val elseBranch = readBody()
+        val elseBranch = readStatement()
         expectType(Type.CLOSE_CURLY)
 
         if (matches.isEmpty()) {
@@ -124,8 +116,8 @@ class Parser {
                 expectType(Type.OPEN_CURVE)
                 val expr = parseNext()
                 expectType(Type.CLOSE_CURVE)
-                val body = bodyOrExpr()
-                return Expression.Until(expr, body)
+                // Scope: Automatic
+                return Expression.Until(expr, autoBodyExpr())
             }
 
             Type.FOR -> {
@@ -138,7 +130,8 @@ class Parser {
                 expectType(Type.COMMA)
                 val operational = if (isNext(Type.CLOSE_CURVE)) null else parseNext()
                 expectType(Type.CLOSE_CURVE)
-                val body = bodyOrExpr()
+                // double layer scope wrapping
+                val body = autoBodyExpr() // Scope: Automatic
                 nameResolver.leaveScope()
                 return Expression.ForLoop(
                     initializer,
@@ -162,14 +155,20 @@ class Parser {
                         by = parseNext()
                     }
                     expectType(Type.CLOSE_CURVE)
-                    return Expression.Itr(iName, from, to, by, bodyOrExpr())
+                    nameResolver.enterScope()
+                    nameResolver.defineVr(iName)
+                    // Manual Scopped!
+                    val body = unscoppedBodyExpr()
+                    nameResolver.leaveScope()
+                    return Expression.Itr(iName, from, to, by, body)
                 } else {
                     expectType(Type.IN)
                     val entity = parseNext()
                     expectType(Type.CLOSE_CURVE)
                     nameResolver.enterScope()
                     nameResolver.defineVr(iName)
-                    val body = bodyOrExpr(false)
+                    // Manual Scopped!
+                    val body = unscoppedBodyExpr()
                     nameResolver.leaveScope()
                     return Expression.ForEach(iName, entity, body)
                 }
@@ -214,10 +213,8 @@ class Parser {
             skip()
             readClassType()
         } else Type.E_ANY
-        val body = if (isNext(Type.ASSIGNMENT)) {
-            skip()
-            parseNext()
-        } else optimiseExpr(normalBody(false))
+
+        val body = unitBody() // Fully Manual Scopped
         nameResolver.leaveScope()
         val fnExpr = Expression.Function(name, requiredArgs, returnType, body)
         fnElement.fnExpression = fnExpr
@@ -237,20 +234,23 @@ class Parser {
             skip()
         }
         expectType(Type.CLOSE_CURVE)
-        val body = if (isNext(Type.ASSIGNMENT)) {
-            skip()
-            parseNext()
-        } else optimiseExpr(normalBody(false))
+        val body = unitBody() // Fully Manual Scopped
         nameResolver.leaveScope()
         return Expression.Shadow(names, body)
     }
+
+    private fun unitBody() = if (isNext(Type.ASSIGNMENT)) {
+        skip()
+        parseNext()
+    } else expressions()
 
     private fun ifDeclaration(): Expression {
         expectType(Type.OPEN_CURVE)
         val logicalExpr = parseNext()
         expectType(Type.CLOSE_CURVE)
-        val ifBody = bodyOrExpr()
+        val ifBody = autoBodyExpr()
 
+        // All is Auto Scopped!
         if (isEOF() || peek().type != Type.ELSE)
             return Expression.If(logicalExpr, ifBody)
         skip()
@@ -260,43 +260,39 @@ class Parser {
                 skip()
                 ifDeclaration()
             }
-
-            else -> bodyOrExpr()
+            else -> autoBodyExpr()
         }
         return Expression.If(logicalExpr, ifBody, elseBranch)
     }
 
-    private fun bodyOrExpr(newScope: Boolean = true): Expression {
-        // function used by if, until, for, itr, normal body
-        if (peek().type == Type.OPEN_CURLY)
-            return optimiseExpr(normalBody(newScope))
-        if (newScope) nameResolver.enterScope()
-        val expr = parseNext()
-        if (newScope) nameResolver.leaveScope()
-        return expr
+    private fun autoBodyExpr(): Expression.Scope {
+        // used everywhere where there is no manual scope management is required,
+        //  e.g., IfExpr, Until, For
+        if (peek().type == Type.OPEN_CURLY) return autoScopeBody()
+        nameResolver.enterScope()
+        return Expression.Scope(parseNext(), nameResolver.leaveScope())
     }
 
-    private fun optimiseExpr(expr: Expression): Expression {
-        // if an expr list has just one element, it directly returns that element
-        if (expr !is Expression.ExpressionList) return expr
-        if (expr.size != 1) return expr
-        return expr.expressions[0]
+    private fun autoScopeBody(): Expression.Scope {
+        nameResolver.enterScope()
+        return Expression.Scope(expressions(), nameResolver.leaveScope())
     }
 
-    private fun normalBody(createScope: Boolean = true): Expression.ExpressionList {
-        if (createScope) nameResolver.enterScope()
-        val expressions = expressions()
-        if (createScope) nameResolver.leaveScope()
-        return Expression.ExpressionList(expressions)
+    private fun unscoppedBodyExpr(): Expression {
+        if (peek().type == Type.OPEN_CURLY) return expressions()
+        return parseNext()
     }
 
-    private fun expressions(): ArrayList<Expression> {
+    private fun expressions(): Expression {
         expectType(Type.OPEN_CURLY)
         val expressions = ArrayList<Expression>()
+        if (peek().type == Type.CLOSE_CURLY)
+            return Expression.ExpressionList(expressions)
         while (!isEOF() && peek().type != Type.CLOSE_CURLY)
             expressions.add(parseNext())
         expectType(Type.CLOSE_CURLY)
-        return expressions
+        if (expressions.size == 1) return expressions[0]
+        return Expression.ExpressionList(expressions)
     }
 
     private fun variableDeclaration(token: Token): Expression {
@@ -403,7 +399,8 @@ class Parser {
         Flag.EQUALITY -> 6
         Flag.RELATIONAL -> 7
         Flag.BINARY -> 8
-        Flag.BINARY_PRECEDE -> 9
+        Flag.BINARY_L2 -> 9
+        Flag.BINARY_L3 -> 10
         else -> -1
     }
 
@@ -416,9 +413,7 @@ class Parser {
                 return expr
             }
 
-            Type.OPEN_CURLY -> {
-                return Expression.Shadow(emptyList(), normalBody())
-            }
+            Type.OPEN_CURLY -> Expression.Shadow(emptyList(), autoScopeBody().expr)
 
             else -> {}
         }

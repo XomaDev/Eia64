@@ -1,7 +1,6 @@
 package space.themelon.eia64
 
 import space.themelon.eia64.analysis.FnElement
-import space.themelon.eia64.analysis.Scope
 import space.themelon.eia64.syntax.Type
 
 abstract class Expression {
@@ -22,6 +21,7 @@ abstract class Expression {
         fun binaryOperation(expr: BinaryOperation): R
         fun expressions(list: ExpressionList): R
         fun nativeCall(call: NativeCall): R
+        fun scope(scope: Scope): R
         fun methodCall(call: MethodCall): R
         fun classMethodCall(call: ClassMethodCall): R
         fun unitInvoke(shadoInvoke: ShadoInvoke): R
@@ -113,6 +113,13 @@ abstract class Expression {
         override fun <R> accept(v: Visitor<R>) = v.nativeCall(this)
     }
 
+    data class Scope(
+        val expr: Expression,
+        val imaginary: Boolean
+    ): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.scope(this)
+    }
+
     data class MethodCall(
         val fnExpr: FnElement,
         val arguments: List<Expression>,
@@ -173,23 +180,23 @@ abstract class Expression {
 
     data class When(
         val expr: Expression,
-        val matches: List<Pair<Expression, Scope>>,
-        val defaultBranch: Scope,
+        val matches: List<Pair<Expression, Expression>>,
+        val defaultBranch: Expression,
     ): Expression() {
         override fun <R> accept(v: Visitor<R>) = v.whenExpr(this)
     }
 
     data class Until(
         val expression: Expression,
-        val body: Scope
+        val body: Expression,
     ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.until(this)
     }
 
     data class If(
         val condition: Expression,
-        val thenBody: Scope,
-        val elseBody: Scope? = null,
+        val thenBody: Expression,
+        val elseBody: Expression? = null,
     ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.ifFunction(this)
     }
