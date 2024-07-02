@@ -1,6 +1,7 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
+import space.themelon.eia64.analysis.Scope
 import space.themelon.eia64.primitives.*
 import space.themelon.eia64.runtime.Entity.Companion.getType
 import space.themelon.eia64.runtime.Entity.Companion.unbox
@@ -8,6 +9,7 @@ import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.math.pow
 import kotlin.random.Random
 import kotlin.system.exitProcess
 
@@ -100,7 +102,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             else EString(left.toString() + right.toString())
         }
         NEGATE -> intExpr(expr.left, "- Subtract") - intExpr(expr.right, "- Subtract")
-        ASTERISK -> intExpr(expr.left, "* Multiply") * intExpr(expr.right, "* Multiply")
+        TIMES -> intExpr(expr.left, "* Multiply") * intExpr(expr.right, "* Multiply")
         SLASH -> intExpr(expr.left, "/ Divide") / intExpr(expr.right, "/ Divide")
         EQUALS, NOT_EQUALS -> {
             val left = unboxEval(expr.left)
@@ -165,6 +167,11 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 else -> throw RuntimeException("Cannot apply *= operator on element $element")
             }
             element
+        }
+        POWER -> {
+            val left = intExpr(expr.left, "** Power")
+            val right = intExpr(expr.right, "** Power")
+            EString(left.get().toDouble().pow(right.get().toDouble()).toString())
         }
         DIVIDIVE_ASSIGNMENT -> {
             val element = unboxEval(expr.left)
@@ -343,6 +350,14 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
+    }
+    
+    private fun evaluateScope(scope: Scope): Any {
+        if (scope.imaginary) return eval(scope.expr)
+        memory.enterScope()
+        val result = eval(scope.expr)
+        memory.leaveScope()
+        return result
     }
 
     override fun methodCall(call: Expression.MethodCall) = fnInvoke(call.fnExpr.fnExpression!!, evaluateArgs(call.arguments))
@@ -621,16 +636,10 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         for (match in whenExpr.matches) {
             val right = unboxEval(match.first)
             if (valueEquals(matchExpr, right)) {
-                memory.enterScope()
-                val result = unboxEval(match.second)
-                memory.leaveScope()
-                return result
+                return unbox(evaluateScope(match.second))
             }
         }
-        memory.enterScope()
-        val result = unboxEval(whenExpr.defaultBranch)
-        memory.leaveScope()
-        return result
+        return unbox(evaluateScope(whenExpr.defaultBranch))
     }
 
     override fun ifFunction(ifExpr: Expression.If): Any {

@@ -1,6 +1,7 @@
 package space.themelon.eia64
 
 import space.themelon.eia64.analysis.FnElement
+import space.themelon.eia64.analysis.Scope
 import space.themelon.eia64.syntax.Type
 
 abstract class Expression {
@@ -172,23 +173,23 @@ abstract class Expression {
 
     data class When(
         val expr: Expression,
-        val matches: List<Pair<Expression, Expression>>,
-        val defaultBranch: Expression,
+        val matches: List<Pair<Expression, Scope>>,
+        val defaultBranch: Scope,
     ): Expression() {
         override fun <R> accept(v: Visitor<R>) = v.whenExpr(this)
     }
 
     data class Until(
         val expression: Expression,
-        val body: Expression
+        val body: Scope
     ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.until(this)
     }
 
     data class If(
         val condition: Expression,
-        val thenBody: Expression,
-        val elseBody: Expression? = null,
+        val thenBody: Scope,
+        val elseBody: Scope? = null,
     ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.ifFunction(this)
     }

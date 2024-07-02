@@ -1,9 +1,1 @@
-fn hello() {
-  println("hello() called")
-  for (var i = 0, , ) {
-  if ((let x = i) == 0) {
-                              println(x)
-                            }
-  }
-}
-hello()
+println(5 ** 42)

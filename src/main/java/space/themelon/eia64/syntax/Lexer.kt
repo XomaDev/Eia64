@@ -32,7 +32,10 @@ class Lexer(private val source: String) {
         tokens.add(when (char) {
             '=' -> if (consumeNext('=')) createOp("==") else createOp("=")
 
-            '*' -> if (consumeNext('=')) createOp("*=") else createOp("*")
+            '*' ->
+                if (consumeNext('=')) createOp("*=")
+                else if (consumeNext('*')) createOp("**")
+                else createOp("*")
             '/' -> if (consumeNext('=')) createOp("/=") else createOp("/")
 
             '+' ->
