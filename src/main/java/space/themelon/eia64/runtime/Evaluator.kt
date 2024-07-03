@@ -8,6 +8,7 @@ import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.math.pow
 import kotlin.random.Random
 import kotlin.system.exitProcess
 
@@ -100,7 +101,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             else EString(left.toString() + right.toString())
         }
         NEGATE -> intExpr(expr.left, "- Subtract") - intExpr(expr.right, "- Subtract")
-        ASTERISK -> intExpr(expr.left, "* Multiply") * intExpr(expr.right, "* Multiply")
+        TIMES -> intExpr(expr.left, "* Multiply") * intExpr(expr.right, "* Multiply")
         SLASH -> intExpr(expr.left, "/ Divide") / intExpr(expr.right, "/ Divide")
         EQUALS, NOT_EQUALS -> {
             val left = unboxEval(expr.left)
@@ -165,6 +166,11 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 else -> throw RuntimeException("Cannot apply *= operator on element $element")
             }
             element
+        }
+        POWER -> {
+            val left = intExpr(expr.left, "** Power")
+            val right = intExpr(expr.right, "** Power")
+            EString(left.get().toDouble().pow(right.get().toDouble()).toString())
         }
         DIVIDIVE_ASSIGNMENT -> {
             val element = unboxEval(expr.left)
@@ -345,6 +351,14 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         }
     }
 
+    override fun scope(scope: Expression.Scope): Any {
+        if (scope.imaginary) return eval(scope.expr)
+        memory.enterScope()
+        val result = eval(scope.expr)
+        memory.leaveScope()
+        return result
+    }
+
     override fun methodCall(call: Expression.MethodCall) = fnInvoke(call.fnExpr.fnExpression!!, evaluateArgs(call.arguments))
 
     override fun classMethodCall(call: Expression.ClassMethodCall): Any {
@@ -392,6 +406,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     ) = fnInvoke(memory.dynamicFnSearch(name), args)
 
     private fun fnInvoke(fn: Expression.Function, callArgs: Array<Any>): Any {
+        // Fully Manual Scopped!
         val fnName = fn.name
 
         val sigArgsSize = fn.arguments.size
@@ -437,6 +452,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     override fun unitInvoke(shadoInvoke: Expression.ShadoInvoke): Any {
         var operand: Any = shadoInvoke.expr
 
+        // Fully Manual Scopped
         if (operand !is Expression.Shadow)
             operand = unboxEval(operand as Expression)
 
@@ -472,12 +488,11 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun until(until: Expression.Until): Any {
+        // Auto Scopped
         var numIterations = 0
         while (booleanExpr(until.expression, "Until Condition").get()) {
             numIterations++
-            memory.enterScope()
             val result = eval(until.body)
-            memory.leaveScope()
             if (result is Entity) {
                 when (result.type) {
                     BREAK -> break
@@ -518,6 +533,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         var numIterations = 0
         while (index < size) {
             numIterations++
+            // Manual Scopped
             memory.enterScope()
             val element = getNext()
             memory.declareVar(named, Entity(named, false, element, getType(element)))
@@ -548,6 +564,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         var numIterations = 0
         while (if (reverse) from >= to else from <= to) {
             numIterations++
+            // Manual Scopped
             memory.enterScope()
             memory.declareVar(named, Entity(named, true, from, E_INT))
             val result = eval(itr.body)
@@ -580,9 +597,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
         while (if (conditional == null) true else booleanExpr(conditional, "ForLoop").get()) {
             numIterations++
-            memory.enterScope()
+            // Auto Scopped
             val result = eval(forLoop.body)
-            memory.leaveScope()
             if (result is Entity) {
                 when (result.type) {
                     BREAK -> break
@@ -617,31 +633,19 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun whenExpr(whenExpr: Expression.When): Any {
+        // Fully Auto Scopped
         val matchExpr = unboxEval(whenExpr.expr)
-        for (match in whenExpr.matches) {
-            val right = unboxEval(match.first)
-            if (valueEquals(matchExpr, right)) {
-                memory.enterScope()
-                val result = unboxEval(match.second)
-                memory.leaveScope()
-                return result
-            }
-        }
-        memory.enterScope()
-        val result = unboxEval(whenExpr.defaultBranch)
-        memory.leaveScope()
-        return result
+        for (match in whenExpr.matches)
+            if (valueEquals(matchExpr, unboxEval(match.first)))
+                return unboxEval(match.second)
+        return unboxEval(whenExpr.defaultBranch)
     }
 
     override fun ifFunction(ifExpr: Expression.If): Any {
         val conditionSuccess = booleanExpr(ifExpr.condition, "If Condition").get()
         val body = if (conditionSuccess) ifExpr.thenBody else ifExpr.elseBody
-        if (body != null) {
-            memory.enterScope()
-            val result = eval(body)
-            memory.leaveScope()
-            return result
-        }
+        // Auto Scopped
+        if (body != null) return eval(body)
         return EBool(conditionSuccess)
     }
 

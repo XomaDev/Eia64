@@ -1,6 +1,7 @@
 package space.themelon.eia64.analysis
 
 class NameResolver {
+
     class Scope(val before: Scope? = null) {
         val names = ArrayList<String>()
         val functions = ArrayList<String>()
@@ -27,16 +28,23 @@ class NameResolver {
     private var currentScope = Scope()
 
     fun enterScope() {
-        val newScope = Scope( currentScope)
+        val newScope = Scope(currentScope)
         currentScope = newScope
     }
 
-    fun leaveScope() {
+    fun leaveScope(): Boolean {
+        // imaginary scope is a scope where you don't have to actually create a new scope
+        // you could run without it, consider this situation:
+        // let x = 5
+        // if (x) { println("Hello, "World") }
+        // here you don't require creating a new scope to evaluate it
+        val imaginaryScope = currentScope.names.isEmpty() && currentScope.functions.isEmpty()
         currentScope.before.let {
             if (it == null)
                 throw RuntimeException("Reached super scope")
             currentScope = it
         }
+        return imaginaryScope
     }
 
     fun defineFn(name: String, fnExpression: FnElement) {
@@ -54,11 +62,5 @@ class NameResolver {
 
     fun resolveFn(name: String) = currentScope.resolveFn(name, 0)
 
-    fun resolveVr(name: String): Int {
-        if (name == "LOWER_CASE") {
-            println("Found: " + currentScope.names)
-        }
-        val index = currentScope.resolveVr(name)
-        return index
-    }
+    fun resolveVr(name: String) = currentScope.resolveVr(name)
 }

@@ -1,9 +1,6 @@
-fn hello() {
-  println("hello() called")
-  for (var i = 0, , ) {
-  if ((let x = i) == 0) {
-                              println(x)
-                            }
-  }
+fn robotChoose(user: String) {
+  if (user == "rock") return "yes"
+  return "no"
 }
-hello()
+
+println(robotChoose("rock"))

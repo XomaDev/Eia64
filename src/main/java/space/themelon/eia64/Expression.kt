@@ -21,6 +21,7 @@ abstract class Expression {
         fun binaryOperation(expr: BinaryOperation): R
         fun expressions(list: ExpressionList): R
         fun nativeCall(call: NativeCall): R
+        fun scope(scope: Scope): R
         fun methodCall(call: MethodCall): R
         fun classMethodCall(call: ClassMethodCall): R
         fun unitInvoke(shadoInvoke: ShadoInvoke): R
@@ -112,6 +113,13 @@ abstract class Expression {
         override fun <R> accept(v: Visitor<R>) = v.nativeCall(this)
     }
 
+    data class Scope(
+        val expr: Expression,
+        val imaginary: Boolean
+    ): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.scope(this)
+    }
+
     data class MethodCall(
         val fnExpr: FnElement,
         val arguments: List<Expression>,
@@ -180,7 +188,7 @@ abstract class Expression {
 
     data class Until(
         val expression: Expression,
-        val body: Expression
+        val body: Expression,
     ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.until(this)
     }

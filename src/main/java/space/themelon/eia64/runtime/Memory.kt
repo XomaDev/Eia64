@@ -28,11 +28,6 @@ class Memory {
             functions.clear()
             values.clear()
         }
-
-        fun applyState(state: Pair<Int, Int>) {
-            values.dropLast(values.size - state.first)
-            functions.dropLast(functions.size - state.second)
-        }
     }
 
     private var recyclePool: Frame? = null
