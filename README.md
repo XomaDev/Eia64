@@ -1,6 +1,7 @@
 # Eia64
-
 Eia64 is an interpreted language that draws inspiration from the lovely syntax of Kotlin and many other languages like Go.
+
+Look at asciinema recording [here](https://asciinema.org/a/666650).
 
 Language is extensively documented at [themelon.space/eia](https://themelon.space/eia)
 
