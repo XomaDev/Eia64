@@ -12,12 +12,39 @@ Language is extensively documented at [themelon.space/eia](https://themelon.spac
 
 > Requires >= Java 11, to know your version run `java -version`
 
-1. Download the [latest release](https://github.com/XomaDev/Eia64/releases) from GitHub
+Clone the repository
 
-2. Extract the zip directory, and spawn a terminal in the directory.
+```bash
+git clone https://github.com/XomaDev/Eia64
+```
 
-3. To run the live mode `java -jar Eia64.jar live`\
-   or pass in a source file `java -jar Eia64.jar uwu.eia`
+### Live Mode
+
+To enter into a live mode do `java -jar Eia64.jar live`
+
+```kotlin
+$ java -jar Eia64.jar live
+> println("Hello, World!")
+> ~~
+Hello, World!
+```
+
+Type in the code in the terminal, to execute it type `~~` in a next line.\
+Use `exit` to exit the terminal.
+
+### Pass in a source file
+
+`java -jar Eia64.jar <source_file>`
+
+````kotlin
+$ java -jar Eia64.jar examples/animation.eia
+Enter a word: meow
+🗑(> ^_^)>          meow
+🗑 (> ^_^)>         meow
+🗑  (> ^_^)>        meow
+🗑   (> ^_^)>       meow
+🗑    (> ^_^)>      meow
+````
 
 Enjoy!\
 Crafted with Love ❤️\
