@@ -1,8 +1,12 @@
 ; a class that can be included by others
 
 var name = "Unknown"
+var lastname = "Yo "
 
-fn init(_name: String) = name = _name
+fn init(_name: String, _lastname: String) {
+  name = _name
+  lastname = _lastname
+}
 
 fn hello() {
   println(format("Hello %s!", name))

@@ -47,7 +47,7 @@ class Executor {
         it.eval((externalParsers[name] ?: throw RuntimeException("Static module '$name') not found")).parsed)
     }
 
-    fun getExecutor(name: String) = externalExecutors[name]
+    fun getEvaluator(name: String) = externalExecutors[name]
 
     private fun getTokens(sourceFile: String) = Lexer(File(sourceFile).readText()).tokens
 }

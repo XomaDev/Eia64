@@ -137,7 +137,7 @@ class Parser(private val executor: Executor) {
         if (path.startsWith('/')) File(path)
         else File("${Executor.EXECUTION_DIRECTORY}/$path")
 
-    private fun newStatement() = Expression.NewObj(readAlpha())
+    private fun newStatement() = Expression.NewObj(readAlpha(), callArguments())
 
     private fun whenStatement(token: Token): Expression {
         expectType(Type.OPEN_CURVE)
@@ -416,9 +416,7 @@ class Parser(private val executor: Executor) {
                     skip()
 
                     val method = readAlpha()
-                    expectType(Type.OPEN_CURVE)
-                    val arguments = parseArguments()
-                    expectType(Type.CLOSE_CURVE)
+                    val arguments = callArguments()
                     var static = false
                     if (left is Expression.Alpha)
                         static = nameResolver.classes.contains(left.value)
@@ -487,10 +485,8 @@ class Parser(private val executor: Executor) {
         } else if (token.hasFlag(Flag.UNARY)) {
             return Expression.UnaryOperation(Expression.Operator(token.type), parseElement(), true)
         } else if (token.hasFlag(Flag.NATIVE_CALL)) {
-            expectType(Type.OPEN_CURVE)
-            val arguments = parseArguments()
-            expectType(Type.CLOSE_CURVE)
-            return Expression.NativeCall(token.type, Expression.ExpressionList(arguments))
+            val arguments = callArguments()
+            return Expression.NativeCall(token.type, arguments)
         }
         back()
         if (canParseNext()) return parseNext()
@@ -543,6 +539,13 @@ class Parser(private val executor: Executor) {
             }
         }
         return Expression.ShadoInvoke(unitExpr, arguments)
+    }
+
+    private fun callArguments(): List<Expression> {
+        expectType(Type.OPEN_CURVE)
+        val arguments = parseArguments()
+        expectType(Type.CLOSE_CURVE)
+        return arguments
     }
 
     private fun parseArguments(): List<Expression> {

@@ -208,14 +208,18 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         return EBool(true)
     }
 
-    override fun new(new: Expression.NewObj) = executor.newEvaluator(new.name)
+    override fun new(new: Expression.NewObj): Evaluator {
+        val evaluator = executor.newEvaluator(new.name)
+        evaluator.dynamicFnCall("init", evaluator.evaluateArgs(new.arguments))
+        return evaluator
+    }
 
     override fun nativeCall(call: Expression.NativeCall): Any {
         val argsSize = call.arguments.size
         when (val type = call.type) {
             PRINT, PRINTLN -> {
                 var printCount = 0
-                call.arguments.expressions.forEach {
+                call.arguments.forEach {
                     var printable = unboxEval(it)
                     printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
 
@@ -233,14 +237,14 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
             SLEEP -> {
                 if (argsSize != 1) reportWrongArguments("sleep", 1, argsSize)
-                val millis = intExpr(call.arguments.expressions[0], "sleep()")
+                val millis = intExpr(call.arguments[0], "sleep()")
                 Thread.sleep(millis.get().toLong())
                 return millis
             }
 
             LEN -> {
                 if (argsSize != 1) reportWrongArguments("len", 1, argsSize)
-                return EInt(when (val data = unboxEval(call.arguments.expressions[0])) {
+                return EInt(when (val data = unboxEval(call.arguments[0])) {
                     is EString -> data.length
                     is EArray -> data.size
                     is Expression.ExpressionList -> data.size
@@ -249,7 +253,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             }
 
             FORMAT -> {
-                val exprs = call.arguments.expressions
+                val exprs = call.arguments
                 val string = unboxEval(exprs[0])
                 if (getType(string) != E_STRING)
                     throw RuntimeException("format() requires a string argument")
@@ -267,21 +271,21 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
             INT_CAST -> {
                 if (argsSize != 1) reportWrongArguments("int", 1, argsSize)
-                val obj = unboxEval(call.arguments.expressions[0])
+                val obj = unboxEval(call.arguments[0])
                 if (getType(obj) == E_INT) return obj
                 return EInt(Integer.parseInt(obj.toString()))
             }
 
             STRING_CAST -> {
                 if (argsSize != 1) reportWrongArguments("str", 1, argsSize)
-                val obj = unboxEval(call.arguments.expressions[0])
+                val obj = unboxEval(call.arguments[0])
                 if (getType(obj) == E_STRING) return obj
                 return EString(obj.toString())
             }
 
             BOOL_CAST -> {
                 if (argsSize != 1) reportWrongArguments("bool", 1, argsSize)
-                val obj = unboxEval(call.arguments.expressions[0])
+                val obj = unboxEval(call.arguments[0])
                 if (getType(obj) == E_BOOL) return obj
                 return EBool(when (obj) {
                     "true" -> true
@@ -292,13 +296,13 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
             TYPE -> {
                 if (argsSize != 1) reportWrongArguments("type", 1, argsSize)
-                val obj = unboxEval(call.arguments.expressions[0])
+                val obj = unboxEval(call.arguments[0])
                 return EString(getType(obj).toString())
             }
 
             INCLUDE -> {
                 if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
-                val obj = unboxEval(call.arguments.expressions[0])
+                val obj = unboxEval(call.arguments[0])
                 if (obj !is EString)
                     throw RuntimeException("Expected a string argument for include() but got $obj")
                 val parts = obj.get().split(":")
@@ -314,7 +318,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
             COPY -> {
                 if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
-                val obj = unboxEval(call.arguments.expressions[0])
+                val obj = unboxEval(call.arguments[0])
                 if (obj !is Primitive<*> || !obj.isCopyable())
                     throw RuntimeException("Cannot apply copy() on object type ${getType(obj)} = $obj")
                 return obj.copy()!!
@@ -322,12 +326,12 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
             ARRALLOC -> {
                 if (argsSize != 1) reportWrongArguments("arralloc", 1, argsSize)
-                val size = intExpr(call.arguments.expressions[0], "arralloc()")
+                val size = intExpr(call.arguments[0], "arralloc()")
                 return EArray(Array(size.get()) { EInt(0) })
             }
 
             ARRAYOF -> {
-                val arguments = call.arguments.expressions
+                val arguments = call.arguments
                 val evaluated = arrayOfNulls<Any>(arguments.size)
                 for ((index, aExpr) in arguments.withIndex())
                     evaluated[index] = unboxEval(aExpr)
@@ -339,14 +343,14 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
             RAND -> {
                 if (argsSize != 2) reportWrongArguments("rand", 2, argsSize)
-                val from = intExpr(call.arguments.expressions[0], "rand()")
-                val to = intExpr(call.arguments.expressions[1], "rand()")
+                val from = intExpr(call.arguments[0], "rand()")
+                val to = intExpr(call.arguments[1], "rand()")
                 return EInt(Random.nextInt(from.get(), to.get()))
             }
 
             EXIT -> {
                 if (argsSize != 1) reportWrongArguments("exit", 1, argsSize)
-                val exitCode = intExpr(call.arguments.expressions[0], "exit()")
+                val exitCode = intExpr(call.arguments[0], "exit()")
                 exitProcess(exitCode.get())
             }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
@@ -375,7 +379,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             // static invocation of an included class
             val staticClass = (obj as Expression.Alpha).value
             args = evaluateArgs(call.arguments)
-            evaluator = executor.getExecutor(staticClass)
+            evaluator = executor.getEvaluator(staticClass)
                 ?: throw RuntimeException("Could not find static class '$staticClass'")
         } else {
             val evaluatedObj = unboxEval(obj)
@@ -390,7 +394,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                     @Suppress("UNCHECKED_CAST")
                     evaluatedArgs as Array<Any>
                     args = evaluatedArgs
-                    executor.getExecutor(evaluatedObj.stdlibName())
+                    executor.getEvaluator(evaluatedObj.stdlibName())
                         ?: throw RuntimeException("Could not find stdlib for $evaluatedObj")
                 }
                 is Evaluator -> {
@@ -412,7 +416,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         return evaluatedArgs
     }
 
-    private fun dynamicFnCall(
+    fun dynamicFnCall(
         name: String,
         args: Array<Any>
     ) = fnInvoke(memory.dynamicFnSearch(name), args)

@@ -1,0 +1,21 @@
+var list = arralloc(0)
+var size = 0
+var index = 0
+
+fn init(initSize: Int) {
+  list = arralloc(initSize)
+  size = initSize
+  index = 0
+}
+
+fn add(element: Any) {
+  list[index++] = element
+}
+
+fn remove(element: Any) {
+
+}
+
+fn get(index: Int) {
+
+}

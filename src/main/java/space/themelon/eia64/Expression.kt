@@ -72,7 +72,10 @@ abstract class Expression {
         override fun <R> accept(v: Visitor<R>): R = v.include(this)
     }
 
-    open class NewObj(val name: String): Expression() {
+    open class NewObj(
+        val name: String,
+        val arguments: List<Expression>
+    ): Expression() {
         override fun <R> accept(v: Visitor<R>) = v.new(this)
     }
 
@@ -113,7 +116,7 @@ abstract class Expression {
 
     data class NativeCall(
         val type: Type,
-        val arguments: ExpressionList,
+        val arguments: List<Expression>,
     ) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.nativeCall(this)
     }

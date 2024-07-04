@@ -2,11 +2,10 @@ include(
   "examples/Person"
 )
 
-let melon = new Person
-melon.init("Melon")
-
-let ekita = new Person
-ekita.init("Ekita")
+let melon = new Person("Melon", "Ekita")
+let ekita = new Person("Ekita", "Melon")
 
 ekita.hello()
 melon.hello()
+
+println(type(melon))
