@@ -1,3 +1,7 @@
+include(
+  static:std:string
+)
+
 var list = arralloc(0)
 var size = 0
 var index = 0
@@ -8,14 +12,60 @@ fn init(initSize: Int) {
   index = 0
 }
 
+fn enlarge() {
+  let newSize = size * 2
+  let newList = arralloc(newSize)
+  for (var i = 0, i < index, i++) {
+    newList[i] = list[i]
+  }
+  list = newList
+  size = newSize
+}
+
+fn get(at: Int) = list[at]
+fn size() = size
+
 fn add(element: Any) {
+  if (index == size) enlarge()
   list[index++] = element
 }
 
-fn remove(element: Any) {
-
+fn indexOf(match: Any) {
+  for (var i = 0, i < index, i++) {
+    if (list[i] == match) return i
+  }
+  return -1
 }
 
-fn get(index: Int) {
+fn remove(at: Int) {
+  let element = list[at]
+  let newList = arralloc(size - 1)
+  var j = 0
+  for (var i = 0, i < size, i++) {
+    if (i == at) {
+      continue
+    }
+    newList[j++] = list[i]
+  }
+  list = newList
+  size--
+  index--
+  return element
+}
 
+fn removeElement(element: Any) {
+  let index = indexOf(element)
+  if (index == -1) return false
+  return remove(index)
+}
+
+fn toString() {
+  if (size == 0) return "[]"
+  var result = "["
+  itr (element in list) {
+    result += str(element) + ", "
+  }
+  result = result.part(0, result.size() - 2)
+  result += "]"
+  return result
 }

@@ -185,6 +185,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         else -> throw RuntimeException("Unknown binary operator $type")
     }
 
+    var i = 0
+
     override fun expressions(list: Expression.ExpressionList): Any {
         if (list.preserveState)
             // it is being stored somewhere, like in a variable, etc.
@@ -210,7 +212,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
     override fun new(new: Expression.NewObj): Evaluator {
         val evaluator = executor.newEvaluator(new.name)
-        evaluator.dynamicFnCall("init", evaluator.evaluateArgs(new.arguments))
+        evaluator.dynamicFnCall("init", evaluateArgs(new.arguments))
         return evaluator
     }
 
@@ -394,8 +396,9 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                     @Suppress("UNCHECKED_CAST")
                     evaluatedArgs as Array<Any>
                     args = evaluatedArgs
-                    executor.getEvaluator(evaluatedObj.stdlibName())
-                        ?: throw RuntimeException("Could not find stdlib for $evaluatedObj")
+                    val stdlibName = evaluatedObj.stdlibName()
+                    executor.getEvaluator(stdlibName)
+                        ?: throw RuntimeException("Could not find executor for stdlib '$stdlibName'")
                 }
                 is Evaluator -> {
                     args = evaluateArgs(call.arguments)
@@ -416,7 +419,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         return evaluatedArgs
     }
 
-    fun dynamicFnCall(
+    private fun dynamicFnCall(
         name: String,
         args: Array<Any>
     ) = fnInvoke(memory.dynamicFnSearch(name), args)
@@ -452,8 +455,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             memory.declareVar(definedParameter.name,
                 Entity(definedParameter.name, true, value, definedParameter.type))
         }
-        // do not handle return calls here, let it naturally unbox itself
-        val result = eval(fn.body)
+        val result = unboxEval(fn.body)
         memory.leaveScope()
 
         val returnSignature = fn.returnType

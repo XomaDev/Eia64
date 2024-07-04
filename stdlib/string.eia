@@ -95,7 +95,7 @@ fn part(self: String, from: Int, till: Int) {
   return result
 }
 
-fn substring(self: String, from: Int) = part(self, from, len(self))
+fn substring(self: String, from: Int) = part(copy(self), from, len(self))
 
 fn replace(self: String, match: String, replacement: String) {
   let matchSize = len(match)

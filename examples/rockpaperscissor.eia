@@ -1,7 +1,9 @@
 ; a rock-paper-scissor game written in Eia, you pick 'rock', 'paper' or a 'scissor'
 ; robot picks it's option randomly
 
-stdlib(string)
+include(
+  static:std:string
+)
 
 let choices = arrayOf("rock", "paper", "scissor")
 
@@ -18,8 +20,8 @@ fn robotChoose(user: String): Array {
   return arrayOf(robot, 2)
 }
 
+println("Pick 'rock' 'paper' or 'scissor'")
 until (true) {
-  println("Pick 'rock' 'paper' or 'scissor'")
   print("Enter your choice: ")
   let input = readln().lowercase()
   if (input == "endgame") {

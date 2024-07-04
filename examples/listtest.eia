@@ -1,0 +1,11 @@
+include(std:list)
+
+let names = new list(1)
+names.add("melon")
+names.add("ekita")
+
+println(names.size() == 2)
+println(names.toString())
+names.remove(0)
+names.add("meow")
+println(names.get(0) == "ekita" && names.get(1) == "meow")

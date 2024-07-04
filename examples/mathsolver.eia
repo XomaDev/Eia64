@@ -2,8 +2,12 @@
 ; supports +, -, * and /.
 ; * and / are evaluated first, then + and -
 ; does not yet support brackets
+; * and / are prioritized over + and -
 
-stdlib(string, array)
+include(
+  static:std:string,
+  static:std:array
+)
 
 let PLUS = "+"
 let MINUS = "-"
