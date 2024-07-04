@@ -2,17 +2,21 @@ package space.themelon.eia64.analysis
 
 import space.themelon.eia64.Config
 import space.themelon.eia64.Expression
+import space.themelon.eia64.runtime.Executor
 import space.themelon.eia64.syntax.Flag
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
+import java.io.File
 
-class Parser {
+class Parser(private val executor: Executor) {
 
     private val nameResolver = NameResolver()
 
     private lateinit var tokens: List<Token>
     private var index = 0
     private var size = 0
+
+    lateinit var parsed: Expression.ExpressionList
 
     fun parse(tokens: List<Token>): Expression.ExpressionList {
         index = 0
@@ -22,7 +26,8 @@ class Parser {
         val expressions = ArrayList<Expression>()
         while (!isEOF()) expressions.add(parseNext())
         if (Config.DEBUG) expressions.forEach { println(it) }
-        return Expression.ExpressionList(expressions)
+        parsed = Expression.ExpressionList(expressions)
+        return parsed
     }
 
     // make sure to update canParseNext() when we add stuff here!
@@ -40,7 +45,7 @@ class Parser {
             Type.IF -> ifDeclaration()
             Type.FUN -> fnDeclaration()
             Type.SHADO -> shadoDeclaration()
-            Type.STDLIB -> importStdLib()
+            Type.INCLUDE -> includeStatement()
             Type.WHEN -> whenStatement(token)
             else -> {
                 back()
@@ -53,30 +58,73 @@ class Parser {
         val token = peek()
         if (token.flags.isNotEmpty())
             token.flags[0].let {
-                if (it == Flag.LOOP || it == Flag.V_KEYWORD || it == Flag.INTERRUPTION)
+                if (it == Flag.LOOP
+                    || it == Flag.V_KEYWORD
+                    || it == Flag.INTERRUPTION)
                     return true
             }
         return when (token.type) {
-            Type.IF, Type.FUN, Type.STDLIB, Type.SHADO, Type.WHEN -> true
+            Type.IF,
+            Type.FUN,
+            Type.STD,
+            Type.INCLUDE,
+            Type.SHADO,
+            Type.WHEN -> true
             else -> false
         }
     }
 
-    private fun importStdLib(): Expression.ImportStdLib {
+    private fun includeStatement(): Expression {
         expectType(Type.OPEN_CURVE)
-        val imports = ArrayList<String>()
+        val staticClasses = mutableListOf<String>()
         while (true) {
-            val className = readAlpha()
-            imports.add(className)
-            nameResolver.classes.add(className)
-            if (peek().type == Type.CLOSE_CURVE) {
-                skip()
-                break
+            val next = next()
+            when (next.type) {
+                // means importing only one static instance of the class
+                Type.STATIC -> staticClasses.add(includeStatic())
+
+                Type.E_STRING -> {
+                    val sourceFile = getModulePath(next.optionalData as String + ".eia")
+                    verifyFilePath(sourceFile, next)
+                    val moduleName = getModuleName(sourceFile)
+                    executor.addModule(sourceFile.absolutePath, moduleName)
+                }
+                else -> next.error("Unexpected token")
             }
+            if (peek().type == Type.CLOSE_CURVE) break
             expectType(Type.COMMA)
         }
-        return Expression.ImportStdLib(imports)
+        expectType(Type.CLOSE_CURVE)
+        return Expression.Include(staticClasses)
     }
+
+    private fun includeStatic(): String {
+        expectType(Type.COLON)
+        val path = next()
+        val sourceFile = if (path.type == Type.STD) {
+            expectType(Type.COLON)
+            File("${Executor.STD_LIB}/${readAlpha()}.eia")
+        } else {
+            if (path.type != Type.E_STRING)
+                path.error<String>("Expected a string type for static:")
+            File("${getModulePath(path.optionalData as String)}.eia")
+        }
+        verifyFilePath(sourceFile, path)
+        val moduleName = getModuleName(sourceFile)
+        nameResolver.classes.add(moduleName)
+        executor.addModule(sourceFile.absolutePath, moduleName)
+        return moduleName
+    }
+
+    private fun getModuleName(sourceFile: File) = sourceFile.name.substring(0, sourceFile.name.length - ".eia".length)
+
+    private fun verifyFilePath(sourceFile: File, next: Token) {
+        if (!sourceFile.isFile || !sourceFile.exists()) {
+            next.error<String>("Cannot find source file '$sourceFile', make sure it is a full valid path")
+        }
+    }
+
+    private fun getModulePath(path: String) = if (path.startsWith('/')) File(path) else File("${Executor.EXECUTION_DIRECTORY}/$path")
 
     private fun whenStatement(token: Token): Expression {
         expectType(Type.OPEN_CURVE)

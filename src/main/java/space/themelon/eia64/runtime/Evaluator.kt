@@ -203,8 +203,8 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         return EInt(list.size)
     }
 
-    override fun importStdLib(stdLib: Expression.ImportStdLib): Any {
-        stdLib.names.forEach { executor.loadExternal("${Executor.STD_LIB}/$it.eia", it) }
+    override fun include(include: Expression.Include): Any {
+        include.names.forEach { executor.executeStaticModule(it) }
         return EBool(true)
     }
 
@@ -306,7 +306,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 if (group.isEmpty()) group = Executor.STD_LIB
 
                 val name = parts[1]
-                executor.loadExternal("$group/$name.eia", name)
+                executor.addModule("$group/$name.eia", name)
                 return EBool(true)
             }
 
@@ -387,7 +387,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
             evaluatedArgs as Array<Any>
             args = evaluatedArgs
         }
-        val executor = executor.getExternalExecutor(className) ?: throw RuntimeException("Could not find class (for) $className")
+        val executor = executor.getStaticExecutor(className) ?: throw RuntimeException("Could not find class (for) $className")
         return executor.dynamicFnCall(methodName, args)
     }
 

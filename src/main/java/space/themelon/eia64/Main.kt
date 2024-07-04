@@ -30,7 +30,7 @@ object Main {
                 println("Cannot find source file '$file', make sure it is a full valid path")
                 return
             }
-            executor.loadFile(file.absolutePath)
+            executor.loadMainFile(file.absolutePath)
             println("Took " + (System.nanoTime() - startTime) + " ns")
         }
     }

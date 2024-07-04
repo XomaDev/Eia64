@@ -15,7 +15,7 @@ object EiaLive {
             val line = scanner.nextLine()
             if (line == "exit") break
             else if (line == "~~") {
-                executor.loadSource(buffer.toString())
+                executor.loadMainSource(buffer.toString())
                 buffer = StringJoiner("\n")
             }
             else buffer.add(line)

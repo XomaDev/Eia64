@@ -37,11 +37,11 @@ enum class Type {
 
     LET, VAR, SHADO, WHEN,
     IF, ELSE,
-    ITR, TO, IN, BY,
+    ITR, TO, IN, BY, AS,
     FOR, UNTIL,
     FUN,
     INCLUDE, COPY, ARRALLOC, ARRAYOF, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT,
-    STDLIB,
+    STD, STATIC,
 
     RETURN, BREAK, CONTINUE,
     ;
@@ -122,7 +122,6 @@ enum class Type {
 
                 it["type"] = StaticToken(TYPE, arrayOf(Flag.NATIVE_CALL))
 
-                it["include"] = StaticToken(INCLUDE, arrayOf(Flag.NATIVE_CALL))
                 it["copy"] = StaticToken(COPY, arrayOf(Flag.NATIVE_CALL))
                 it["arralloc"] = StaticToken(ARRALLOC, arrayOf(Flag.NATIVE_CALL))
                 it["arrayOf"] = StaticToken(ARRAYOF, arrayOf(Flag.NATIVE_CALL))
@@ -137,13 +136,16 @@ enum class Type {
                 it["format"] = StaticToken(FORMAT, arrayOf(Flag.NATIVE_CALL))
                 it["exit"] = StaticToken(EXIT, arrayOf(Flag.NATIVE_CALL))
 
-                it["stdlib"] = StaticToken(STDLIB)
+                it["std"] = StaticToken(STD)
+                it["static"] = StaticToken(STATIC)
+                it["include"] = StaticToken(INCLUDE)
 
                 it["until"] = StaticToken(UNTIL, arrayOf(Flag.LOOP)) // auto scope
                 it["itr"] = StaticToken(ITR, arrayOf(Flag.LOOP)) // TODO check this later
                 it["to"] = StaticToken(TO)
                 it["in"] = StaticToken(IN)
                 it["by"] = StaticToken(BY)
+                it["as"] = StaticToken(AS)
                 it["for"] = StaticToken(FOR, arrayOf(Flag.LOOP)) // auto scope
 
                 it["let"] = StaticToken(LET, arrayOf(Flag.V_KEYWORD))

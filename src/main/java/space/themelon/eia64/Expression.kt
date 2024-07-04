@@ -13,7 +13,7 @@ abstract class Expression {
         fun charLiteral(charLiteral: CharLiteral): R
         fun alpha(alpha: Alpha): R
         fun operator(operator: Operator): R
-        fun importStdLib(stdLib: ImportStdLib): R
+        fun include(include: Include): R
         fun variable(variable: ExplicitVariable): R
         fun autoVariable(autoVariable: AutoVariable): R
         fun shado(shadow: Shadow): R
@@ -67,8 +67,8 @@ abstract class Expression {
         override fun <R> accept(v: Visitor<R>) = v.operator(this)
     }
 
-    open class ImportStdLib(val names: List<String>): Expression() {
-        override fun <R> accept(v: Visitor<R>): R = v.importStdLib(this)
+    open class Include(val names: List<String>): Expression() {
+        override fun <R> accept(v: Visitor<R>): R = v.include(this)
     }
 
     data class UnaryOperation(

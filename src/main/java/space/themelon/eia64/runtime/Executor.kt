@@ -7,7 +7,8 @@ import java.io.File
 class Executor {
 
     companion object {
-        var STD_LIB = ""
+        var STD_LIB = "" // will be set
+        var EXECUTION_DIRECTORY = File(System.getProperty("user.dir")).absolutePath
     }
 
     init {
@@ -15,29 +16,35 @@ class Executor {
             throw RuntimeException("STD_LIB is not set")
     }
 
-    private val externalEvaluator = HashMap<String, Evaluator>()
-
-    private val mainParser = Parser()
-
+    private val staticExternalModules = HashMap<String, Evaluator>()
     private val mainEvaluator = Evaluator(this)
 
-    fun loadFile(sourceFile: String) {
+    private val externalParsers = HashMap<String, Parser>()
+    private val mainParser = Parser(this)
+
+    fun loadMainFile(sourceFile: String) {
         mainEvaluator.eval(mainParser.parse(getTokens(sourceFile)))
     }
 
-    fun loadSource(source: String) {
+    fun loadMainSource(source: String) {
         mainEvaluator.eval(mainParser.parse(Lexer(source).tokens))
     }
 
-    fun loadExternal(sourceFile: String, name: String) {
-        if (externalEvaluator[name] != null) return
-        Evaluator(this).apply {
-            externalEvaluator[name] = this
-            eval(Parser().parse(getTokens(sourceFile)))
+    // called by parsers, parse the included module
+    fun addModule(sourceFile: String, name: String): Boolean {
+        if (externalParsers[name] != null) return false
+        externalParsers[name] = Parser(this).also { it.parse(getTokens(sourceFile)) }
+        return true
+    }
+
+    // loads the included module and executes it
+    fun executeStaticModule(name: String) {
+        staticExternalModules[name] = Evaluator(this).also {
+            it.eval((externalParsers[name] ?: throw RuntimeException("Static module '$name' not found")).parsed)
         }
     }
 
-    fun getExternalExecutor(name: String) = externalEvaluator[name]
+    fun getStaticExecutor(name: String) = staticExternalModules[name]
 
     private fun getTokens(sourceFile: String) = Lexer(File(sourceFile).readText()).tokens
 }
