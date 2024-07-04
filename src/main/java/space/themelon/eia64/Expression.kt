@@ -14,6 +14,7 @@ abstract class Expression {
         fun alpha(alpha: Alpha): R
         fun operator(operator: Operator): R
         fun include(include: Include): R
+        fun new(new: NewObj): R
         fun variable(variable: ExplicitVariable): R
         fun autoVariable(autoVariable: AutoVariable): R
         fun shado(shadow: Shadow): R
@@ -69,6 +70,10 @@ abstract class Expression {
 
     open class Include(val names: List<String>): Expression() {
         override fun <R> accept(v: Visitor<R>): R = v.include(this)
+    }
+
+    open class NewObj(val name: String): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.new(this)
     }
 
     data class UnaryOperation(

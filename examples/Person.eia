@@ -1,0 +1,9 @@
+; a class that can be included by others
+
+var name = "Unknown"
+
+fn init(_name: String) = name = _name
+
+fn hello() {
+  println(format("Hello %s!", name))
+}

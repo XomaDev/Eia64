@@ -42,6 +42,7 @@ open class Entity(
             is EChar -> E_CHAR
             is EArray -> E_ARRAY
             is Expression -> E_UNIT
+            is Evaluator -> E_OBJECT
             else -> throw RuntimeException("Unknown type of value $value")
         }
     }

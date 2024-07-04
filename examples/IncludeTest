@@ -1,0 +1,12 @@
+include(
+  "examples/Person"
+)
+
+let melon = new Person
+melon.init("Melon")
+
+let ekita = new Person
+ekita.init("Ekita")
+
+ekita.hello()
+melon.hello()

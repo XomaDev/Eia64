@@ -204,9 +204,11 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     }
 
     override fun include(include: Expression.Include): Any {
-        include.names.forEach { executor.executeStaticModule(it) }
+        include.names.forEach { executor.executeModule(it) }
         return EBool(true)
     }
+
+    override fun new(new: Expression.NewObj) = executor.newEvaluator(new.name)
 
     override fun nativeCall(call: Expression.NativeCall): Any {
         val argsSize = call.arguments.size
@@ -365,30 +367,40 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         val obj = call.obj
         val methodName = call.method
         val args: Array<Any>
-        val className: String
+
+        val evaluator: Evaluator
 
         // we may need to do a recursive alpha parse
         if (call.static) {
             // static invocation of an included class
-            className = (obj as Expression.Alpha).value
+            val staticClass = (obj as Expression.Alpha).value
             args = evaluateArgs(call.arguments)
+            evaluator = executor.getExecutor(staticClass)
+                ?: throw RuntimeException("Could not find static class '$staticClass'")
         } else {
-           val evaluatedObj = unboxEval(obj)
-           if (evaluatedObj !is Primitive<*>)
-               throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
-           className = evaluatedObj.stdlibName()
-           call.arguments as ArrayList
-            val evaluatedArgs = arrayOfNulls<Any>(call.arguments.size + 1)
-            for ((index, expression) in call.arguments.withIndex())
-                evaluatedArgs[index + 1] = unboxEval(expression)
-            // NOTE: we never should directly modify the original expression list
-            evaluatedArgs[0] = evaluatedObj
-            @Suppress("UNCHECKED_CAST")
-            evaluatedArgs as Array<Any>
-            args = evaluatedArgs
+            val evaluatedObj = unboxEval(obj)
+            call.arguments as ArrayList
+            evaluator = when (evaluatedObj) {
+                is Primitive<*> -> {
+                    val evaluatedArgs = arrayOfNulls<Any>(call.arguments.size + 1)
+                    for ((index, expression) in call.arguments.withIndex())
+                        evaluatedArgs[index + 1] = unboxEval(expression)
+                    // NOTE: we never should directly modify the original expression list
+                    evaluatedArgs[0] = evaluatedObj
+                    @Suppress("UNCHECKED_CAST")
+                    evaluatedArgs as Array<Any>
+                    args = evaluatedArgs
+                    executor.getExecutor(evaluatedObj.stdlibName())
+                        ?: throw RuntimeException("Could not find stdlib for $evaluatedObj")
+                }
+                is Evaluator -> {
+                    args = evaluateArgs(call.arguments)
+                    evaluatedObj
+                }
+                else -> throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
+            }
         }
-        val executor = executor.getStaticExecutor(className) ?: throw RuntimeException("Could not find class (for) $className")
-        return executor.dynamicFnCall(methodName, args)
+        return evaluator.dynamicFnCall(methodName, args)
     }
 
     private fun evaluateArgs(args: List<Expression>): Array<Any> {

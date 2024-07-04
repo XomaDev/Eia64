@@ -1,4 +1,6 @@
-stdlib(array)
+include(
+  static:std:array
+)
 
 fn indexOfChar(self: String, letter: Char) {
   let size = len(self)

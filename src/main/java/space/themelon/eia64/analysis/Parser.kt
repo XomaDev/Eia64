@@ -46,6 +46,7 @@ class Parser(private val executor: Executor) {
             Type.FUN -> fnDeclaration()
             Type.SHADO -> shadoDeclaration()
             Type.INCLUDE -> includeStatement()
+            Type.NEW -> newStatement()
             Type.WHEN -> whenStatement(token)
             else -> {
                 back()
@@ -68,6 +69,7 @@ class Parser(private val executor: Executor) {
             Type.FUN,
             Type.STD,
             Type.INCLUDE,
+            Type.NEW,
             Type.SHADO,
             Type.WHEN -> true
             else -> false
@@ -82,7 +84,14 @@ class Parser(private val executor: Executor) {
             when (next.type) {
                 // means importing only one static instance of the class
                 Type.STATIC -> staticClasses.add(includeStatic())
-
+                Type.STD -> {
+                    expectType(Type.COLON)
+                    val file = File("${Executor.STD_LIB}/${readAlpha()}.eia")
+                    val moduleName = getModuleName(file)
+                    staticClasses.add(moduleName)
+                    nameResolver.classes.add(moduleName)
+                    executor.addModule(file.absolutePath, moduleName)
+                }
                 Type.E_STRING -> {
                     val sourceFile = getModulePath(next.optionalData as String + ".eia")
                     verifyFilePath(sourceFile, next)
@@ -124,7 +133,11 @@ class Parser(private val executor: Executor) {
         }
     }
 
-    private fun getModulePath(path: String) = if (path.startsWith('/')) File(path) else File("${Executor.EXECUTION_DIRECTORY}/$path")
+    private fun getModulePath(path: String) =
+        if (path.startsWith('/')) File(path)
+        else File("${Executor.EXECUTION_DIRECTORY}/$path")
+
+    private fun newStatement() = Expression.NewObj(readAlpha())
 
     private fun whenStatement(token: Token): Expression {
         expectType(Type.OPEN_CURVE)

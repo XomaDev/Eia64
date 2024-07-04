@@ -27,7 +27,7 @@ enum class Type {
     COMMA,
 
     E_INT, E_BOOL, E_STRING, E_CHAR,
-    E_ARRAY, E_ANY, E_UNIT,
+    E_ARRAY, E_ANY, E_UNIT, E_OBJECT,
 
     ALPHA,
     E_TRUE, E_FALSE,
@@ -40,8 +40,8 @@ enum class Type {
     ITR, TO, IN, BY, AS,
     FOR, UNTIL,
     FUN,
-    INCLUDE, COPY, ARRALLOC, ARRAYOF, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT,
-    STD, STATIC,
+    COPY, ARRALLOC, ARRAYOF, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT,
+    INCLUDE, STD, STATIC, NEW,
 
     RETURN, BREAK, CONTINUE,
     ;
@@ -112,6 +112,7 @@ enum class Type {
                 it["Any"] = StaticToken(E_ANY, arrayOf(Flag.CLASS))
                 it["Array"] = StaticToken(E_ARRAY, arrayOf(Flag.CLASS))
                 it["Unit"] = StaticToken(E_UNIT, arrayOf(Flag.CLASS))
+                it["Object"] = StaticToken(E_OBJECT, arrayOf(Flag.CLASS))
 
                 it["true"] = StaticToken(E_TRUE, arrayOf(Flag.VALUE, Flag.E_BOOL))
                 it["false"] = StaticToken(E_FALSE, arrayOf(Flag.VALUE, Flag.E_BOOL))
@@ -139,6 +140,7 @@ enum class Type {
                 it["std"] = StaticToken(STD)
                 it["static"] = StaticToken(STATIC)
                 it["include"] = StaticToken(INCLUDE)
+                it["new"] = StaticToken(NEW)
 
                 it["until"] = StaticToken(UNTIL, arrayOf(Flag.LOOP)) // auto scope
                 it["itr"] = StaticToken(ITR, arrayOf(Flag.LOOP)) // TODO check this later
