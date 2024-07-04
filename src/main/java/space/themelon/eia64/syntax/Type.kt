@@ -42,6 +42,7 @@ enum class Type {
     FUN,
     COPY, ARRALLOC, ARRAYOF, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT,
     INCLUDE, STD, STATIC, NEW,
+    THROW,
 
     RETURN, BREAK, CONTINUE,
     ;
@@ -141,6 +142,7 @@ enum class Type {
                 it["static"] = StaticToken(STATIC)
                 it["include"] = StaticToken(INCLUDE)
                 it["new"] = StaticToken(NEW)
+                it["throw"] = StaticToken(THROW)
 
                 it["until"] = StaticToken(UNTIL, arrayOf(Flag.LOOP)) // auto scope
                 it["itr"] = StaticToken(ITR, arrayOf(Flag.LOOP)) // TODO check this later

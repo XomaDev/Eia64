@@ -47,6 +47,7 @@ class Parser(private val executor: Executor) {
             Type.SHADO -> shadoDeclaration()
             Type.INCLUDE -> includeStatement()
             Type.NEW -> newStatement()
+            Type.THROW -> throwStatement()
             Type.WHEN -> whenStatement(token)
             else -> {
                 back()
@@ -70,11 +71,14 @@ class Parser(private val executor: Executor) {
             Type.STD,
             Type.INCLUDE,
             Type.NEW,
+            Type.THROW,
             Type.SHADO,
             Type.WHEN -> true
             else -> false
         }
     }
+
+    private fun throwStatement() = Expression.ThrowExpr(parseNext())
 
     private fun includeStatement(): Expression {
         expectType(Type.OPEN_CURVE)

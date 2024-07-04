@@ -359,6 +359,10 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         }
     }
 
+    override fun throwExpr(throwExpr: Expression.ThrowExpr): Any {
+        throw RuntimeException(unboxEval(throwExpr.error).toString())
+    }
+
     override fun scope(scope: Expression.Scope): Any {
         if (scope.imaginary) return eval(scope.expr)
         memory.enterScope()

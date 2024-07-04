@@ -22,12 +22,43 @@ fn enlarge() {
   size = newSize
 }
 
-fn get(at: Int) = list[at]
-fn size() = size
+fn checkBounds(at: Int) {
+  if (0 > at || at >= index) {
+    throw format("Index Out of Bounds, index=%d, size=%d", at, index)
+  }
+}
+
+fn get(at: Int) {
+  checkBounds(at)
+  := list[at]
+}
+
+fn set(element: Any, at: Int) {
+  checkBounds(at)
+  list[at] = element
+}
+
+fn size() = index
+fn isEmpty() = size == 0
 
 fn add(element: Any) {
   if (index == size) enlarge()
   list[index++] = element
+}
+
+fn addAt(element: Any, at: Int) {
+  checkBounds(at)
+  let newList = arralloc(size + 1)
+  var j = 0
+  for (var i = 0, i < size, i++) {
+    if (i == at) {
+      newList[j++] = element
+    }
+    newList[j++] = list[i]
+  }
+  list = newList
+  size++
+  index++
 }
 
 fn indexOf(match: Any) {
@@ -37,7 +68,10 @@ fn indexOf(match: Any) {
   return -1
 }
 
+fn contains(match: Any) = indexOf(match) != -1
+
 fn remove(at: Int) {
+  checkBounds(at)
   let element = list[at]
   let newList = arralloc(size - 1)
   var j = 0
@@ -48,8 +82,8 @@ fn remove(at: Int) {
     newList[j++] = list[i]
   }
   list = newList
-  size--
   index--
+  size--
   return element
 }
 
@@ -57,6 +91,10 @@ fn removeElement(element: Any) {
   let index = indexOf(element)
   if (index == -1) return false
   return remove(index)
+}
+
+fn clear() {
+  index = 0
 }
 
 fn toString() {
