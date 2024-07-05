@@ -17,4 +17,4 @@ println(names.get(2) == "miww")
 println()
 println(names.toString())
 ; this should error out
-names.get(3)
+names.get(7)

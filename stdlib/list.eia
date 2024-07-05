@@ -12,6 +12,12 @@ fn init(initSize: Int) {
   index = 0
 }
 
+fn initArray(array: Array) {
+  size = len(array)
+  index = 0
+  list = array
+}
+
 fn enlarge() {
   let newSize = size * 2
   let newList = arralloc(newSize)
@@ -73,17 +79,10 @@ fn contains(match: Any) = indexOf(match) != -1
 fn remove(at: Int) {
   checkBounds(at)
   let element = list[at]
-  let newList = arralloc(size - 1)
-  var j = 0
-  for (var i = 0, i < size, i++) {
-    if (i == at) {
-      continue
-    }
-    newList[j++] = list[i]
+  for (var i = copy(at), i < index - 1, i++) {
+    list[i] = list[i + 1]
   }
-  list = newList
   index--
-  size--
   return element
 }
 
@@ -95,6 +94,19 @@ fn removeElement(element: Any) {
 
 fn clear() {
   index = 0
+}
+
+fn arrayOfRange(from: Int, to: Int) {
+  checkBounds(from)
+  checkBounds(to)
+
+  let sublistSize = to - from
+  let subarray = arralloc(sublistSize)
+
+  for (var i = 0, i < sublistSize, i++) {
+    subarray[i] = list[from + i]
+  }
+  return subarray
 }
 
 fn toString() {
