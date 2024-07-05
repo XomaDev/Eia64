@@ -49,6 +49,7 @@ class Parser(private val executor: Executor) {
             Type.NEW -> newStatement()
             Type.THROW -> throwStatement()
             Type.WHEN -> whenStatement(token)
+            Type.OPEN_SQUARE -> arrayStatement()
             else -> {
                 back()
                 return parseExpr(0)
@@ -73,6 +74,7 @@ class Parser(private val executor: Executor) {
             Type.NEW,
             Type.THROW,
             Type.SHADO,
+            Type.OPEN_SQUARE,
             Type.WHEN -> true
             else -> false
         }
@@ -142,6 +144,19 @@ class Parser(private val executor: Executor) {
         else File("${Executor.EXECUTION_DIRECTORY}/$path")
 
     private fun newStatement() = Expression.NewObj(readAlpha(), callArguments())
+
+    private fun arrayStatement(): Expression.Array {
+        val arrayElements = mutableListOf<Expression>()
+        if (peek().type != Type.CLOSE_SQUARE) {
+            while (true) {
+                arrayElements.add(parseNext())
+                val next = next()
+                if (next.type == Type.CLOSE_SQUARE) break
+                else if (next.type != Type.COMMA) next.error<String>("Expected comma for array element separator")
+            }
+        }
+        return Expression.Array(arrayElements)
+    }
 
     private fun whenStatement(token: Token): Expression {
         expectType(Type.OPEN_CURVE)
@@ -393,9 +408,37 @@ class Parser(private val executor: Executor) {
     }
 
     private fun parseExpr(minPrecedence: Int): Expression {
+        // this parses a full expressions, until it's done!
         var left = parseElement()
-        // a[x][y]
-        // {{a, x}, y}
+        if (!isEOF() && peek().hasFlag(Flag.POSSIBLE_RIGHT_UNARY)) {
+            left = Expression.UnaryOperation(Expression.Operator(next().type), left, false)
+        }
+        while (!isEOF()) {
+            val opToken = peek()
+            if (!opToken.hasFlag(Flag.OPERATOR)) return left
+
+            val precedence = operatorPrecedence(opToken.flags[0])
+            if (precedence == -1) return left
+
+            if (precedence >= minPrecedence) {
+                skip() // operator token
+                val right =
+                    if (opToken.hasFlag(Flag.PRESERVE_ORDER)) parseTerm()
+                    else parseExpr(precedence)
+                left = Expression.BinaryOperation(
+                    left,
+                    right,
+                    Expression.Operator(opToken.type)
+                )
+            } else return left
+        }
+        return left
+    }
+
+    private fun parseElement(): Expression {
+        var left = parseTerm()
+        // checks for calling methods located in different classes and also
+        //  for array access parsing
         while (!isEOF()) {
             val nextOp = peek()
             if (nextOp.type != Type.DOT
@@ -428,28 +471,6 @@ class Parser(private val executor: Executor) {
                 }
             }
         }
-        if (!isEOF() && peek().hasFlag(Flag.POSSIBLE_RIGHT_UNARY)) {
-            left = Expression.UnaryOperation(Expression.Operator(next().type), left, false)
-        }
-        while (!isEOF()) {
-            val opToken = peek()
-            if (!opToken.hasFlag(Flag.OPERATOR)) return left
-
-            val precedence = operatorPrecedence(opToken.flags[0])
-            if (precedence == -1) return left
-
-            if (precedence >= minPrecedence) {
-                skip() // operator token
-                val right =
-                    if (opToken.hasFlag(Flag.PRESERVE_ORDER)) parseElement()
-                    else parseExpr(precedence)
-                left = Expression.BinaryOperation(
-                    left,
-                    right,
-                    Expression.Operator(opToken.type)
-                )
-            } else return left
-        }
         return left
     }
 
@@ -467,7 +488,8 @@ class Parser(private val executor: Executor) {
         else -> -1
     }
 
-    private fun parseElement(): Expression {
+    private fun parseTerm(): Expression {
+        // a term is only one value, like 'a', '123'
         when (peek().type) {
             Type.OPEN_CURVE -> {
                 skip()
@@ -487,7 +509,7 @@ class Parser(private val executor: Executor) {
                 return unitCall(alpha)
             return alpha
         } else if (token.hasFlag(Flag.UNARY)) {
-            return Expression.UnaryOperation(Expression.Operator(token.type), parseElement(), true)
+            return Expression.UnaryOperation(Expression.Operator(token.type), parseTerm(), true)
         } else if (token.hasFlag(Flag.NATIVE_CALL)) {
             val arguments = callArguments()
             return Expression.NativeCall(token.type, arguments)
@@ -527,6 +549,8 @@ class Parser(private val executor: Executor) {
     }
 
     private fun unitCall(unitExpr: Expression): Expression {
+        // only limited to functions or shado variables inside the class
+        //  does not touch outside classes
         val at = expectType(Type.OPEN_CURVE)
         val arguments = parseArguments()
         expectType(Type.CLOSE_CURVE)

@@ -12,6 +12,7 @@ abstract class Expression {
         fun stringLiteral(stringLiteral: StringLiteral): R
         fun charLiteral(charLiteral: CharLiteral): R
         fun alpha(alpha: Alpha): R
+        fun array(array: Array): R
         fun operator(operator: Operator): R
         fun include(include: Include): R
         fun new(new: NewObj): R
@@ -63,6 +64,10 @@ abstract class Expression {
 
     data class Alpha(val index: Int, val value: String) : Expression() {
         override fun <R> accept(v: Visitor<R>) = v.alpha(this)
+    }
+
+    data class Array(val elements: List<Expression>): Expression() {
+        override fun <R> accept(v: Visitor<R>) = v.array(this)
     }
 
     data class Operator(val value: Type) : Expression() {

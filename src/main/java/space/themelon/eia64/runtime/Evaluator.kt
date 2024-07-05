@@ -39,6 +39,17 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
     override fun charLiteral(charLiteral: Expression.CharLiteral) = EChar(charLiteral.value)
 
     override fun alpha(alpha: Expression.Alpha) = memory.getVar(alpha.index, alpha.value)
+
+    private fun prepareArrayOf(arguments: List<Expression>): EArray {
+        val evaluated = arrayOfNulls<Any>(arguments.size)
+        for ((index, aExpr) in arguments.withIndex())
+            evaluated[index] = unboxEval(aExpr)
+        evaluated as Array<Any>
+        return EArray(evaluated)
+    }
+
+    override fun array(array: Expression.Array) = prepareArrayOf(array.elements)
+
     override fun operator(operator: Expression.Operator) = operator.value
 
     private fun update(scope: Int, name: String, value: Any) {
@@ -185,8 +196,6 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
         else -> throw RuntimeException("Unknown binary operator $type")
     }
 
-    var i = 0
-
     override fun expressions(list: Expression.ExpressionList): Any {
         if (list.preserveState)
             // it is being stored somewhere, like in a variable, etc.
@@ -332,14 +341,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 return EArray(Array(size.get()) { EInt(0) })
             }
 
-            ARRAYOF -> {
-                val arguments = call.arguments
-                val evaluated = arrayOfNulls<Any>(arguments.size)
-                for ((index, aExpr) in arguments.withIndex())
-                    evaluated[index] = unboxEval(aExpr)
-                evaluated as Array<Any>
-                return EArray(evaluated)
-            }
+            ARRAYOF -> return prepareArrayOf(call.arguments)
 
             TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())
 
