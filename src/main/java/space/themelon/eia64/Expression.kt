@@ -4,9 +4,10 @@ import space.themelon.eia64.analysis.ExprType
 import space.themelon.eia64.analysis.FnElement
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
-import kotlin.math.exp
 
-abstract class Expression {
+abstract class Expression(
+    private val where: Token? = null
+) {
 
     interface Visitor<R> {
         fun genericLiteral(literal: GenericLiteral): R
@@ -45,87 +46,120 @@ abstract class Expression {
     abstract fun type(): ExprType
 
     // for internal evaluation use
-    data class GenericLiteral(val value: Any): Expression() {
+    data class GenericLiteral(
+        val where: Token,
+        val value: Any): Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.genericLiteral(this)
         override fun type() = ExprType.ANY
     }
 
-    data class IntLiteral(val value: Int): Expression() {
+    data class IntLiteral(
+        val where: Token,
+        val value: Int): Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.intLiteral(this)
         override fun type() = ExprType.INT
     }
 
-    data class BoolLiteral(val value: Boolean): Expression() {
+    data class BoolLiteral(
+        val where: Token,
+        val value: Boolean
+    ): Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.boolLiteral(this)
         override fun type() = ExprType.BOOL
     }
 
-    data class StringLiteral(val value: String): Expression() {
+    data class StringLiteral(
+        val where: Token,
+        val value: String): Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.stringLiteral(this)
         override fun type() = ExprType.STRING
     }
 
-    data class CharLiteral(val value: Char): Expression() {
+    data class CharLiteral(
+        val where: Token,
+        val value: Char
+    ): Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.charLiteral(this)
         override fun type() = ExprType.CHAR
     }
 
-    data class Alpha(val index: Int, val value: String) : Expression() {
+    data class Alpha(
+        val where: Token,
+        val index: Int,
+        val value: String) : Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.alpha(this)
         override fun type() = ExprType.ANY
     }
 
-    data class Array(val elements: List<Expression>): Expression() {
+    data class Array(
+        val where: Token,
+        val elements: List<Expression>): Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.array(this)
         override fun type() = ExprType.ANY
     }
 
-    open class Include(val names: List<String>): Expression() {
+    data class Include(
+        val names: List<String>): Expression(null) {
+
         override fun <R> accept(v: Visitor<R>): R = v.include(this)
         override fun type() = ExprType.NONE
     }
 
-    open class NewObj(
+    data class NewObj(
+        val where: Token,
         val name: String,
         val arguments: List<Expression>
-    ): Expression() {
+    ): Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.new(this)
         override fun type() = ExprType.OBJECT
     }
 
-    open class ThrowExpr(
+    data class ThrowExpr(
         val error: Expression
-    ): Expression() {
+    ): Expression(null) {
+
         override fun <R> accept(v: Visitor<R>) = v.throwExpr(this)
         override fun type() = ExprType.NONE
     }
 
     data class UnaryOperation(
+        val where: Token,
         val operator: Type,
         val expr: Expression,
         val left: Boolean
-    ) : Expression() {
+    ) : Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.unaryOperation(this)
 
-        fun verify(token: Token) {
+        init { verify() }
+
+        private fun verify() {
             val exprType = expr.type()
             if (left) {
                 when (operator) {
                     Type.NEGATE -> {
                         if (exprType == ExprType.INT) return
-                        token.error<String>("Expected Int expression to apply (-) Negate Operator")
+                        where.error<String>("Expected Int expression to apply (-) Negate Operator")
                     }
                     Type.INCREMENT -> {
                         if (exprType == ExprType.INT) return
-                        token.error<String>("Expected Int expression to apply (++) Increment Operator")
+                        where.error<String>("Expected Int expression to apply (++) Increment Operator")
                     }
                     Type.DECREMENT -> {
                         if (exprType == ExprType.INT) return
-                        token.error<String>("Expected Int expression to apply (--) Decrement Operator")
+                        where.error<String>("Expected Int expression to apply (--) Decrement Operator")
                     }
                     Type.NOT -> {
                         if (exprType == ExprType.BOOL) return
-                        token.error<String>("Expected Boolean expression to apply (!) Not Operator")
+                        where.error<String>("Expected Boolean expression to apply (!) Not Operator")
                     }
                     else -> { }
                 }
@@ -133,16 +167,16 @@ abstract class Expression {
                 when (operator) {
                     Type.INCREMENT -> {
                         if (exprType == ExprType.INT) return
-                        token.error<String>("Expected Int expression to apply (++) Increment Operator")
+                        where.error<String>("Expected Int expression to apply (++) Increment Operator")
                     }
                     Type.DECREMENT -> {
                         if (exprType == ExprType.INT) return
-                        token.error<String>("Expected Int expression to apply (--) Decrement Operator")
+                        where.error<String>("Expected Int expression to apply (--) Decrement Operator")
                     }
                     else -> { }
                 }
             }
-            token.error<String>("Unknown operator")
+            where.error<String>("Unknown operator")
         }
 
         override fun type(): ExprType {
@@ -165,9 +199,10 @@ abstract class Expression {
     }
 
     data class BinaryOperation(
+        val where: Token,
         val left: Expression,
         val right: Expression,
-        val operator: Type) : Expression() {
+        val operator: Type) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.binaryOperation(this)
 
@@ -186,26 +221,44 @@ abstract class Expression {
     )
 
     data class ExplicitVariable(
+        val where: Token,
         val mutable: Boolean,
         val definition: DefinitionType,
         val expr: Expression
-    ) : Expression() {
+    ) : Expression(where) {
+
+        init { verify() }
+
+        private fun verify() {
+            val declaredType = ExprType.translate(definition.type)
+            val valueType = expr.type()
+
+            if (declaredType != ExprType.ANY && declaredType != valueType) {
+                where.error<String>("Variable '${definition.name}' has type ${definition.type}" +
+                        " but got ${ExprType.translateBack(valueType)}")
+            }
+        }
+
         override fun <R> accept(v: Visitor<R>) = v.variable(this)
         override fun type() = expr.type()
     }
 
     data class AutoVariable(
+        val where: Token,
         val name: String,
         val expr: Expression
-    ) : Expression() {
+    ) : Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.autoVariable(this)
         override fun type() = expr.type()
     }
 
     data class NativeCall(
+        val where: Token,
         val type: Type,
         val arguments: List<Expression>,
-    ) : Expression() {
+    ) : Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.nativeCall(this)
 
         // TODO:
@@ -215,9 +268,11 @@ abstract class Expression {
     }
 
     data class Scope(
+        val where: Token,
         val expr: Expression,
         val imaginary: Boolean
-    ): Expression() {
+    ): Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.scope(this)
         // TODO:
         //  in future we need to check this again, if we are doing it right
@@ -225,86 +280,91 @@ abstract class Expression {
     }
 
     data class MethodCall(
+        val where: Token,
         val fnExpr: FnElement,
         val arguments: List<Expression>,
-    ) : Expression() {
+    ) : Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.methodCall(this)
-        override fun type(): ExprType {
-            return when (val type = fnExpr.fnExpression!!.returnType) {
-                Type.E_INT -> ExprType.INT
-                Type.E_BOOL -> ExprType.BOOL
-                Type.E_CHAR -> ExprType.CHAR
-                Type.E_STRING -> ExprType.STRING
-                Type.E_OBJECT -> ExprType.OBJECT
-                Type.E_ARRAY -> ExprType.ARRAY
-                Type.E_UNIT -> ExprType.UNIT
-                else -> throw RuntimeException("Unknown return type translation $type")
-            }
-        }
+        override fun type() = ExprType.translate(fnExpr.fnExpression!!.returnType)
     }
 
     data class ClassMethodCall(
+        val where: Token,
         val static: Boolean,
         val obj: Expression,
         val method: String,
         val arguments: List<Expression>
-    ): Expression() {
+    ): Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.classMethodCall(this)
         override fun type() = ExprType.ANY
     }
 
     data class ShadoInvoke(
+        val where: Token,
         val expr: Expression,
         val arguments: List<Expression>
-    ): Expression() {
+    ): Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.unitInvoke(this)
         override fun type() = ExprType.ANY
     }
 
     data class ExpressionList(
+        val where: Token,
         val expressions: List<Expression>,
         var preserveState: Boolean = false,
-    ) : Expression() {
+    ) : Expression(where) {
+
         val size = expressions.size
         override fun <R> accept(v: Visitor<R>) = v.expressions(this)
         override fun type() = ExprType.ANY
     }
 
     data class ForEach(
+        val where: Token,
         val name: String,
         val entity: Expression,
         val body: Expression,
-    ): Expression() {
+    ): Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.forEach(this)
         override fun type() = ExprType.NONE
     }
 
     data class ForLoop(
+        val where: Token,
         val initializer: Expression?,
         val conditional: Expression?,
         val operational: Expression?,
         val body: Expression,
-    ) : Expression() {
+    ) : Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.forLoop(this)
         override fun type() = ExprType.NONE
     }
 
     data class Itr(
+        val where: Token,
         val name: String,
         val from: Expression,
         val to: Expression,
         val by: Expression?,
         val body: Expression,
-    ) : Expression() {
+    ) : Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.itr(this)
         override fun type() = ExprType.NONE
     }
 
     data class When(
+        val where: Token,
         val expr: Expression,
         val matches: List<Pair<Expression, Expression>>,
         val defaultBranch: Expression,
-    ): Expression() {
+    ): Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.whenExpr(this)
         // TODO:
         //  in future we have to analyze all the types, if all of the types are equal, return them
@@ -313,18 +373,22 @@ abstract class Expression {
     }
 
     data class Until(
+        val where: Token,
         val expression: Expression,
         val body: Expression,
-    ) : Expression() {
+        ) : Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.until(this)
         override fun type() = ExprType.ANY
     }
 
     data class If(
+        val where: Token,
         val condition: Expression,
         val thenBody: Expression,
         val elseBody: Expression? = null,
-    ) : Expression() {
+    ) : Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.ifFunction(this)
 
         override fun type(): ExprType {
@@ -337,34 +401,44 @@ abstract class Expression {
         }
     }
 
-    data class Interruption(val operator: Type, val expr: Expression? = null)
-        : Expression() {
+    data class Interruption(
+        val where: Token,
+        val operator: Type,
+        val expr: Expression? = null)
+        : Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.interruption(this)
         override fun type() = expr?.type() ?: ExprType.NONE
     }
 
     data class Function(
+        val where: Token,
         val name: String,
         val arguments: List<DefinitionType>,
         val returnType: Type,
         val body: Expression
-    ) : Expression() {
+    ) : Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.function(this)
         override fun type() = ExprType.ANY
     }
 
     data class Shadow(
+        val where: Token,
         val names: List<String>,
         val body: Expression
-    ): Expression() {
+    ): Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.shado(this)
         override fun type() = ExprType.ANY
     }
 
     data class ElementAccess(
+        val where: Token,
         val expr: Expression,
         val index: Expression
-    ) : Expression() {
+    ) : Expression(where) {
+
         override fun <R> accept(v: Visitor<R>) = v.elementAccess(this)
 
         override fun type(): ExprType {

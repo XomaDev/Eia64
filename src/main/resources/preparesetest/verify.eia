@@ -1,0 +1,2 @@
+let x: Int = if (true) "10" else 7
+println(x)
