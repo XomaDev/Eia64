@@ -14,8 +14,7 @@ object Main {
         }
         Executor.STD_LIB = stdlib.absolutePath
 
-        if (args.size != 1) throw RuntimeException("eia <source_path> or eia live")
-        if (args[0] == "live") {
+        if (args.size != 1 || args[0] == "live") {
             EiaLive.main(emptyArray<String>())
         } else {
             val executor = Executor()

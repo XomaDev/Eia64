@@ -18,9 +18,9 @@ class Memory {
             return fSuper?.searchVr(index, name) ?: throw RuntimeException("Unable to find variable '$name'")
         }
 
-        fun searchFn(name: String): Expression.Function {
+        fun searchFn(name: String): Expression.Function? {
             for (function in functions) if (function.first == name) return function.second
-            return fSuper?.searchFn(name) ?: throw RuntimeException("Unable to find function '$name'")
+            return fSuper?.searchFn(name)
         }
 
         fun reset(newSuper: Frame) {
@@ -73,7 +73,7 @@ class Memory {
 
     fun getVar(index: Int, name: String) = currentFrame.searchVr(index, name)
 
-    fun dynamicFnSearch(name: String): Expression.Function {
+    fun dynamicFnSearch(name: String): Expression.Function? {
         if (frameStack.size != 1)
             throw RuntimeException("Dynamic search can only be requested from master scope")
         return currentFrame.searchFn(name)

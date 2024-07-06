@@ -16,7 +16,7 @@ class Executor {
     }
 
     private val externalExecutors = HashMap<String, Evaluator>()
-    private val mainEvaluator = Evaluator(this)
+    private val mainEvaluator = Evaluator("Main", this)
 
     private val externalParsers = HashMap<String, Parser>()
     private val mainParser = Parser(this)
@@ -43,7 +43,7 @@ class Executor {
         return evaluator
     }
 
-    fun newEvaluator(name: String) = Evaluator(this).also {
+    fun newEvaluator(name: String) = Evaluator(name, this).also {
         it.eval((externalParsers[name] ?: throw RuntimeException("Static module '$name') not found")).parsed)
     }
 

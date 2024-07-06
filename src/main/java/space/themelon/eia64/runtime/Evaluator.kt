@@ -12,7 +12,10 @@ import kotlin.math.pow
 import kotlin.random.Random
 import kotlin.system.exitProcess
 
-class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
+class Evaluator(
+    private val className: String,
+    private val executor: Executor
+) : Expression.Visitor<Any> {
 
     private val startupTime = System.currentTimeMillis()
 
@@ -221,9 +224,16 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
     override fun new(new: Expression.NewObj): Evaluator {
         val evaluator = executor.newEvaluator(new.name)
-        evaluator.dynamicFnCall("init", evaluateArgs(new.arguments))
+        evaluator.dynamicFnCall("init", evaluateArgs(new.arguments), true)
         return evaluator
     }
+
+    // try to call a string() method located in local class if available
+    @Override
+    override fun toString() = dynamicFnCall("string",
+        emptyArray(),
+        false,
+        "Class<$className>").toString()
 
     override fun nativeCall(call: Expression.NativeCall): Any {
         val argsSize = call.arguments.size
@@ -413,7 +423,7 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
                 else -> throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
             }
         }
-        return evaluator.dynamicFnCall(methodName, args)
+        return evaluator.dynamicFnCall(methodName, args, false)!!
     }
 
     private fun evaluateArgs(args: List<Expression>): Array<Any> {
@@ -427,8 +437,15 @@ class Evaluator(private val executor: Executor) : Expression.Visitor<Any> {
 
     private fun dynamicFnCall(
         name: String,
-        args: Array<Any>
-    ) = fnInvoke(memory.dynamicFnSearch(name), args)
+        args: Array<Any>,
+        discardIfNotFound: Boolean,
+        defaultValue: Any? = null
+    ): Any? {
+        val fn = memory.dynamicFnSearch(name)
+        if (discardIfNotFound && fn == null) return defaultValue
+        if (fn == null) throw RuntimeException("Unable to find function '$name()' in class $className")
+        return fnInvoke(fn, args)
+    }
 
     private fun fnInvoke(fn: Expression.Function, callArgs: Array<Any>): Any {
         // Fully Manual Scopped!

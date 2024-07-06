@@ -96,11 +96,11 @@ fn clear() {
   index = 0
 }
 
-fn arrayOfRange(from: Int, to: Int) {
+fn arrayOfRange(from: Int, end: Int) {
   checkBounds(from)
-  checkBounds(to)
+  checkBounds(end)
 
-  let sublistSize = to - from
+  let sublistSize = end - from
   let subarray = arralloc(sublistSize)
 
   for (var i = 0, i < sublistSize, i++) {
@@ -109,7 +109,7 @@ fn arrayOfRange(from: Int, to: Int) {
   return subarray
 }
 
-fn toString() {
+fn string() {
   if (size == 0) return "[]"
   var result = "["
   itr (element in list) {
