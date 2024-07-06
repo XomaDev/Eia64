@@ -53,8 +53,6 @@ class Evaluator(
 
     override fun array(array: Expression.Array) = prepareArrayOf(array.elements)
 
-    override fun operator(operator: Expression.Operator) = operator.value
-
     private fun update(scope: Int, name: String, value: Any) {
         (memory.getVar(scope, name) as Entity).update(value)
     }
@@ -77,7 +75,7 @@ class Evaluator(
         return value
     }
 
-    override fun unaryOperation(expr: Expression.UnaryOperation): Any = when (val type = operator(expr.operator)) {
+    override fun unaryOperation(expr: Expression.UnaryOperation): Any = when (val type = expr.operator) {
         NOT -> EBool(!(booleanExpr(expr.expr, "! Not").get()))
         NEGATE -> EInt(Math.negateExact(intExpr(expr.expr, "- Negate").get()))
         INCREMENT, DECREMENT -> {
@@ -105,7 +103,7 @@ class Evaluator(
         return false
     }
 
-    override fun binaryOperation(expr: Expression.BinaryOperation) = when (val type = operator(expr.operator)) {
+    override fun binaryOperation(expr: Expression.BinaryOperation) = when (val type = expr.operator) {
         PLUS -> {
             val left = unboxEval(expr.left)
             val right = unboxEval(expr.right)
@@ -664,7 +662,7 @@ class Evaluator(
         return EInt(numIterations)
     }
 
-    override fun interruption(interruption: Expression.Interruption) = when (val type = eval(interruption.type)) {
+    override fun interruption(interruption: Expression.Interruption) = when (val type = interruption.operator) {
         // wrap it as a normal entity, this will be naturally unboxed when called unbox()
         RETURN -> Entity("FlowReturn", false, unboxEval(interruption.expr!!), RETURN)
         BREAK -> Entity("FlowBreak", false, 0, BREAK)

@@ -259,7 +259,7 @@ class Parser(private val executor: Executor) {
     }
 
     private fun interruption(token: Token) = Expression.Interruption(
-        Expression.Operator(token.type),
+        token.type,
         when (token.type) {
             Type.RETURN -> parseNext()
             Type.USE -> parseNext()
@@ -411,7 +411,8 @@ class Parser(private val executor: Executor) {
         // this parses a full expressions, until it's done!
         var left = parseElement()
         if (!isEOF() && peek().hasFlag(Flag.POSSIBLE_RIGHT_UNARY)) {
-            left = Expression.UnaryOperation(Expression.Operator(next().type), left, false)
+            val token = next()
+            left = Expression.UnaryOperation(token.type, left, false).also { it.verify(token) }
         }
         while (!isEOF()) {
             val opToken = peek()
@@ -428,7 +429,7 @@ class Parser(private val executor: Executor) {
                 left = Expression.BinaryOperation(
                     left,
                     right,
-                    Expression.Operator(opToken.type)
+                    opToken.type
                 )
             } else return left
         }
@@ -509,7 +510,7 @@ class Parser(private val executor: Executor) {
                 return unitCall(alpha)
             return alpha
         } else if (token.hasFlag(Flag.UNARY)) {
-            return Expression.UnaryOperation(Expression.Operator(token.type), parseTerm(), true)
+            return Expression.UnaryOperation(token.type, parseTerm(), true).also { it.verify(token) }
         } else if (token.hasFlag(Flag.NATIVE_CALL)) {
             val arguments = callArguments()
             return Expression.NativeCall(token.type, arguments)
