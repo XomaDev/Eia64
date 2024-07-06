@@ -1,12 +1,13 @@
 package space.themelon.eia64
 
 import space.themelon.eia64.analysis.ExprType
-import space.themelon.eia64.analysis.FnElement
+import space.themelon.eia64.analysis.ExprType.Companion.typeEquals
+import space.themelon.eia64.analysis.FunctionReference
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 
 abstract class Expression(
-    private val where: Token? = null
+    val marking: Token? = null
 ) {
 
     interface Visitor<R> {
@@ -91,7 +92,8 @@ abstract class Expression(
     data class Alpha(
         val where: Token,
         val index: Int,
-        val value: String) : Expression(where) {
+        val value: String,
+        val exprType: ExprType? = null) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.alpha(this)
         override fun type() = ExprType.ANY
@@ -146,32 +148,32 @@ abstract class Expression(
             if (left) {
                 when (operator) {
                     Type.NEGATE -> {
-                        if (exprType == ExprType.INT) return
-                        where.error<String>("Expected Int expression to apply (-) Negate Operator")
+                        if (typeEquals(exprType, ExprType.INT)) return
+                        where.error<String>("Expected Int expression to apply (-) Negate Operator, got $exprType")
                     }
                     Type.INCREMENT -> {
-                        if (exprType == ExprType.INT) return
-                        where.error<String>("Expected Int expression to apply (++) Increment Operator")
+                        if (typeEquals(exprType, ExprType.INT)) return
+                        where.error<String>("Expected Int expression to apply (++) Increment Operator, got $exprType")
                     }
                     Type.DECREMENT -> {
-                        if (exprType == ExprType.INT) return
-                        where.error<String>("Expected Int expression to apply (--) Decrement Operator")
+                        if (typeEquals(exprType, ExprType.INT)) return
+                        where.error<String>("Expected Int expression to apply (--) Decrement Operator, got $exprType")
                     }
                     Type.NOT -> {
-                        if (exprType == ExprType.BOOL) return
-                        where.error<String>("Expected Boolean expression to apply (!) Not Operator")
+                        if (typeEquals(exprType, ExprType.BOOL)) return
+                        where.error<String>("Expected Boolean expression to apply (!) Not Operator, got $exprType")
                     }
                     else -> { }
                 }
             } else {
                 when (operator) {
                     Type.INCREMENT -> {
-                        if (exprType == ExprType.INT) return
-                        where.error<String>("Expected Int expression to apply (++) Increment Operator")
+                        if (typeEquals(exprType, ExprType.INT)) return
+                        where.error<String>("Expected Int expression to apply (++) Increment Operator, got $exprType")
                     }
                     Type.DECREMENT -> {
-                        if (exprType == ExprType.INT) return
-                        where.error<String>("Expected Int expression to apply (--) Decrement Operator")
+                        if (typeEquals(exprType, ExprType.INT)) return
+                        where.error<String>("Expected Int expression to apply (--) Decrement Operator, got $exprType")
                     }
                     else -> { }
                 }
@@ -268,10 +270,9 @@ abstract class Expression(
     }
 
     data class Scope(
-        val where: Token,
         val expr: Expression,
         val imaginary: Boolean
-    ): Expression(where) {
+    ): Expression(null) {
 
         override fun <R> accept(v: Visitor<R>) = v.scope(this)
         // TODO:
@@ -281,7 +282,7 @@ abstract class Expression(
 
     data class MethodCall(
         val where: Token,
-        val fnExpr: FnElement,
+        val fnExpr: FunctionReference,
         val arguments: List<Expression>,
     ) : Expression(where) {
 
@@ -312,10 +313,9 @@ abstract class Expression(
     }
 
     data class ExpressionList(
-        val where: Token,
         val expressions: List<Expression>,
         var preserveState: Boolean = false,
-    ) : Expression(where) {
+    ) : Expression(null) {
 
         val size = expressions.size
         override fun <R> accept(v: Visitor<R>) = v.expressions(this)
@@ -412,22 +412,20 @@ abstract class Expression(
     }
 
     data class Function(
-        val where: Token,
         val name: String,
         val arguments: List<DefinitionType>,
         val returnType: Type,
         val body: Expression
-    ) : Expression(where) {
+    ) : Expression(null) {
 
         override fun <R> accept(v: Visitor<R>) = v.function(this)
-        override fun type() = ExprType.ANY
+        override fun type() = ExprType.NONE // this is just a pure declration
     }
 
     data class Shadow(
-        val where: Token,
         val names: List<String>,
         val body: Expression
-    ): Expression(where) {
+    ): Expression() {
 
         override fun <R> accept(v: Visitor<R>) = v.shado(this)
         override fun type() = ExprType.ANY

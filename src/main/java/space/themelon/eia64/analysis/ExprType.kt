@@ -40,5 +40,7 @@ enum class ExprType {
             UNIT -> Type.E_ANY
             else -> throw RuntimeException("Unknown return type translation $type")
         }
+
+        fun typeEquals(left: ExprType, right: ExprType) = left == right
     }
 }

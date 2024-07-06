@@ -1,27 +1,6 @@
 package space.themelon.eia64.analysis
 
-class NameResolver {
-
-    class Scope(val before: Scope? = null) {
-        val names = ArrayList<String>()
-        val functions = ArrayList<String>()
-
-        val funcObjs = HashMap<String, FnElement>()
-
-        fun resolveFn(name: String, travelDepth: Int): FnElement? {
-            functions.indexOf(name).let {
-                if (it != -1) return funcObjs[name]!!
-                if (before != null) return before.resolveFn(name, travelDepth + 1)
-                return null
-            }
-        }
-
-        fun resolveVr(name: String): Int {
-            names.indexOf(name).let { if (it != -1) return it }
-            if (before != null) return before.resolveVr(name)
-            return -1
-        }
-    }
+class ReferenceResolver {
 
     val classes = ArrayList<String>()
 
@@ -47,17 +26,18 @@ class NameResolver {
         return imaginaryScope
     }
 
-    fun defineFn(name: String, fnExpression: FnElement) {
+    fun defineFn(name: String, fnExpression: FunctionReference) {
         if (name in currentScope.functions)
             throw RuntimeException("Function $name is already defined in the current scope")
         currentScope.functions += name
-        currentScope.funcObjs[name] = fnExpression
+        currentScope.funcObjs += fnExpression
     }
 
-    fun defineVr(name: String) {
+    fun defineVariable(name: String, exprType: ExprType) {
         if (name in currentScope.names)
             throw RuntimeException("Variable $name is already defined in the current scope")
         currentScope.names += name
+        currentScope.variableExprs += exprType
     }
 
     fun resolveFn(name: String) = currentScope.resolveFn(name, 0)
