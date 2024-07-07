@@ -4,7 +4,7 @@ class Scope(val before: Scope? = null) {
     val names = ArrayList<String>()
     val functions = ArrayList<String>()
 
-    val variableTypes = ArrayList<VariableType>()
+    val variableMetadata = ArrayList<VariableMetadata>()
     val funcObjs = ArrayList<FunctionReference>()
 
     fun resolveFn(name: String, travelDepth: Int): FunctionReference? {
@@ -16,7 +16,7 @@ class Scope(val before: Scope? = null) {
     }
 
     fun resolveVr(name: String): VariableReference? {
-        names.indexOf(name).let { if (it != -1) return VariableReference(it, variableTypes[it]) }
+        names.indexOf(name).let { if (it != -1) return VariableReference(it, variableMetadata[it]) }
         if (before != null) return before.resolveVr(name)
         return null
     }

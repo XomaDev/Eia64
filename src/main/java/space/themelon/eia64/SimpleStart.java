@@ -2,6 +2,6 @@ package space.themelon.eia64;
 
 public class SimpleStart {
   public static void main(String[] args) {
-    Main.main(new String[] {"/home/kumaraswamy/Documents/Eia64Prod/simulationenv/test.eia"});
+    Main.main(new String[] {"/home/kumaraswamy/Documents/Eia64Prod/simulationenv/includetest.eia"});
   }
 }

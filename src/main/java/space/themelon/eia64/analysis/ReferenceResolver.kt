@@ -33,11 +33,11 @@ class ReferenceResolver {
         currentScope.funcObjs += fnExpression
     }
 
-    fun defineVariable(name: String, type: VariableType) {
+    fun defineVariable(name: String, type: VariableMetadata) {
         if (name in currentScope.names)
             throw RuntimeException("Variable $name is already defined in the current scope")
         currentScope.names += name
-        currentScope.variableTypes += type
+        currentScope.variableMetadata += type
     }
 
     fun resolveFn(name: String) = currentScope.resolveFn(name, 0)

@@ -3,7 +3,7 @@ package space.themelon.eia64
 import space.themelon.eia64.analysis.ExpressionSignature
 import space.themelon.eia64.analysis.ExpressionType
 import space.themelon.eia64.analysis.FunctionReference
-import space.themelon.eia64.analysis.VariableType
+import space.themelon.eia64.analysis.VariableMetadata
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
@@ -98,13 +98,14 @@ abstract class Expression(
         val where: Token,
         val index: Int,
         val value: String,
-        val vrType: VariableType? = null
+        val vrType: VariableMetadata? = null
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.alpha(this)
         override fun signature(): ExpressionSignature {
             if (vrType == null) return ExpressionSignature(ExpressionType.ANY)
-            return ExpressionSignature(vrType.runtimeType, value)
+            println("alpha $value vr type = $vrType")
+            return ExpressionSignature(vrType.runtimeType, vrType)
         }
     }
 
@@ -176,7 +177,7 @@ abstract class Expression(
                     }
 
                     NOT -> {
-                        if (exprType.type == ExpressionType.INT) return
+                        if (exprType.type == ExpressionType.BOOL) return
                         where.error<String>("Expected Boolean expression to apply (!) Not Operator, got $exprType")
                     }
 
@@ -341,8 +342,16 @@ abstract class Expression(
         val expr: Expression
     ) : Expression(where) {
 
+        init {
+            signature()
+        }
+
         override fun <R> accept(v: Visitor<R>) = v.autoVariable(this)
-        override fun signature() = expr.signature()
+        override fun signature(): ExpressionSignature {
+            val signature = expr.signature()
+            println("Signature: $signature")
+            return signature
+        }
     }
 
     data class NativeCall(

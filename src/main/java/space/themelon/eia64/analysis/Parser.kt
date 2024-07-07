@@ -238,7 +238,7 @@ class Parser(private val executor: Executor) {
                     }
                     expectType(Type.CLOSE_CURVE)
                     resolver.enterScope()
-                    resolver.defineVariable(iName, VariableType(ExpressionType.INT))
+                    resolver.defineVariable(iName, VariableMetadata(ExpressionType.INT))
                     // Manual Scopped!
                     val body = unscoppedBodyExpr()
                     resolver.leaveScope()
@@ -250,7 +250,7 @@ class Parser(private val executor: Executor) {
                     resolver.enterScope()
                     // TODO:
                     //  we will have to take a look into this later
-                    resolver.defineVariable(iName, VariableType(ExpressionType.ANY))
+                    resolver.defineVariable(iName, VariableMetadata(ExpressionType.ANY))
                     // Manual Scopped!
                     val body = unscoppedBodyExpr()
                     resolver.leaveScope()
@@ -300,13 +300,15 @@ class Parser(private val executor: Executor) {
 
         requiredArgs.forEach {
             // TODO: check this one later
-            resolver.defineVariable(it.name, VariableType(ExpressionType.translate(it.type)))
+            resolver.defineVariable(it.name, VariableMetadata(ExpressionType.translate(it.type)))
         }
 
         val body = unitBody() // Fully Manual Scopped
         resolver.leaveScope()
         val fnExpr = Expression.Function(name, requiredArgs, returnType, body)
         reference.fnExpression = fnExpr
+        println("printing reference")
+        println(reference)
         return fnExpr
     }
 
@@ -318,7 +320,7 @@ class Parser(private val executor: Executor) {
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val name = readAlpha()
             // TODO: take a look at this later, look into how it can be improved
-            resolver.defineVariable(name, VariableType(ExpressionType.ANY))
+            resolver.defineVariable(name, VariableMetadata(ExpressionType.ANY))
             names.add(name)
             if (!isNext(Type.COMMA)) break
             skip()
@@ -386,14 +388,17 @@ class Parser(private val executor: Executor) {
         val name = readAlpha()
 
         val expr: Expression
-        val typeInfo: VariableType
+        val typeInfo: VariableMetadata
 
         if (!isNext(Type.COLON)) {
             // TODO: take a look into this later
             val value = readVariableExpr()
-            println("value type: " + value)
             expr = Expression.AutoVariable(where, name, value)
-            typeInfo = VariableType(value.signature().type)
+
+            val valueSignature = value.signature()
+            val valueMetadata = valueSignature.metadata
+            typeInfo = if (valueMetadata != null) (valueMetadata as VariableMetadata).copy()
+            else VariableMetadata(valueSignature.type)
         } else {
             skip()
 
@@ -403,14 +408,14 @@ class Parser(private val executor: Executor) {
 
             if (!(isPrimitive || typeObject)) where.error<String>("Unknown class type '$typeClass'")
 
-            val runtimeType = if (typeObject) Type.E_ANY else typeClass.type
+            val runtimeType = if (typeObject) Type.E_OBJECT else typeClass.type
             expr = Expression.ExplicitVariable(
                 where,
                 where.type == Type.VAR,
                 Expression.DefinitionType(name, runtimeType),
                 readVariableExpr()
             )
-            typeInfo = VariableType(
+            typeInfo = VariableMetadata(
                 ExpressionType.translate(runtimeType),
                 isPrimitive,
                 if (isPrimitive) null else typeClass.optionalData as String)

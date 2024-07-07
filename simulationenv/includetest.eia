@@ -1,0 +1,3 @@
+fn hi(good: Bool) {
+  if (good) { hi(false) }
+}
