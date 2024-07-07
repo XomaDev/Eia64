@@ -26,7 +26,6 @@ class Parser(private val executor: Executor) {
         val expressions = ArrayList<Expression>()
         while (!isEOF()) expressions.add(parseNext())
         if (Config.DEBUG) expressions.forEach { println(it) }
-        // TODO: we need to get back here sometime
         parsed = Expression.ExpressionList(expressions)
         return parsed
     }

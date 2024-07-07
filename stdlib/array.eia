@@ -16,7 +16,7 @@ fn fillRecursive(flattened: Array, unflattened: Array, fillIndex: Int) {
   }
 }
 
-fn recursiveLen(self: Array) {
+fn recursiveLen(self: Array): Int {
   var size = 0
   itr (element in self) {
     if (type(element) == "e_array") size += recursiveLen(element)
