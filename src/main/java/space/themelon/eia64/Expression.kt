@@ -64,7 +64,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.intLiteral(this)
-        override fun signature() = ExpressionSignature(ExpressionType.INT)
+        override fun signature() = ExpressionSignature(ExpressionType.INT, VariableMetadata(ExpressionType.INT, "eint"))
     }
 
     data class BoolLiteral(
@@ -82,7 +82,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.stringLiteral(this)
-        override fun signature() = ExpressionSignature(ExpressionType.STRING)
+        override fun signature() = ExpressionSignature(ExpressionType.STRING, VariableMetadata(ExpressionType.STRING, "string"))
     }
 
     data class CharLiteral(
@@ -115,7 +115,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.array(this)
-        override fun signature() = ExpressionSignature(ExpressionType.ARRAY)
+        override fun signature() = ExpressionSignature(ExpressionType.ARRAY, VariableMetadata(ExpressionType.ARRAY, "array"))
     }
 
     data class Include(
@@ -394,7 +394,7 @@ abstract class Expression(
 
         // TODO:
         //  in future we need to check this again, if we are doing it right
-        override fun signature() = ExpressionSignature(ExpressionType.ANY)
+        override fun signature() = expr.signature()
     }
 
     data class MethodCall(
@@ -404,7 +404,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.methodCall(this)
-        override fun signature() = ExpressionSignature(ExpressionType.translate(fnExpr.returnType))
+        override fun signature() = ExpressionSignature(ExpressionType.translate(fnExpr.returnType), VariableMetadata(ExpressionType.translate(fnExpr.returnType)))
     }
 
     data class ClassMethodCall(
@@ -514,7 +514,10 @@ abstract class Expression(
         override fun <R> accept(v: Visitor<R>) = v.ifFunction(this)
 
         override fun signature(): ExpressionSignature {
+            println("then=$thenBody")
+            println("else=$elseBody")
             val thenType = thenBody.signature()
+            println("then signature = $thenType")
             if (elseBody == null) return thenType
 
             val elseType = elseBody.signature()

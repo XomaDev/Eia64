@@ -36,7 +36,7 @@ class Executor {
         return true
     }
 
-    fun getModule(name: String) = externalParsers[name]
+    fun getModule(name: String) = externalParsers[name] ?: throw RuntimeException("Could not find module '$name'")
 
     // loads the included module and executes it
     fun executeModule(name: String): Evaluator {

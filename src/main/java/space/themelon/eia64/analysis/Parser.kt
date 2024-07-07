@@ -390,14 +390,14 @@ class Parser(private val executor: Executor) {
 
         if (!isNext(Type.COLON)) {
             // TODO: take a look into this later
+            println("about to declare variable name $name")
             val value = readVariableExpr()
             expr = Expression.AutoVariable(where, name, value)
 
             println("expr is : = $expr")
             val valueSignature = value.signature()
             val valueMetadata = valueSignature.metadata
-            typeInfo = if (valueMetadata != null) (valueMetadata as VariableMetadata).copy()
-            else VariableMetadata(valueSignature.type)
+            typeInfo = valueMetadata?.copy() ?: VariableMetadata(valueSignature.type)
             println("auto variable declaration was called")
         } else {
             skip()
@@ -419,6 +419,7 @@ class Parser(private val executor: Executor) {
                 ExpressionType.translate(runtimeType),
                 if (isPrimitive) null else typeClass.optionalData as String)
         }
+        println("defining $name: = $expr")
         resolver.defineVariable(name, typeInfo)
         return expr
     }
@@ -517,58 +518,49 @@ class Parser(private val executor: Executor) {
             static = resolver.classes.contains(left.value)
         }
 
-        var returnType: ExpressionType? = null
+        val returnType: ExpressionType?
         if (static) {
             left as Expression.Alpha
             val className = left.value
-            val fn = executor.getModule(className)!!.getFn(methodName)
-                ?: method.error("Could not find method '$methodName' in class '$className'")
-            returnType = ExpressionType.translate(fn.returnType)
+            returnType = executor.getModule(className)!!.getFnType(methodName)
         } else {
             when (left) {
                 is Expression.Alpha -> {
                     val vrType = left.vrType!!
-                    val className = if (vrType.module == null) {
-                        getStdModuleName(vrType.runtimeType)
-                    } else vrType.module as String
-                    val fn = executor.getModule(className)!!.getFn(methodName)
-                        ?: method.error("Could not find method '$methodName' in class '$className'")
-                    println("was able to track down of method: $methodName")
-                    returnType = ExpressionType.translate(fn.returnType)
+                    val className = vrType.getModule()
+                    returnType = executor.getModule(className)!!.getFnType(methodName)
                 }
 
-                is Expression.NewObj -> {
-                    val className = left.name
-                    val fn = executor.getModule(className)!!.getFn(methodName)
-                        ?: method.error("Could not find method '$methodName' in class '$className'")
-                    returnType = ExpressionType.translate(fn.returnType)
-                }
+                is Expression.NewObj -> returnType = executor.getModule(left.name)!!.getFnType(methodName)
 
                 else -> {
                     println("the expression on which to invoke is: $left")
-                    method.error("Invalid syntax")
+                    val signature = left.signature()
+                    val vrMeta = signature.metadata!!
+                    val className = vrMeta.getModule()
+                    returnType = executor.getModule(className).getFnType(methodName)
                 }
             }
         }
-        println("left expression = $left")
-        println("method call $methodName, return type = $returnType")
         return Expression.ClassMethodCall(
             left.marking!!,
             static,
             left,
             methodName,
             arguments,
-            returnType!!)
+            returnType
+        )
     }
 
-    private fun getStdModuleName(runtimeType: ExpressionType) = when (runtimeType) {
-        ExpressionType.INT -> "int"
-        ExpressionType.STRING -> "string"
-        ExpressionType.ARRAY -> "array"
-        else -> throw RuntimeException("Could not find std module name for $runtimeType")
+    private fun fetchFnSignature(expression: Expression, method: String): ExpressionType {
+        return ExpressionType.NONE
     }
 
-    private fun getFn(name: String) = resolver.resolveFn(name)
+    private fun getFnType(name: String): ExpressionType {
+        val fn = resolver.resolveFn(name)
+            ?: throw RuntimeException("Could not find function '$name' in module _")
+        return ExpressionType.translate(fn.returnType)
+    }
 
     private fun operatorPrecedence(type: Flag) = when (type) {
         Flag.ASSIGNMENT_TYPE -> 1
@@ -600,10 +592,11 @@ class Parser(private val executor: Executor) {
         }
         val token = next()
         if (token.hasFlag(Flag.VALUE)) {
-            val alpha = parseValue(token)
-            if (!isEOF() && peek().type == Type.OPEN_CURVE)
-                return unitCall(alpha)
-            return alpha
+            val value = parseValue(token)
+            println("lxr value: $value")
+            if (value is Expression.Alpha && !isEOF() && peek().type == Type.OPEN_CURVE)
+                return unitCall(value)
+            return value
         } else if (token.hasFlag(Flag.UNARY)) {
             return Expression.UnaryOperation(token, token.type, parseTerm(), true)
         } else if (token.hasFlag(Flag.NATIVE_CALL)) {
