@@ -2,7 +2,7 @@ package space.themelon.eia64.analysis
 
 import space.themelon.eia64.syntax.Type
 
-enum class ExprType {
+enum class ExpressionType {
     INT,
     BOOL,
     STRING,
@@ -29,7 +29,7 @@ enum class ExprType {
             else -> throw RuntimeException("Unknown return type translation $type")
         }
 
-        fun translateBack(type: ExprType) = when (type) {
+        fun translateBack(type: ExpressionType) = when (type) {
             INT -> Type.E_INT
             BOOL -> Type.E_BOOL
             CHAR -> Type.E_CHAR
@@ -40,7 +40,5 @@ enum class ExprType {
             UNIT -> Type.E_ANY
             else -> throw RuntimeException("Unknown return type translation $type")
         }
-
-        fun typeEquals(left: ExprType, right: ExprType) = left == right
     }
 }

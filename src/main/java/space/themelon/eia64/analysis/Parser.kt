@@ -102,6 +102,7 @@ class Parser(private val executor: Executor) {
                     val sourceFile = getModulePath(next.optionalData as String + ".eia")
                     verifyFilePath(sourceFile, next)
                     val moduleName = getModuleName(sourceFile)
+                    resolver.classes.add(moduleName)
                     executor.addModule(sourceFile.absolutePath, moduleName)
                 }
                 else -> next.error("Unexpected token")
@@ -237,7 +238,7 @@ class Parser(private val executor: Executor) {
                     }
                     expectType(Type.CLOSE_CURVE)
                     resolver.enterScope()
-                    resolver.defineVariable(iName, VariableType(ExprType.INT))
+                    resolver.defineVariable(iName, VariableType(ExpressionType.INT))
                     // Manual Scopped!
                     val body = unscoppedBodyExpr()
                     resolver.leaveScope()
@@ -249,7 +250,7 @@ class Parser(private val executor: Executor) {
                     resolver.enterScope()
                     // TODO:
                     //  we will have to take a look into this later
-                    resolver.defineVariable(iName, VariableType(ExprType.ANY))
+                    resolver.defineVariable(iName, VariableType(ExpressionType.ANY))
                     // Manual Scopped!
                     val body = unscoppedBodyExpr()
                     resolver.leaveScope()
@@ -299,7 +300,7 @@ class Parser(private val executor: Executor) {
 
         requiredArgs.forEach {
             // TODO: check this one later
-            resolver.defineVariable(it.name, VariableType(ExprType.translate(it.type)))
+            resolver.defineVariable(it.name, VariableType(ExpressionType.translate(it.type)))
         }
 
         val body = unitBody() // Fully Manual Scopped
@@ -317,7 +318,7 @@ class Parser(private val executor: Executor) {
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val name = readAlpha()
             // TODO: take a look at this later, look into how it can be improved
-            resolver.defineVariable(name, VariableType(ExprType.ANY))
+            resolver.defineVariable(name, VariableType(ExpressionType.ANY))
             names.add(name)
             if (!isNext(Type.COMMA)) break
             skip()
@@ -387,10 +388,12 @@ class Parser(private val executor: Executor) {
         val expr: Expression
         val typeInfo: VariableType
 
-        if (isNext(Type.COLON)) {
+        if (!isNext(Type.COLON)) {
             // TODO: take a look into this later
-            expr = Expression.AutoVariable(where, name, readVariableExpr())
-            typeInfo = VariableType(expr.type())
+            val value = readVariableExpr()
+            println("value type: " + value)
+            expr = Expression.AutoVariable(where, name, value)
+            typeInfo = VariableType(value.signature().type)
         } else {
             skip()
 
@@ -400,7 +403,7 @@ class Parser(private val executor: Executor) {
 
             if (!(isPrimitive || typeObject)) where.error<String>("Unknown class type '$typeClass'")
 
-            val runtimeType = if (typeObject) Type.E_OBJECT else typeClass.type
+            val runtimeType = if (typeObject) Type.E_ANY else typeClass.type
             expr = Expression.ExplicitVariable(
                 where,
                 where.type == Type.VAR,
@@ -408,7 +411,7 @@ class Parser(private val executor: Executor) {
                 readVariableExpr()
             )
             typeInfo = VariableType(
-                ExprType.translate(runtimeType),
+                ExpressionType.translate(runtimeType),
                 isPrimitive,
                 if (isPrimitive) null else typeClass.optionalData as String)
         }
@@ -510,13 +513,13 @@ class Parser(private val executor: Executor) {
             static = resolver.classes.contains(left.value)
         }
 
-        var returnType: ExprType? = null
+        var returnType: ExpressionType? = null
         if (static) {
             left as Expression.Alpha
             val className = left.value
             val fn = executor.getModule(className)!!.getFn(methodName)
                 ?: method.error("Could not find method '$methodName' in class '$className'")
-            returnType = ExprType.translate(fn.returnType)
+            returnType = ExpressionType.translate(fn.returnType)
         } else {
             if (left is Expression.Alpha) {
                 val vrType = left.vrType!!
@@ -526,13 +529,13 @@ class Parser(private val executor: Executor) {
                     val className = vrType.value as String
                     val fn = executor.getModule(className)!!.getFn(methodName)
                         ?: method.error("Could not find method '$methodName' in class '$className'")
-                    returnType = ExprType.translate(fn.returnType)
+                    returnType = ExpressionType.translate(fn.returnType)
                 }
             } else if (left is Expression.NewObj) {
                 val className = left.name
                 val fn = executor.getModule(className)!!.getFn(methodName)
                     ?: method.error("Could not find method '$methodName' in class '$className'")
-                returnType = ExprType.translate(fn.returnType)
+                returnType = ExpressionType.translate(fn.returnType)
             } else method.error("Invalid syntax")
         }
         return Expression.ClassMethodCall(

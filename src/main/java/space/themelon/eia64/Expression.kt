@@ -1,9 +1,8 @@
 package space.themelon.eia64
 
-import space.themelon.eia64.analysis.ExprType
-import space.themelon.eia64.analysis.ExprType.Companion.typeEquals
+import space.themelon.eia64.analysis.ExpressionSignature
+import space.themelon.eia64.analysis.ExpressionType
 import space.themelon.eia64.analysis.FunctionReference
-import space.themelon.eia64.analysis.VariableReference
 import space.themelon.eia64.analysis.VariableType
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
@@ -47,7 +46,7 @@ abstract class Expression(
     }
 
     abstract fun <R> accept(v: Visitor<R>): R
-    abstract fun type(): ExprType
+    abstract fun signature(): ExpressionSignature
 
     // for internal evaluation use
     data class GenericLiteral(
@@ -56,7 +55,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.genericLiteral(this)
-        override fun type() = ExprType.ANY
+        override fun signature() = ExpressionSignature(ExpressionType.ANY)
     }
 
     data class IntLiteral(
@@ -65,7 +64,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.intLiteral(this)
-        override fun type() = ExprType.INT
+        override fun signature() = ExpressionSignature(ExpressionType.INT)
     }
 
     data class BoolLiteral(
@@ -74,7 +73,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.boolLiteral(this)
-        override fun type() = ExprType.BOOL
+        override fun signature() = ExpressionSignature(ExpressionType.BOOL)
     }
 
     data class StringLiteral(
@@ -83,7 +82,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.stringLiteral(this)
-        override fun type() = ExprType.STRING
+        override fun signature() = ExpressionSignature(ExpressionType.STRING)
     }
 
     data class CharLiteral(
@@ -92,7 +91,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.charLiteral(this)
-        override fun type() = ExprType.CHAR
+        override fun signature() = ExpressionSignature(ExpressionType.CHAR)
     }
 
     data class Alpha(
@@ -103,8 +102,9 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.alpha(this)
-        override fun type(): ExprType {
-            return vrType?.runtimeType ?: ExprType.ANY
+        override fun signature(): ExpressionSignature {
+            if (vrType == null) return ExpressionSignature(ExpressionType.ANY)
+            return ExpressionSignature(vrType.runtimeType, value)
         }
     }
 
@@ -114,7 +114,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.array(this)
-        override fun type() = ExprType.ANY
+        override fun signature() = ExpressionSignature(ExpressionType.ARRAY)
     }
 
     data class Include(
@@ -122,7 +122,7 @@ abstract class Expression(
     ) : Expression(null) {
 
         override fun <R> accept(v: Visitor<R>): R = v.include(this)
-        override fun type() = ExprType.NONE
+        override fun signature() = ExpressionSignature(ExpressionType.NONE)
     }
 
     data class NewObj(
@@ -132,7 +132,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.new(this)
-        override fun type() = ExprType.OBJECT
+        override fun signature() = ExpressionSignature(ExpressionType.OBJECT, name)
     }
 
     data class ThrowExpr(
@@ -140,7 +140,7 @@ abstract class Expression(
     ) : Expression(null) {
 
         override fun <R> accept(v: Visitor<R>) = v.throwExpr(this)
-        override fun type() = ExprType.NONE
+        override fun signature() = ExpressionSignature(ExpressionType.NONE)
     }
 
     data class UnaryOperation(
@@ -157,27 +157,26 @@ abstract class Expression(
         }
 
         private fun verify() {
-            val exprType = expr.type()
+            val exprType = expr.signature()
             if (left) {
                 when (operator) {
                     NEGATE -> {
-                        if (typeEquals(exprType, ExprType.INT)) return
+                        if (exprType.type == ExpressionType.INT) return
                         where.error<String>("Expected Int expression to apply (-) Negate Operator, got $exprType")
                     }
 
                     INCREMENT -> {
-                        if (typeEquals(exprType, ExprType.INT)) return
+                        if (exprType.type == ExpressionType.INT) return
                         where.error<String>("Expected Int expression to apply (++) Increment Operator, got $exprType")
                     }
 
                     DECREMENT -> {
-                        if (typeEquals(exprType, ExprType.INT)) return
+                        if (exprType.type == ExpressionType.INT) return
                         where.error<String>("Expected Int expression to apply (--) Decrement Operator, got $exprType")
                     }
 
                     NOT -> {
-                        println("expr = $expr")
-                        if (typeEquals(exprType, ExprType.BOOL)) return
+                        if (exprType.type == ExpressionType.INT) return
                         where.error<String>("Expected Boolean expression to apply (!) Not Operator, got $exprType")
                     }
 
@@ -186,12 +185,12 @@ abstract class Expression(
             } else {
                 when (operator) {
                     INCREMENT -> {
-                        if (typeEquals(exprType, ExprType.INT)) return
+                        if (exprType.type == ExpressionType.INT) return
                         where.error<String>("Expected Int expression to apply (++) Increment Operator, got $exprType")
                     }
 
                     DECREMENT -> {
-                        if (typeEquals(exprType, ExprType.INT)) return
+                        if (exprType.type == ExpressionType.INT) return
                         where.error<String>("Expected Int expression to apply (--) Decrement Operator, got $exprType")
                     }
 
@@ -201,22 +200,23 @@ abstract class Expression(
             where.error<String>("Unknown operator")
         }
 
-        override fun type(): ExprType {
-            val exprType = expr.type()
-            if (left) {
+        override fun signature(): ExpressionSignature {
+            val exprType = expr.signature()
+            return ExpressionSignature(if (left) {
                 when {
-                    operator == NEGATE && exprType == ExprType.INT -> return ExprType.INT
-                    operator == INCREMENT && exprType == ExprType.INT -> return ExprType.INT
-                    operator == DECREMENT && exprType == ExprType.INT -> return ExprType.INT
-                    operator == NOT && exprType == ExprType.BOOL -> return ExprType.BOOL
+                    operator == NEGATE && exprType.type == ExpressionType.INT -> ExpressionType.INT
+                    operator == INCREMENT && exprType.type == ExpressionType.INT -> ExpressionType.INT
+                    operator == DECREMENT && exprType.type == ExpressionType.INT -> ExpressionType.INT
+                    operator == NOT && exprType.type == ExpressionType.BOOL -> ExpressionType.BOOL
+                    else -> ExpressionType.NONE
                 }
             } else {
                 when {
-                    operator == INCREMENT && exprType == ExprType.INT -> return ExprType.INT
-                    operator == DECREMENT && exprType == ExprType.INT -> return ExprType.INT
+                    operator == INCREMENT && exprType.type == ExpressionType.INT -> ExpressionType.INT
+                    operator == DECREMENT && exprType.type == ExpressionType.INT -> ExpressionType.INT
+                    else -> ExpressionType.NONE
                 }
-            }
-            return ExprType.MISMATCHED
+            })
         }
     }
 
@@ -235,8 +235,8 @@ abstract class Expression(
 
         private fun verify() {
             println("left = $left, right = $right, operator = $operator")
-            val leftType = left.type()
-            val rightType = right.type()
+            val leftType = left.signature()
+            val rightType = right.signature()
 
             when (operator) {
                 NEGATE,
@@ -252,36 +252,37 @@ abstract class Expression(
                 MULTIPLICATIVE_ASSIGNMENT,
                 DIVIDIVE_ASSIGNMENT,
                 POWER -> {
-                    if (leftType == ExprType.INT && rightType == ExprType.INT) return
+                    if (leftType.type == ExpressionType.INT && rightType.type == ExpressionType.INT) return
                     where.error<String>("Cannot apply to a non Int expressions")
                 }
                 LOGICAL_AND, LOGICAL_OR -> {
-                    if (leftType == ExprType.BOOL && rightType == ExprType.BOOL) return
+                    if (leftType.type == ExpressionType.BOOL && rightType.type == ExpressionType.BOOL) return
                     where.error<String>("Cannot apply to a non Bool expressions")
                 }
 
                 ADDITIVE_ASSIGNMENT -> {
-                    if (leftType == ExprType.STRING && (rightType == ExprType.STRING || rightType == ExprType.CHAR)
-                        || leftType == ExprType.INT && rightType == ExprType.INT) return
+                    if (leftType.type == ExpressionType.STRING
+                        && (rightType.type == ExpressionType.STRING || rightType.type == ExpressionType.CHAR)
+                        || leftType.type == ExpressionType.INT && rightType.type == ExpressionType.INT) return
                     where.error<String>("Cannot apply operator to a non String or Int")
                 }
-                ASSIGNMENT -> left.type()
+                ASSIGNMENT -> left.signature()
                 EQUALS, NOT_EQUALS, PLUS -> { }
                 else -> where.error("Undocumented binary operator")
             }
         }
 
-        override fun type(): ExprType {
-            val leftType = left.type()
-            val rightType = right.type()
+        override fun signature(): ExpressionSignature {
+            val leftType = left.signature().type
+            val rightType = right.signature().type
 
-            return when (operator) {
+            return ExpressionSignature(when (operator) {
                 PLUS -> {
-                    if (leftType == ExprType.INT && rightType == ExprType.INT) ExprType.INT
-                    else ExprType.STRING
+                    if (leftType == ExpressionType.INT && rightType == ExpressionType.INT) ExpressionType.INT
+                    else ExpressionType.STRING
                 }
 
-                NEGATE, TIMES, SLASH, BITWISE_AND, BITWISE_OR -> ExprType.INT
+                NEGATE, TIMES, SLASH, BITWISE_AND, BITWISE_OR -> ExpressionType.INT
 
                 EQUALS,
                 NOT_EQUALS,
@@ -290,14 +291,14 @@ abstract class Expression(
                 GREATER_THAN,
                 LESSER_THAN,
                 GREATER_THAN_EQUALS,
-                LESSER_THAN_EQUALS -> ExprType.BOOL
+                LESSER_THAN_EQUALS -> ExpressionType.BOOL
 
-                ASSIGNMENT -> left.type() // TODO: confirm this in future
-                ADDITIVE_ASSIGNMENT -> if (left.type() == ExprType.STRING) ExprType.STRING else ExprType.INT
-                DEDUCTIVE_ASSIGNMENT, MULTIPLICATIVE_ASSIGNMENT, DIVIDIVE_ASSIGNMENT, POWER -> ExprType.INT
+                ASSIGNMENT -> left.signature().type // TODO: confirm this in future
+                ADDITIVE_ASSIGNMENT -> if (left.signature().type == ExpressionType.STRING) ExpressionType.STRING else ExpressionType.INT
+                DEDUCTIVE_ASSIGNMENT, MULTIPLICATIVE_ASSIGNMENT, DIVIDIVE_ASSIGNMENT, POWER -> ExpressionType.INT
 
                 else -> throw RuntimeException("Unknown operator $operator")
-            }
+            })
         }
     }
 
@@ -319,19 +320,19 @@ abstract class Expression(
         }
 
         private fun verify() {
-            val declaredType = ExprType.translate(definition.type)
-            val valueType = expr.type()
+            val declaredType = ExpressionType.translate(definition.type)
+            val valueType = expr.signature()
 
-            if (declaredType != ExprType.ANY && declaredType != valueType) {
+            if (declaredType != ExpressionType.ANY && declaredType != valueType.type) {
                 where.error<String>(
                     "Variable '${definition.name}' has type ${definition.type}" +
-                            " but got ${ExprType.translateBack(valueType)}"
+                            " but got ${ExpressionType.translateBack(valueType.type)}"
                 )
             }
         }
 
         override fun <R> accept(v: Visitor<R>) = v.variable(this)
-        override fun type() = expr.type()
+        override fun signature() = expr.signature()
     }
 
     data class AutoVariable(
@@ -341,7 +342,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.autoVariable(this)
-        override fun type() = expr.type()
+        override fun signature() = expr.signature()
     }
 
     data class NativeCall(
@@ -352,25 +353,25 @@ abstract class Expression(
 
         override fun <R> accept(v: Visitor<R>) = v.nativeCall(this)
 
-        override fun type() = when (type) {
-            PRINT, PRINTLN -> ExprType.INT
-            READ, READLN -> ExprType.STRING
-            SLEEP -> ExprType.INT
-            LEN -> ExprType.INT
-            FORMAT -> ExprType.STRING
-            INT_CAST -> ExprType.INT
-            STRING_CAST -> ExprType.STRING
-            BOOL_CAST -> ExprType.BOOL
-            TYPE -> ExprType.STRING
-            INCLUDE -> ExprType.BOOL
+        override fun signature() = ExpressionSignature(when (type) {
+            PRINT, PRINTLN -> ExpressionType.INT
+            READ, READLN -> ExpressionType.STRING
+            SLEEP -> ExpressionType.INT
+            LEN -> ExpressionType.INT
+            FORMAT -> ExpressionType.STRING
+            INT_CAST -> ExpressionType.INT
+            STRING_CAST -> ExpressionType.STRING
+            BOOL_CAST -> ExpressionType.BOOL
+            TYPE -> ExpressionType.STRING
+            INCLUDE -> ExpressionType.BOOL
             // TODO: we need to figure out a better way
-            COPY -> arguments[0].type()
-            ARRAYOF, ARRALLOC -> ExprType.ARRAY
-            TIME -> ExprType.INT
-            RAND -> ExprType.INT
-            EXIT -> ExprType.INT
+            COPY -> arguments[0].signature().type
+            ARRAYOF, ARRALLOC -> ExpressionType.ARRAY
+            TIME -> ExpressionType.INT
+            RAND -> ExpressionType.INT
+            EXIT -> ExpressionType.INT
             else -> throw RuntimeException("Unknown native call type $type")
-        }
+        })
     }
 
     data class Scope(
@@ -382,7 +383,7 @@ abstract class Expression(
 
         // TODO:
         //  in future we need to check this again, if we are doing it right
-        override fun type() = ExprType.ANY
+        override fun signature() = ExpressionSignature(ExpressionType.ANY)
     }
 
     data class MethodCall(
@@ -392,7 +393,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.methodCall(this)
-        override fun type() = ExprType.translate(fnExpr.returnType)
+        override fun signature() = ExpressionSignature(ExpressionType.translate(fnExpr.returnType))
     }
 
     data class ClassMethodCall(
@@ -401,11 +402,11 @@ abstract class Expression(
         val obj: Expression,
         val method: String,
         val arguments: List<Expression>,
-        val returnType: ExprType
+        val returnType: ExpressionType
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.classMethodCall(this)
-        override fun type() = returnType
+        override fun signature() = ExpressionSignature(returnType)
     }
 
     data class ShadoInvoke(
@@ -415,7 +416,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.unitInvoke(this)
-        override fun type() = ExprType.ANY
+        override fun signature() = ExpressionSignature(ExpressionType.ANY)
     }
 
     data class ExpressionList(
@@ -425,7 +426,7 @@ abstract class Expression(
 
         val size = expressions.size
         override fun <R> accept(v: Visitor<R>) = v.expressions(this)
-        override fun type() = ExprType.ANY
+        override fun signature() = ExpressionSignature(ExpressionType.ANY)
     }
 
     data class ForEach(
@@ -436,7 +437,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.forEach(this)
-        override fun type() = ExprType.NONE
+        override fun signature() = ExpressionSignature(ExpressionType.NONE)
     }
 
     data class ForLoop(
@@ -448,7 +449,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.forLoop(this)
-        override fun type() = ExprType.NONE
+        override fun signature() = ExpressionSignature(ExpressionType.NONE)
     }
 
     data class Itr(
@@ -461,7 +462,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.itr(this)
-        override fun type() = ExprType.NONE
+        override fun signature() = ExpressionSignature(ExpressionType.NONE)
     }
 
     data class When(
@@ -476,7 +477,7 @@ abstract class Expression(
         // TODO:
         //  in future we have to analyze all the types, if all of the types are equal, return them
         //  or else we return type ANY
-        override fun type() = ExprType.ANY
+        override fun signature() = ExpressionSignature(ExpressionType.ANY)
     }
 
     data class Until(
@@ -486,7 +487,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.until(this)
-        override fun type() = ExprType.ANY
+        override fun signature() = ExpressionSignature(ExpressionType.ANY)
     }
 
     data class If(
@@ -498,13 +499,13 @@ abstract class Expression(
 
         override fun <R> accept(v: Visitor<R>) = v.ifFunction(this)
 
-        override fun type(): ExprType {
-            val thenType = thenBody.type()
+        override fun signature(): ExpressionSignature {
+            val thenType = thenBody.signature()
             if (elseBody == null) return thenType
 
-            val elseType = elseBody.type()
+            val elseType = elseBody.signature()
             if (thenType == elseType) return thenType
-            return ExprType.ANY
+            return ExpressionSignature(ExpressionType.ANY)
         }
     }
 
@@ -515,7 +516,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.interruption(this)
-        override fun type() = expr?.type() ?: ExprType.NONE
+        override fun signature() = expr?.signature() ?: ExpressionSignature(ExpressionType.NONE)
     }
 
     data class Function(
@@ -526,7 +527,7 @@ abstract class Expression(
     ) : Expression(null) {
 
         override fun <R> accept(v: Visitor<R>) = v.function(this)
-        override fun type() = ExprType.NONE // this is just a pure declration
+        override fun signature() = ExpressionSignature(ExpressionType.NONE) // this is just a pure declration
     }
 
     data class Shadow(
@@ -535,7 +536,7 @@ abstract class Expression(
     ) : Expression() {
 
         override fun <R> accept(v: Visitor<R>) = v.shado(this)
-        override fun type() = ExprType.ANY
+        override fun signature() = ExpressionSignature(ExpressionType.ANY)
     }
 
     data class ElementAccess(
@@ -546,10 +547,10 @@ abstract class Expression(
 
         override fun <R> accept(v: Visitor<R>) = v.elementAccess(this)
 
-        override fun type(): ExprType {
-            val exprType = expr.type()
-            if (exprType == ExprType.STRING) return ExprType.CHAR
-            if (exprType == ExprType.ARRAY) return ExprType.ANY
+        override fun signature(): ExpressionSignature {
+            val exprType = expr.signature().type
+            if (exprType == ExpressionType.STRING) return ExpressionSignature(ExpressionType.CHAR)
+            if (exprType == ExpressionType.ARRAY) return ExpressionSignature(ExpressionType.ANY)
             throw RuntimeException("Unknown element expr type $exprType")
         }
     }

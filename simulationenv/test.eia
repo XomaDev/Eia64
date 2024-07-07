@@ -2,5 +2,12 @@ include(
   "simulationenv/hello"
 )
 
-let myHello = new hello()
-println(type(myHello))
+let myHello: hello = new hello()
+println(myHello.sayHello())
+let y = myHello
+println(type(y))
+; todo: now try `let z: String = y.sayHello()`
+; we need to fix this problem:
+
+
+let z: String = y.sayHello()
