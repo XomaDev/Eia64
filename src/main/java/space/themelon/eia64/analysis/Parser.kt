@@ -307,8 +307,6 @@ class Parser(private val executor: Executor) {
         resolver.leaveScope()
         val fnExpr = Expression.Function(name, requiredArgs, returnType, body)
         reference.fnExpression = fnExpr
-        println("printing reference")
-        println(reference)
         return fnExpr
     }
 
@@ -395,10 +393,12 @@ class Parser(private val executor: Executor) {
             val value = readVariableExpr()
             expr = Expression.AutoVariable(where, name, value)
 
+            println("expr is : = $expr")
             val valueSignature = value.signature()
             val valueMetadata = valueSignature.metadata
             typeInfo = if (valueMetadata != null) (valueMetadata as VariableMetadata).copy()
             else VariableMetadata(valueSignature.type)
+            println("auto variable declaration was called")
         } else {
             skip()
 
@@ -417,7 +417,6 @@ class Parser(private val executor: Executor) {
             )
             typeInfo = VariableMetadata(
                 ExpressionType.translate(runtimeType),
-                isPrimitive,
                 if (isPrimitive) null else typeClass.optionalData as String)
         }
         resolver.defineVariable(name, typeInfo)
@@ -526,23 +525,33 @@ class Parser(private val executor: Executor) {
                 ?: method.error("Could not find method '$methodName' in class '$className'")
             returnType = ExpressionType.translate(fn.returnType)
         } else {
-            if (left is Expression.Alpha) {
-                val vrType = left.vrType!!
-                if (vrType.primitive) {
-                    returnType = vrType.runtimeType
-                } else {
-                    val className = vrType.value as String
+            when (left) {
+                is Expression.Alpha -> {
+                    val vrType = left.vrType!!
+                    val className = if (vrType.module == null) {
+                        getStdModuleName(vrType.runtimeType)
+                    } else vrType.module as String
+                    val fn = executor.getModule(className)!!.getFn(methodName)
+                        ?: method.error("Could not find method '$methodName' in class '$className'")
+                    println("was able to track down of method: $methodName")
+                    returnType = ExpressionType.translate(fn.returnType)
+                }
+
+                is Expression.NewObj -> {
+                    val className = left.name
                     val fn = executor.getModule(className)!!.getFn(methodName)
                         ?: method.error("Could not find method '$methodName' in class '$className'")
                     returnType = ExpressionType.translate(fn.returnType)
                 }
-            } else if (left is Expression.NewObj) {
-                val className = left.name
-                val fn = executor.getModule(className)!!.getFn(methodName)
-                    ?: method.error("Could not find method '$methodName' in class '$className'")
-                returnType = ExpressionType.translate(fn.returnType)
-            } else method.error("Invalid syntax")
+
+                else -> {
+                    println("the expression on which to invoke is: $left")
+                    method.error("Invalid syntax")
+                }
+            }
         }
+        println("left expression = $left")
+        println("method call $methodName, return type = $returnType")
         return Expression.ClassMethodCall(
             left.marking!!,
             static,
@@ -550,6 +559,13 @@ class Parser(private val executor: Executor) {
             methodName,
             arguments,
             returnType!!)
+    }
+
+    private fun getStdModuleName(runtimeType: ExpressionType) = when (runtimeType) {
+        ExpressionType.INT -> "int"
+        ExpressionType.STRING -> "string"
+        ExpressionType.ARRAY -> "array"
+        else -> throw RuntimeException("Could not find std module name for $runtimeType")
     }
 
     private fun getFn(name: String) = resolver.resolveFn(name)

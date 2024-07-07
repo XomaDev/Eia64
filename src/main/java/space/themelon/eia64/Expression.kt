@@ -133,7 +133,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.new(this)
-        override fun signature() = ExpressionSignature(ExpressionType.OBJECT, name)
+        override fun signature() = ExpressionSignature(ExpressionType.OBJECT, VariableMetadata(ExpressionType.OBJECT, name))
     }
 
     data class ThrowExpr(
@@ -257,6 +257,8 @@ abstract class Expression(
                     where.error<String>("Cannot apply to a non Int expressions")
                 }
                 LOGICAL_AND, LOGICAL_OR -> {
+                    println("left=${leftType.type}")
+                    println("left=${rightType.type}")
                     if (leftType.type == ExpressionType.BOOL && rightType.type == ExpressionType.BOOL) return
                     where.error<String>("Cannot apply to a non Bool expressions")
                 }
@@ -349,7 +351,7 @@ abstract class Expression(
         override fun <R> accept(v: Visitor<R>) = v.autoVariable(this)
         override fun signature(): ExpressionSignature {
             val signature = expr.signature()
-            println("Signature: $signature")
+            println("SignatureX: $signature")
             return signature
         }
     }
@@ -415,7 +417,10 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.classMethodCall(this)
-        override fun signature() = ExpressionSignature(returnType)
+        override fun signature(): ExpressionSignature {
+            println("request for class method call $method")
+            return ExpressionSignature(returnType)
+        }
     }
 
     data class ShadoInvoke(

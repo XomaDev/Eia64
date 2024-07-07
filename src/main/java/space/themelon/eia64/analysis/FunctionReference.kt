@@ -7,4 +7,8 @@ data class FunctionReference(
     var fnExpression: Expression.Function? = null,
     var argsSize: Int = -1,
     val returnType: Type
-)
+) {
+    override fun toString(): String {
+        return "<${fnExpression?.name ?: "UnsetFunctionReference"}()>"
+    }
+}
