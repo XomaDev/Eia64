@@ -1,12 +1,10 @@
 package space.themelon.eia64.analysis
 
-import space.themelon.eia64.Expression
-
 class Scope(val before: Scope? = null) {
     val names = ArrayList<String>()
     val functions = ArrayList<String>()
 
-    val variableExprs = ArrayList<ExprType>()
+    val variableTypes = ArrayList<VariableType>()
     val funcObjs = ArrayList<FunctionReference>()
 
     fun resolveFn(name: String, travelDepth: Int): FunctionReference? {
@@ -18,7 +16,7 @@ class Scope(val before: Scope? = null) {
     }
 
     fun resolveVr(name: String): VariableReference? {
-        names.indexOf(name).let { if (it != -1) return VariableReference(it, variableExprs[it]) }
+        names.indexOf(name).let { if (it != -1) return VariableReference(it, variableTypes[it]) }
         if (before != null) return before.resolveVr(name)
         return null
     }

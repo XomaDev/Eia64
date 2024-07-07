@@ -1,6 +1,6 @@
 include(
-  static:"simulationenv/hello"
+  "simulationenv/hello"
 )
 
-let x: String = hello.sayHello()
-println(x)
+let myHello = new hello()
+println(type(myHello))

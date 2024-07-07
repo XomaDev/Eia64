@@ -3,6 +3,8 @@ package space.themelon.eia64
 import space.themelon.eia64.analysis.ExprType
 import space.themelon.eia64.analysis.ExprType.Companion.typeEquals
 import space.themelon.eia64.analysis.FunctionReference
+import space.themelon.eia64.analysis.VariableReference
+import space.themelon.eia64.analysis.VariableType
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
@@ -97,13 +99,12 @@ abstract class Expression(
         val where: Token,
         val index: Int,
         val value: String,
-        val exprType: ExprType? = null
+        val vrType: VariableType? = null
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.alpha(this)
         override fun type(): ExprType {
-            println("expr type $exprType $value")
-            return exprType ?: ExprType.ANY
+            return vrType?.runtimeType ?: ExprType.ANY
         }
     }
 
@@ -302,7 +303,8 @@ abstract class Expression(
 
     data class DefinitionType(
         val name: String,
-        val type: Type
+        val type: Type,
+        val className: String? = null
     )
 
     data class ExplicitVariable(
@@ -398,11 +400,12 @@ abstract class Expression(
         val static: Boolean,
         val obj: Expression,
         val method: String,
-        val arguments: List<Expression>
+        val arguments: List<Expression>,
+        val returnType: ExprType
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.classMethodCall(this)
-        override fun type() = ExprType.ANY
+        override fun type() = returnType
     }
 
     data class ShadoInvoke(

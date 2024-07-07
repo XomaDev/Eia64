@@ -237,7 +237,7 @@ class Parser(private val executor: Executor) {
                     }
                     expectType(Type.CLOSE_CURVE)
                     resolver.enterScope()
-                    resolver.defineVariable(iName, ExprType.INT)
+                    resolver.defineVariable(iName, VariableType(ExprType.INT))
                     // Manual Scopped!
                     val body = unscoppedBodyExpr()
                     resolver.leaveScope()
@@ -249,7 +249,7 @@ class Parser(private val executor: Executor) {
                     resolver.enterScope()
                     // TODO:
                     //  we will have to take a look into this later
-                    resolver.defineVariable(iName, ExprType.ANY)
+                    resolver.defineVariable(iName, VariableType(ExprType.ANY))
                     // Manual Scopped!
                     val body = unscoppedBodyExpr()
                     resolver.leaveScope()
@@ -298,7 +298,8 @@ class Parser(private val executor: Executor) {
         resolver.enterScope()
 
         requiredArgs.forEach {
-            resolver.defineVariable(it.name, ExprType.translate(it.type))
+            // TODO: check this one later
+            resolver.defineVariable(it.name, VariableType(ExprType.translate(it.type)))
         }
 
         val body = unitBody() // Fully Manual Scopped
@@ -316,7 +317,7 @@ class Parser(private val executor: Executor) {
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val name = readAlpha()
             // TODO: take a look at this later, look into how it can be improved
-            resolver.defineVariable(name, ExprType.ANY)
+            resolver.defineVariable(name, VariableType(ExprType.ANY))
             names.add(name)
             if (!isNext(Type.COMMA)) break
             skip()
@@ -382,17 +383,36 @@ class Parser(private val executor: Executor) {
 
     private fun variableDeclaration(where: Token): Expression {
         val name = readAlpha()
-        val expr = if (!isNext(Type.COLON)) {
-            Expression.AutoVariable(where, name, readVariableExpr())
+
+        val expr: Expression
+        val typeInfo: VariableType
+
+        if (isNext(Type.COLON)) {
+            // TODO: take a look into this later
+            expr = Expression.AutoVariable(where, name, readVariableExpr())
+            typeInfo = VariableType(expr.type())
         } else {
             skip()
-            val definition = Expression.DefinitionType(name, readClassType())
-            Expression.ExplicitVariable(
+
+            val typeClass = next()
+            val isPrimitive = typeClass.hasFlag(Flag.CLASS)
+            val typeObject = typeClass.type == Type.ALPHA && resolver.classes.contains(typeClass.optionalData as String)
+
+            if (!(isPrimitive || typeObject)) where.error<String>("Unknown class type '$typeClass'")
+
+            val runtimeType = if (typeObject) Type.E_OBJECT else typeClass.type
+            expr = Expression.ExplicitVariable(
                 where,
                 where.type == Type.VAR,
-                definition, readVariableExpr())
+                Expression.DefinitionType(name, runtimeType),
+                readVariableExpr()
+            )
+            typeInfo = VariableType(
+                ExprType.translate(runtimeType),
+                isPrimitive,
+                if (isPrimitive) null else typeClass.optionalData as String)
         }
-        resolver.defineVariable(name, expr.type())
+        resolver.defineVariable(name, typeInfo)
         return expr
     }
 
@@ -469,39 +489,59 @@ class Parser(private val executor: Executor) {
                     left = Expression.ElementAccess(left.marking!!, left, expr)
                 }
 
-                else -> {
-                    // calling a method in another class
-                    // string.contains("melon")
-                    // TODO: over here also
-                    skip()
-
-                    val method = next()
-                    val methodName = readAlpha(method)
-
-                    val arguments = callArguments()
-                    var static = false
-                    if (left is Expression.Alpha) {
-                        static = resolver.classes.contains(left.value)
-                    }
-
-                    val returnType: Type
-                    if (static) {
-                        left as Expression.Alpha
-                        val className = left.value
-                        val fn = executor.getModule(className)!!.getFn(methodName)
-                            ?: method.error("Could not find method '$methodName' in class '$className'")
-                        returnType = fn.returnType
-                    } else {
-                        if (left is Expression.Alpha) {
-
-                        }
-                    }
-
-                    left = Expression.ClassMethodCall(left.marking!!, static, left, methodName, arguments)
-                }
+                else -> left = classMethodCall(left)
             }
         }
         return left
+    }
+
+    private fun classMethodCall(left: Expression): Expression {
+        // calling a method in another class
+        // string.contains("melon")
+        // TODO: over here also
+        skip()
+
+        val method = next()
+        val methodName = readAlpha(method)
+
+        val arguments = callArguments()
+        var static = false
+        if (left is Expression.Alpha) {
+            static = resolver.classes.contains(left.value)
+        }
+
+        var returnType: ExprType? = null
+        if (static) {
+            left as Expression.Alpha
+            val className = left.value
+            val fn = executor.getModule(className)!!.getFn(methodName)
+                ?: method.error("Could not find method '$methodName' in class '$className'")
+            returnType = ExprType.translate(fn.returnType)
+        } else {
+            if (left is Expression.Alpha) {
+                val vrType = left.vrType!!
+                if (vrType.primitive) {
+                    returnType = vrType.runtimeType
+                } else {
+                    val className = vrType.value as String
+                    val fn = executor.getModule(className)!!.getFn(methodName)
+                        ?: method.error("Could not find method '$methodName' in class '$className'")
+                    returnType = ExprType.translate(fn.returnType)
+                }
+            } else if (left is Expression.NewObj) {
+                val className = left.name
+                val fn = executor.getModule(className)!!.getFn(methodName)
+                    ?: method.error("Could not find method '$methodName' in class '$className'")
+                returnType = ExprType.translate(fn.returnType)
+            } else method.error("Invalid syntax")
+        }
+        return Expression.ClassMethodCall(
+            left.marking!!,
+            static,
+            left,
+            methodName,
+            arguments,
+            returnType!!)
     }
 
     private fun getFn(name: String) = resolver.resolveFn(name)
