@@ -274,29 +274,32 @@ class Parser(private val executor: Executor) {
     private fun fnDeclaration(): Expression {
         val name = readAlpha()
 
-        // create a wrapper object, that can be set to actual value later
-        val reference = FunctionReference()
-        resolver.defineFn(name, reference)
-        resolver.enterScope()
-
         expectType(Type.OPEN_CURVE)
         val requiredArgs = ArrayList<Expression.DefinitionType>()
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val parameterName = readAlpha()
             expectType(Type.COLON)
             val clazz = readClassType()
-            resolver.defineVariable(parameterName, ExprType.translate(clazz))
+            //resolver.defineVariable(parameterName, ExprType.translate(clazz))
 
             requiredArgs.add(Expression.DefinitionType(parameterName, clazz))
             if (!isNext(Type.COMMA)) break
             skip()
         }
-        reference.argsSize = requiredArgs.size
         expectType(Type.CLOSE_CURVE)
         val returnType = if (isNext(Type.COLON)) {
             skip()
             readClassType()
         } else Type.E_ANY
+
+        // create a wrapper object, that can be set to actual value later
+        val reference = FunctionReference(null, requiredArgs.size, returnType)
+        resolver.defineFn(name, reference)
+        resolver.enterScope()
+
+        requiredArgs.forEach {
+            resolver.defineVariable(it.name, ExprType.translate(it.type))
+        }
 
         val body = unitBody() // Fully Manual Scopped
         resolver.leaveScope()
@@ -469,19 +472,39 @@ class Parser(private val executor: Executor) {
                 else -> {
                     // calling a method in another class
                     // string.contains("melon")
+                    // TODO: over here also
                     skip()
 
-                    val method = readAlpha()
+                    val method = next()
+                    val methodName = readAlpha(method)
+
                     val arguments = callArguments()
                     var static = false
-                    if (left is Expression.Alpha)
+                    if (left is Expression.Alpha) {
                         static = resolver.classes.contains(left.value)
-                    left = Expression.ClassMethodCall(left.marking!!, static, left, method, arguments)
+                    }
+
+                    val returnType: Type
+                    if (static) {
+                        left as Expression.Alpha
+                        val className = left.value
+                        val fn = executor.getModule(className)!!.getFn(methodName)
+                            ?: method.error("Could not find method '$methodName' in class '$className'")
+                        returnType = fn.returnType
+                    } else {
+                        if (left is Expression.Alpha) {
+
+                        }
+                    }
+
+                    left = Expression.ClassMethodCall(left.marking!!, static, left, methodName, arguments)
                 }
             }
         }
         return left
     }
+
+    private fun getFn(name: String) = resolver.resolveFn(name)
 
     private fun operatorPrecedence(type: Flag) = when (type) {
         Flag.ASSIGNMENT_TYPE -> 1

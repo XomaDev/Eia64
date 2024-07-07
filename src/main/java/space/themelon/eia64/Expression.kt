@@ -260,12 +260,12 @@ abstract class Expression(
                 }
 
                 ADDITIVE_ASSIGNMENT -> {
-                    if (leftType == ExprType.STRING && rightType == ExprType.STRING
+                    if (leftType == ExprType.STRING && (rightType == ExprType.STRING || rightType == ExprType.CHAR)
                         || leftType == ExprType.INT && rightType == ExprType.INT) return
                     where.error<String>("Cannot apply operator to a non String or Int")
                 }
                 ASSIGNMENT -> left.type()
-                EQUALS, NOT_EQUALS -> { }
+                EQUALS, NOT_EQUALS, PLUS -> { }
                 else -> where.error("Undocumented binary operator")
             }
         }

@@ -1,0 +1,3 @@
+fn sayHello(): String {
+  return "Hello, World!"
+}

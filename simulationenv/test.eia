@@ -1,0 +1,6 @@
+include(
+  static:"simulationenv/hello"
+)
+
+let x: String = hello.sayHello()
+println(x)

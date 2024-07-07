@@ -36,6 +36,8 @@ class Executor {
         return true
     }
 
+    fun getModule(name: String) = externalParsers[name]
+
     // loads the included module and executes it
     fun executeModule(name: String): Evaluator {
         val evaluator = newEvaluator(name)
