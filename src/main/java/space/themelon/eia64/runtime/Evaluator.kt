@@ -384,7 +384,7 @@ class Evaluator(
         return result
     }
 
-    override fun methodCall(call: Expression.MethodCall) = fnInvoke(call.fnExpr.fnExpression!!, evaluateArgs(call.arguments))
+    override fun methodCall(call: Expression.MethodCall) = fnInvoke(call.functionReference.fnExpression!!, evaluateArgs(call.arguments))
 
     override fun classMethodCall(call: Expression.ClassMethodCall): Any {
         val obj = call.obj

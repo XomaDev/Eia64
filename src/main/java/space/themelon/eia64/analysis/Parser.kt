@@ -293,7 +293,7 @@ class Parser(private val executor: Executor) {
         } else Type.E_ANY
 
         // create a wrapper object, that can be set to actual value later
-        val reference = FunctionReference(null, requiredArgs.size, returnType)
+        val reference = FunctionReference(null, requiredArgs, requiredArgs.size, returnType)
         resolver.defineFn(name, reference)
         resolver.enterScope()
 

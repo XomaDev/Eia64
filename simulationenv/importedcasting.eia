@@ -3,4 +3,5 @@ include(
 )
 
 let melon: Any = new Person("Melon")
-println(melon.getName())
+
+println(melon::Person.getName())

@@ -4,6 +4,7 @@ fn init(name: String) {
   personName = name
 }
 
+; fn to return field, normally another classes cannot access fields
 fn getName() = personName
 
 fn string() = "Person(" + personName + ")"

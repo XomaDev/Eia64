@@ -11,4 +11,4 @@ hello(new Person("Melon"))
 let miaw(p: Person) {
   println(p)
 }
-miaw(new Person("Ekita"))
+miaw("Ekita")

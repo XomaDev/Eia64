@@ -13,7 +13,6 @@ enum class ExpressionType {
     ANY,
     NONE,
 
-    MISMATCHED,
     ;
 
     companion object {
