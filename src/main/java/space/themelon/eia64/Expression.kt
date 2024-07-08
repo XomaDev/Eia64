@@ -1,9 +1,6 @@
 package space.themelon.eia64
 
-import space.themelon.eia64.analysis.ExpressionSignature
-import space.themelon.eia64.analysis.ExpressionType
-import space.themelon.eia64.analysis.FunctionReference
-import space.themelon.eia64.analysis.VariableMetadata
+import space.themelon.eia64.analysis.*
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
@@ -545,7 +542,7 @@ abstract class Expression(
 
     data class Function(
         val name: String,
-        val arguments: List<DefinitionType>,
+        val arguments: List<ValueDefinition>,
         val returnType: Type,
         val body: Expression
     ) : Expression(null) {

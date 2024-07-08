@@ -97,7 +97,7 @@ class Lexer(private val source: String) {
         }
         if (next() != '\'')
             reportError("Invalid syntax while using single quotes")
-        return Token(line, E_CHAR, arrayOf(Flag.VALUE), char)
+        return Token(line, E_CHAR, arrayOf(Flag.VALUE, Flag.CONSTANT_VALUE), char)
     }
 
     private fun parseString(): Token {
@@ -116,7 +116,7 @@ class Lexer(private val source: String) {
             }
             content.append(c)
         }
-        return Token(line, E_STRING, arrayOf(Flag.VALUE), content.toString())
+        return Token(line, E_STRING, arrayOf(Flag.VALUE, Flag.CONSTANT_VALUE), content.toString())
     }
 
     private fun parseAlpha(c: Char): Token {
@@ -142,7 +142,7 @@ class Lexer(private val source: String) {
                 content.append(next())
             } else break
         }
-        return Token(line, E_INT, arrayOf(Flag.VALUE), content.toString().toInt())
+        return Token(line, E_INT, arrayOf(Flag.VALUE, Flag.CONSTANT_VALUE), content.toString().toInt())
     }
 
     private fun isNumeric(c: Char) = c in '0'..'9'

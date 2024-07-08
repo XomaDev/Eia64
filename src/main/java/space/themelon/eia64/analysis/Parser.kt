@@ -276,14 +276,13 @@ class Parser(private val executor: Executor) {
         val name = readAlpha()
 
         expectType(Type.OPEN_CURVE)
-        val requiredArgs = ArrayList<Expression.DefinitionType>()
+        val requiredArgs = ArrayList<ValueDefinition>()
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val parameterName = readAlpha()
             expectType(Type.COLON)
-            val clazz = readClassType()
-            //resolver.defineVariable(parameterName, ExprType.translate(clazz))
+            val clazz = readClass(next())
 
-            requiredArgs.add(Expression.DefinitionType(parameterName, clazz))
+            requiredArgs.add(ValueDefinition(parameterName, clazz.first, clazz.second))
             if (!isNext(Type.COMMA)) break
             skip()
         }
@@ -298,10 +297,7 @@ class Parser(private val executor: Executor) {
         resolver.defineFn(name, reference)
         resolver.enterScope()
 
-        requiredArgs.forEach {
-            // TODO: check this one later
-            resolver.defineVariable(it.name, VariableMetadata(ExpressionType.translate(it.type)))
-        }
+        requiredArgs.forEach { resolver.defineVariable(it.name, it.metadata) }
 
         val body = unitBody() // Fully Manual Scopped
         resolver.leaveScope()
@@ -317,8 +313,9 @@ class Parser(private val executor: Executor) {
         expectType(Type.OPEN_CURVE)
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val name = readAlpha()
-            // TODO: take a look at this later, look into how it can be improved
-            resolver.defineVariable(name, VariableMetadata(ExpressionType.ANY))
+            expectType(Type.COLON)
+            val clazz = readClass(next())
+            resolver.defineVariable(name, clazz.second)
             names.add(name)
             if (!isNext(Type.COMMA)) break
             skip()
@@ -390,15 +387,12 @@ class Parser(private val executor: Executor) {
 
         if (!isNext(Type.COLON)) {
             // TODO: take a look into this later
-            println("about to declare variable name $name")
             val value = readVariableExpr()
             expr = Expression.AutoVariable(where, name, value)
 
-            println("expr is : = $expr")
             val valueSignature = value.signature()
             val valueMetadata = valueSignature.metadata
             typeInfo = valueMetadata?.copy() ?: VariableMetadata(valueSignature.type)
-            println("auto variable declaration was called")
         } else {
             skip()
 
@@ -413,7 +407,6 @@ class Parser(private val executor: Executor) {
                 readVariableExpr()
             )
         }
-        println("defining $name: = $expr")
         resolver.defineVariable(name, typeInfo)
         return expr
     }
@@ -488,66 +481,73 @@ class Parser(private val executor: Executor) {
         //  for array access parsing
         while (!isEOF()) {
             val nextOp = peek()
-            if (nextOp.type != Type.DOT
-                && nextOp.type != Type.OPEN_CURVE
-                && nextOp.type != Type.OPEN_SQUARE
-                && nextOp.type != Type.CAST
+            if (nextOp.type != Type.DOT // (left is class) trying to call a method on an object. e.g. person.sayHello()
+                && !(nextOp.type == Type.OPEN_CURVE && !isConstantLiteralExpr(left)) // (left points/is a unit)
+                && nextOp.type != Type.OPEN_SQUARE // array element access
+                && nextOp.type != Type.CAST // value casting
             ) break
 
-            when (nextOp.type) {
-                // calling shadow funcs
-                Type.OPEN_CURVE -> left = unitCall(left)
+            left = when (nextOp.type) {
+                // calling shadow func
+                Type.OPEN_CURVE -> unitCall(left)
                 Type.OPEN_SQUARE -> {
                     // array access
                     skip()
                     val expr = parseNext()
                     expectType(Type.CLOSE_SQUARE)
-                    left = Expression.ElementAccess(left.marking!!, left, expr)
+                    Expression.ElementAccess(left.marking!!, left, expr)
                 }
                 Type.CAST -> {
                     skip()
 
                     val into = next()
                     val pair = readClass(into)
-                    left = Expression.Cast(into, left, pair.second)
+                    Expression.Cast(into, left, pair.second)
                 }
-                else -> left = classMethodCall(left)
+                else -> classMethodCall(left)
             }
         }
         return left
     }
 
-    private fun classMethodCall(left: Expression): Expression {
+    private fun isConstantLiteralExpr(expression: Expression) = when (expression) {
+        is Expression.IntLiteral,
+        is Expression.StringLiteral, -> true
+        is Expression.BoolLiteral, -> true
+        is Expression.CharLiteral, -> true
+        is Expression.Array, -> true
+        else -> false
+    }
+
+    private fun classMethodCall(expressionObject: Expression): Expression {
         skip()
 
         val method = next()
         val methodName = readAlpha(method)
 
+        val module: String? = when (expressionObject) {
+            is Expression.Alpha -> {
+                (if (resolver.classes.contains(expressionObject.value)) expressionObject.value
+                else expressionObject.vrType!!.getModule())
+            }
+            is Expression.NewObj -> expressionObject.name
+            else -> expressionObject.signature().metadata!!.getModule()
+        }
+        if (module == null) {
+            method.error<String>("Could not find method $methodName() for object $expressionObject")
+            throw RuntimeException()
+        }
+        val fnReturnType =  executor.getModule(module).getFnType(methodName)
         val arguments = callArguments()
-        val static = left is Expression.Alpha && resolver.classes.contains(left.value)
-        val fnReturnType = fetchFnSignature(left, methodName)
+
         return Expression.ClassMethodCall(
-            left.marking!!,
-            static,
-            left,
+            expressionObject.marking!!,
+            expressionObject is Expression.Alpha && resolver.classes.contains(expressionObject.value),
+            expressionObject,
             methodName,
             arguments,
             fnReturnType
         )
-    }
-
-    private fun fetchFnSignature(expression: Expression, method: String): ExpressionType {
-        val module: String = when (expression) {
-            is Expression.Alpha -> {
-                (if (resolver.classes.contains(expression.value)) expression.value
-                else expression.vrType!!.getModule())
-            }
-
-            is Expression.NewObj -> expression.name
-
-            else -> expression.signature().metadata!!.getModule()
-        }
-        return executor.getModule(module).getFnType(method)
     }
 
     private fun getFnType(name: String): ExpressionType {
@@ -587,7 +587,9 @@ class Parser(private val executor: Executor) {
         val token = next()
         if (token.hasFlag(Flag.VALUE)) {
             val value = parseValue(token)
-            if (!isEOF() && peek().type == Type.OPEN_CURVE)
+            if (!token.hasFlag(Flag.CONSTANT_VALUE) // not a hard constant, like `123` or `"Hello, World"`
+                && !isEOF()
+                && peek().type == Type.OPEN_CURVE)
                 return unitCall(value)
             return value
         } else if (token.hasFlag(Flag.UNARY)) {

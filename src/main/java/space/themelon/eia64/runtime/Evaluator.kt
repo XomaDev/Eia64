@@ -1,6 +1,7 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
+import space.themelon.eia64.analysis.ValueDefinition
 import space.themelon.eia64.primitives.*
 import space.themelon.eia64.runtime.Entity.Companion.getType
 import space.themelon.eia64.runtime.Entity.Companion.unbox
@@ -459,7 +460,7 @@ class Evaluator(
         val parameters = fn.arguments.iterator()
         val callExpressions = callArgs.iterator()
 
-        val callValues = ArrayList<Pair<Expression.DefinitionType, Any>>()
+        val callValues = ArrayList<Pair<ValueDefinition, Any>>()
         while (parameters.hasNext()) {
             val definedParameter = parameters.next()
             val typeSignature = definedParameter.type

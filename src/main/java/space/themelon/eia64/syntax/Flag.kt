@@ -13,6 +13,7 @@ enum class Flag {
     E_BOOL,
 
     VALUE,
+    CONSTANT_VALUE,
 
     V_KEYWORD,
 

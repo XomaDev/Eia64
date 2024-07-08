@@ -170,6 +170,11 @@ fn splitRecursive(self: String, delimiter: String) {
   return onceSplit
 }
 
-fn split(self: String, delimiter: String): Array = splitRecursive(self, delimiter)::Array.flatten()
+fn split(self: String, delimiter: String): Array {
+  if (contains(self, delimiter)) {
+    return splitRecursive(self, delimiter)::Array.flatten()
+  }
+  return arrayOf(self)
+}
 
 fn size(self: String): Int = len(self)
