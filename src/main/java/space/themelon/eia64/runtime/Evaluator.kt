@@ -123,8 +123,8 @@ class Evaluator(
         }
         LOGICAL_AND -> booleanExpr(expr.left, "&& Logical And").and(booleanExpr(expr.right, "&& Logical And"))
         LOGICAL_OR -> booleanExpr(expr.left, "|| Logical Or").or(booleanExpr(expr.right, "|| Logical Or"))
-        GREATER_THAN -> EBool(intExpr(expr.left, "> GreaterThan") > intExpr(expr.right, "> GreaterThan"))
-        LESSER_THAN -> {
+        RIGHT_DIAMOND -> EBool(intExpr(expr.left, "> GreaterThan") > intExpr(expr.right, "> GreaterThan"))
+        LEFT_DIAMOND -> {
             val left = intExpr(expr.left, "< LesserThan")
             val right = intExpr(expr.right, "< LesserThan")
             EBool(left < right)
@@ -232,6 +232,8 @@ class Evaluator(
         emptyArray(),
         false,
         "Class<$className>").toString()
+
+    override fun cast(cast: Expression.Cast) = eval(cast.expr)
 
     override fun nativeCall(call: Expression.NativeCall): Any {
         val argsSize = call.arguments.size

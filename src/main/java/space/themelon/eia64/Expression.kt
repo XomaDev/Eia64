@@ -30,6 +30,7 @@ abstract class Expression(
         fun binaryOperation(expr: BinaryOperation): R
         fun expressions(list: ExpressionList): R
         fun nativeCall(call: NativeCall): R
+        fun cast(cast: Cast): R
         fun scope(scope: Scope): R
         fun methodCall(call: MethodCall): R
         fun classMethodCall(call: ClassMethodCall): R
@@ -245,8 +246,8 @@ abstract class Expression(
                 SLASH,
                 BITWISE_AND,
                 BITWISE_OR,
-                GREATER_THAN,
-                LESSER_THAN,
+                RIGHT_DIAMOND,
+                LEFT_DIAMOND,
                 GREATER_THAN_EQUALS,
                 LESSER_THAN_EQUALS,
                 DEDUCTIVE_ASSIGNMENT,
@@ -291,8 +292,8 @@ abstract class Expression(
                 NOT_EQUALS,
                 LOGICAL_AND,
                 LOGICAL_OR,
-                GREATER_THAN,
-                LESSER_THAN,
+                RIGHT_DIAMOND,
+                LEFT_DIAMOND,
                 GREATER_THAN_EQUALS,
                 LESSER_THAN_EQUALS -> ExpressionType.BOOL
 
@@ -356,6 +357,15 @@ abstract class Expression(
         }
     }
 
+    data class Cast(
+        val where: Token,
+        val expr: Expression,
+        val metadata: VariableMetadata
+    ): Expression(where) {
+        override fun <R> accept(v: Visitor<R>) = expr.accept(v) // do a direct bypass, this isn't required at runtime
+        override fun signature() = ExpressionSignature(metadata.runtimeType, metadata)
+    }
+
     data class NativeCall(
         val where: Token,
         val type: Type,
@@ -417,10 +427,7 @@ abstract class Expression(
     ) : Expression(where) {
 
         override fun <R> accept(v: Visitor<R>) = v.classMethodCall(this)
-        override fun signature(): ExpressionSignature {
-            println("request for class method call $method")
-            return ExpressionSignature(returnType)
-        }
+        override fun signature() = ExpressionSignature(returnType)
     }
 
     data class ShadoInvoke(

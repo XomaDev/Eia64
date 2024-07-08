@@ -163,13 +163,13 @@ fn splitOnce(self: String, delimiter: String): Array {
             substring(self, splitIndex + 1) )
 }
 
-fn splitRecursive(self: String, delimiter: String): Array {
+fn splitRecursive(self: String, delimiter: String) {
   if (!contains(self, delimiter)) return self
   let onceSplit = splitOnce(self, delimiter)
   onceSplit[1] = splitRecursive(onceSplit[1], delimiter)
   return onceSplit
 }
 
-fn split(self: String, delimiter: String): Array = splitRecursive(self, delimiter).flatten()
+fn split(self: String, delimiter: String): Array = splitRecursive(self, delimiter)::Array.flatten()
 
 fn size(self: String): Int = len(self)

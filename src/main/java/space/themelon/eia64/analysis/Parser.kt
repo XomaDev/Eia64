@@ -402,26 +402,33 @@ class Parser(private val executor: Executor) {
         } else {
             skip()
 
-            val typeClass = next()
-            val isPrimitive = typeClass.hasFlag(Flag.CLASS)
-            val typeObject = typeClass.type == Type.ALPHA && resolver.classes.contains(typeClass.optionalData as String)
+            val pair = readClass(next())
+            val runtimeType = pair.first
+            typeInfo = pair.second
 
-            if (!(isPrimitive || typeObject)) where.error<String>("Unknown class type '$typeClass'")
-
-            val runtimeType = if (typeObject) Type.E_OBJECT else typeClass.type
             expr = Expression.ExplicitVariable(
                 where,
                 where.type == Type.VAR,
                 Expression.DefinitionType(name, runtimeType),
                 readVariableExpr()
             )
-            typeInfo = VariableMetadata(
-                ExpressionType.translate(runtimeType),
-                if (isPrimitive) null else typeClass.optionalData as String)
         }
         println("defining $name: = $expr")
         resolver.defineVariable(name, typeInfo)
         return expr
+    }
+
+    private fun readClass(typeClass: Token): Pair<Type, VariableMetadata> {
+        val isPrimitive = typeClass.hasFlag(Flag.CLASS)
+        val typeObject = typeClass.type == Type.ALPHA && resolver.classes.contains(typeClass.optionalData as String)
+
+        if (!(isPrimitive || typeObject)) typeClass.error<String>("Unknown class type '$typeClass'")
+
+        val runtimeType = if (typeObject) Type.E_OBJECT else typeClass.type
+        return Pair(runtimeType, VariableMetadata(
+            ExpressionType.translate(runtimeType),
+            if (isPrimitive) null else typeClass.optionalData as String
+        ))
     }
 
     private fun readClassType(): Type {
@@ -482,8 +489,9 @@ class Parser(private val executor: Executor) {
         while (!isEOF()) {
             val nextOp = peek()
             if (nextOp.type != Type.DOT
-                && nextOp.type != Type.OPEN_CURVE &&
-                nextOp.type != Type.OPEN_SQUARE
+                && nextOp.type != Type.OPEN_CURVE
+                && nextOp.type != Type.OPEN_SQUARE
+                && nextOp.type != Type.CAST
             ) break
 
             when (nextOp.type) {
@@ -496,7 +504,13 @@ class Parser(private val executor: Executor) {
                     expectType(Type.CLOSE_SQUARE)
                     left = Expression.ElementAccess(left.marking!!, left, expr)
                 }
+                Type.CAST -> {
+                    skip()
 
+                    val into = next()
+                    val pair = readClass(into)
+                    left = Expression.Cast(into, left, pair.second)
+                }
                 else -> left = classMethodCall(left)
             }
         }
@@ -504,56 +518,36 @@ class Parser(private val executor: Executor) {
     }
 
     private fun classMethodCall(left: Expression): Expression {
-        // calling a method in another class
-        // string.contains("melon")
-        // TODO: over here also
         skip()
 
         val method = next()
         val methodName = readAlpha(method)
 
         val arguments = callArguments()
-        var static = false
-        if (left is Expression.Alpha) {
-            static = resolver.classes.contains(left.value)
-        }
-
-        val returnType: ExpressionType?
-        if (static) {
-            left as Expression.Alpha
-            val className = left.value
-            returnType = executor.getModule(className)!!.getFnType(methodName)
-        } else {
-            when (left) {
-                is Expression.Alpha -> {
-                    val vrType = left.vrType!!
-                    val className = vrType.getModule()
-                    returnType = executor.getModule(className)!!.getFnType(methodName)
-                }
-
-                is Expression.NewObj -> returnType = executor.getModule(left.name)!!.getFnType(methodName)
-
-                else -> {
-                    println("the expression on which to invoke is: $left")
-                    val signature = left.signature()
-                    val vrMeta = signature.metadata!!
-                    val className = vrMeta.getModule()
-                    returnType = executor.getModule(className).getFnType(methodName)
-                }
-            }
-        }
+        val static = left is Expression.Alpha && resolver.classes.contains(left.value)
+        val fnReturnType = fetchFnSignature(left, methodName)
         return Expression.ClassMethodCall(
             left.marking!!,
             static,
             left,
             methodName,
             arguments,
-            returnType
+            fnReturnType
         )
     }
 
     private fun fetchFnSignature(expression: Expression, method: String): ExpressionType {
-        return ExpressionType.NONE
+        val module: String = when (expression) {
+            is Expression.Alpha -> {
+                (if (resolver.classes.contains(expression.value)) expression.value
+                else expression.vrType!!.getModule())
+            }
+
+            is Expression.NewObj -> expression.name
+
+            else -> expression.signature().metadata!!.getModule()
+        }
+        return executor.getModule(module).getFnType(method)
     }
 
     private fun getFnType(name: String): ExpressionType {
@@ -593,8 +587,7 @@ class Parser(private val executor: Executor) {
         val token = next()
         if (token.hasFlag(Flag.VALUE)) {
             val value = parseValue(token)
-            println("lxr value: $value")
-            if (value is Expression.Alpha && !isEOF() && peek().type == Type.OPEN_CURVE)
+            if (!isEOF() && peek().type == Type.OPEN_CURVE)
                 return unitCall(value)
             return value
         } else if (token.hasFlag(Flag.UNARY)) {

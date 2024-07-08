@@ -8,7 +8,7 @@ enum class Type {
     LOGICAL_AND, LOGICAL_OR,
     BITWISE_AND, BITWISE_OR,
     EQUALS, NOT_EQUALS,
-    GREATER_THAN, LESSER_THAN,
+    RIGHT_DIAMOND, LEFT_DIAMOND,
     GREATER_THAN_EQUALS, LESSER_THAN_EQUALS,
     SLASH, TIMES, POWER,
     PLUS, NEGATE,
@@ -17,7 +17,7 @@ enum class Type {
     DOT,
     RIGHT_ARROW,
 
-    COLON,
+    COLON, CAST,
     ASSIGNMENT,
     ADDITIVE_ASSIGNMENT, DEDUCTIVE_ASSIGNMENT,
     MULTIPLICATIVE_ASSIGNMENT, DIVIDIVE_ASSIGNMENT,
@@ -72,8 +72,8 @@ enum class Type {
                 it["=="] = StaticToken(EQUALS, arrayOf(Flag.EQUALITY, Flag.OPERATOR))
                 it["!="] = StaticToken(NOT_EQUALS, arrayOf(Flag.EQUALITY, Flag.OPERATOR))
 
-                it[">"] = StaticToken(GREATER_THAN, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
-                it["<"] = StaticToken(LESSER_THAN, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
+                it[">"] = StaticToken(RIGHT_DIAMOND, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
+                it["<"] = StaticToken(LEFT_DIAMOND, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
                 it[">="] = StaticToken(GREATER_THAN_EQUALS, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
                 it["<="] = StaticToken(LESSER_THAN_EQUALS, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
 
@@ -92,6 +92,7 @@ enum class Type {
                 it["->"] = StaticToken(RIGHT_ARROW)
 
                 it[":"] = StaticToken(COLON)
+                it["::"] = StaticToken(CAST)
 
                 it["["] = StaticToken(OPEN_SQUARE, arrayOf(Flag.NONE))
                 it["]"] = StaticToken(CLOSE_SQUARE, arrayOf(Flag.NONE))
