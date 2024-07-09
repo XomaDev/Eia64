@@ -3,7 +3,7 @@ package space.themelon.eia64.analysis
 import space.themelon.eia64.Config
 import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
-import space.themelon.eia64.expressions.Array
+import space.themelon.eia64.expressions.ArrayLiteral
 import space.themelon.eia64.runtime.Executor
 import space.themelon.eia64.syntax.Flag
 import space.themelon.eia64.syntax.Token
@@ -148,7 +148,7 @@ class Parser(private val executor: Executor) {
 
     private fun newStatement(token: Token) = NewObj(token, readAlpha(), callArguments())
 
-    private fun arrayStatement(token: Token): Array {
+    private fun arrayStatement(token: Token): ArrayLiteral {
         val arrayElements = mutableListOf<Expression>()
         if (peek().type != Type.CLOSE_SQUARE) {
             while (true) {
@@ -158,7 +158,7 @@ class Parser(private val executor: Executor) {
                 else if (next.type != Type.COMMA) next.error<String>("Expected comma for array element separator")
             }
         }
-        return Array(token, arrayElements)
+        return ArrayLiteral(token, arrayElements)
     }
 
     private fun whenStatement(where: Token): Expression {
@@ -341,14 +341,14 @@ class Parser(private val executor: Executor) {
 
         // All is Auto Scopped!
         if (isEOF() || peek().type != Type.ELSE)
-            return If(where, logicalExpr, ifBody)
+            return IfStatement(where, logicalExpr, ifBody)
         skip()
 
         val elseBranch = when (peek().type) {
             Type.IF -> ifDeclaration(next())
             else -> autoBodyExpr()
         }
-        return If(where, logicalExpr, ifBody, elseBranch)
+        return IfStatement(where, logicalExpr, ifBody, elseBranch)
     }
 
     private fun autoBodyExpr(): Scope {
@@ -498,7 +498,7 @@ class Parser(private val executor: Executor) {
                     skip()
                     val expr = parseNext()
                     expectType(Type.CLOSE_SQUARE)
-                    ElementAccess(left.marking!!, left, expr)
+                    ArrayAccess(left.marking!!, left, expr)
                 }
                 Type.CAST -> {
                     skip()
@@ -518,7 +518,7 @@ class Parser(private val executor: Executor) {
         is StringLiteral, -> true
         is BoolLiteral, -> true
         is CharLiteral, -> true
-        is Array, -> true
+        is ArrayLiteral, -> true
         else -> false
     }
 

@@ -1,8 +1,7 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.ExpressionSignature
-import space.themelon.eia64.analysis.ExpressionType
+import space.themelon.eia64.analysis.Signature
 import space.themelon.eia64.syntax.Token
 
 data class BoolLiteral(
@@ -11,5 +10,6 @@ data class BoolLiteral(
 ) : Expression(where) {
 
     override fun <R> accept(v: Visitor<R>) = v.boolLiteral(this)
-    override fun signature() = ExpressionSignature(ExpressionType.BOOL)
+
+    override fun sig() = Signature("BoolLiteral", Sign.BOOL)
 }

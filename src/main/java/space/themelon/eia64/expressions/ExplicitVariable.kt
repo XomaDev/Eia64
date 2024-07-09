@@ -1,39 +1,29 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.VariableMetadata
+import space.themelon.eia64.analysis.Signature
 import space.themelon.eia64.syntax.Token
 
 data class ExplicitVariable(
     val where: Token,
-    val typeInfo: VariableMetadata,
     val mutable: Boolean,
-    val definition: DefinitionType,
-    val expr: Expression
+    val name: String,
+    val expr: Expression,
+    val explicitSign: String
 ) : Expression(where) {
 
     init {
-        verify()
-    }
-
-    private fun verify() {
-        val gotSignature = expr.signature()
-        if (gotSignature.type != typeInfo.runtimeType) {
-            where.error<String>(
-                "Variable ${definition.name} expected runtime type ${typeInfo.runtimeType} but got" +
-                        " ${gotSignature.type}"
-            )
-        }
-        if (gotSignature.metadata != null
-            && gotSignature.metadata.getModule() != typeInfo.getModule()
-        ) {
-            where.error<String>(
-                "Variable ${definition.name} was expected type ${typeInfo.getModule()} " +
-                        "but got ${gotSignature.metadata.getModule()}"
-            )
-        }
+        sig()
     }
 
     override fun <R> accept(v: Visitor<R>) = v.variable(this)
-    override fun signature() = expr.signature()
+
+    override fun sig(): Signature {
+        val exprSig = expr.sig()
+        if (explicitSign != exprSig.signature) {
+            where.error<String>("Variable '$name' expected signature $explicitSign but got ${exprSig.signature}")
+            throw RuntimeException()
+        }
+        return Signature("ExplicitVariable", explicitSign)
+    }
 }

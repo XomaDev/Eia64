@@ -1,7 +1,6 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.ValueDefinition
 import space.themelon.eia64.primitives.*
 import space.themelon.eia64.runtime.Entity.Companion.getType
 import space.themelon.eia64.runtime.Entity.Companion.unbox
@@ -668,9 +667,9 @@ class Evaluator(
     override fun interruption(interruption: Expression.Interruption) = when (val type = interruption.operator) {
         // wrap it as a normal entity, this will be naturally unboxed when called unbox()
         RETURN -> Entity("FlowReturn", false, unboxEval(interruption.expr!!), RETURN)
+        USE -> Entity("FlowUse", false, unboxEval(interruption.expr!!), USE)
         BREAK -> Entity("FlowBreak", false, 0, BREAK)
         CONTINUE -> Entity("FlowContinue", false, 0, CONTINUE)
-        USE -> Entity("FlowUse", false, unboxEval(interruption.expr!!), USE)
         else -> throw RuntimeException("Unknown interruption type $type")
     }
 

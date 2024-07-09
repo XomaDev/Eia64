@@ -1,8 +1,7 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.ExpressionSignature
-import space.themelon.eia64.analysis.ExpressionType
+import space.themelon.eia64.analysis.Signature
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 
@@ -13,5 +12,12 @@ data class Interruption(
 ) : Expression(where) {
 
     override fun <R> accept(v: Visitor<R>) = v.interruption(this)
-    override fun signature() = expr?.signature() ?: ExpressionSignature(ExpressionType.NONE)
+
+    override fun sig(): Signature {
+        if (operator == Type.RETURN || operator == Type.USE) {
+            if (expr == null) where.error<String>("No expression for operator $operator provided")
+            return expr!!.sig().holderCopy("Interruption")
+        }
+        return Signature("Interruption", Sign.ANY)
+    }
 }

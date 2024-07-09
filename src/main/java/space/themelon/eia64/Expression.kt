@@ -2,22 +2,21 @@ package space.themelon.eia64
 
 import space.themelon.eia64.analysis.*
 import space.themelon.eia64.expressions.*
-import space.themelon.eia64.expressions.Array
+import space.themelon.eia64.expressions.ArrayLiteral
 import space.themelon.eia64.expressions.Function
 import space.themelon.eia64.syntax.Token
 
 abstract class Expression(
-    val marking: Token? = null
+    val marking: Token? = null,
 ) {
 
     interface Visitor<R> {
-        fun genericLiteral(literal: GenericLiteral): R
         fun intLiteral(intLiteral: IntLiteral): R
         fun boolLiteral(boolLiteral: BoolLiteral): R
         fun stringLiteral(stringLiteral: StringLiteral): R
         fun charLiteral(charLiteral: CharLiteral): R
         fun alpha(alpha: Alpha): R
-        fun array(array: Array): R
+        fun array(arrayLiteral: ArrayLiteral): R
         fun include(include: Include): R
         fun new(new: NewObj): R
         fun throwExpr(throwExpr: ThrowExpr): R
@@ -39,11 +38,11 @@ abstract class Expression(
         fun forEach(forEach: ForEach): R
         fun forLoop(forLoop: ForLoop): R
         fun interruption(interruption: Interruption): R
-        fun ifFunction(ifExpr: If): R
+        fun ifFunction(ifExpr: IfStatement): R
         fun function(function: Function): R
-        fun elementAccess(access: ElementAccess): R
+        fun elementAccess(access: ArrayAccess): R
     }
 
     abstract fun <R> accept(v: Visitor<R>): R
-    abstract fun signature(): ExpressionSignature
+    abstract fun sig(): Signature
 }

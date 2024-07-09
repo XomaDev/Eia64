@@ -4,17 +4,16 @@ import space.themelon.eia64.Expression
 import space.themelon.eia64.analysis.Signature
 import space.themelon.eia64.syntax.Token
 
-data class Alpha(
+data class ArrayLiteral(
     val where: Token,
-    val index: Int,
-    val value: String,
+    val elements: List<Expression>
 ) : Expression(where) {
 
-    override fun <R> accept(v: Visitor<R>) = v.alpha(this)
+    override fun <R> accept(v: Visitor<R>) = v.array(this)
 
     override fun sig() = SIGN
 
     companion object {
-        private val SIGN = Signature("Alpha", Sign.ANY)
+        val SIGN = Signature("ArrayLiteral", Sign.ARRAY)
     }
 }
