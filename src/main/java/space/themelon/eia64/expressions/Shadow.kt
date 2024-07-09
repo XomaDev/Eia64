@@ -1,6 +1,7 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
+import space.themelon.eia64.analysis.Signature
 
 data class Shadow(
     val names: List<String>,
@@ -8,5 +9,6 @@ data class Shadow(
 ) : Expression() {
 
     override fun <R> accept(v: Visitor<R>) = v.shado(this)
-    override fun signature() = ExpressionSignature(ExpressionType.ANY)
+
+    override fun sig() = Signature("Shadow", Sign.UNIT)
 }

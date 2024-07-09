@@ -14,5 +14,5 @@ data class ForLoop(
 
     override fun <R> accept(v: Visitor<R>) = v.forLoop(this)
 
-    override fun sig() = Signature("ForLoop", Sign.ANY)
+    override fun sig() = Signature("ForLoop", Sign.NONE)
 }

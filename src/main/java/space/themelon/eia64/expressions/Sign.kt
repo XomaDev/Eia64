@@ -8,4 +8,6 @@ object Sign {
     const val CHAR = "sig_char"
     const val BOOL = "sig_bool"
     const val ARRAY = "sig_array"
+    const val UNIT = "sig_unit"
+    const val OBJECT = "sig_object"
 }

@@ -11,5 +11,5 @@ data class IntLiteral(
 
     override fun <R> accept(v: Visitor<R>) = v.intLiteral(this)
 
-    override fun sig() = Signature("IntLiteral", "sig_eint")
+    override fun sig() = Signature("IntLiteral", Sign.INT)
 }

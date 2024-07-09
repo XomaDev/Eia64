@@ -11,5 +11,5 @@ data class ExpressionList(
     val size = expressions.size
     override fun <R> accept(v: Visitor<R>) = v.expressions(this)
 
-    override fun sig() = Signature("ExpressionList", Sign.ANY)
+    override fun sig() = Signature("ExpressionList", Sign.NONE)
 }

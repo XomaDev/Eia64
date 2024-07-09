@@ -14,7 +14,6 @@ data class StringLiteral(
     override fun sig() = SIGN
 
     companion object {
-        val SIGN = Signature("StringLiteral", "sig_string")
-        fun make(holder: String) = Signature(holder, "sig_string")
+        val SIGN = Signature("StringLiteral", Sign.STRING)
     }
 }

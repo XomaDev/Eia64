@@ -13,5 +13,5 @@ data class ForEach(
 
     override fun <R> accept(v: Visitor<R>) = v.forEach(this)
 
-    override fun sig() = Signature("ForEach", Sign.ANY)
+    override fun sig() = Signature("ForEach", Sign.NONE)
 }
