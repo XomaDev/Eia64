@@ -4,10 +4,10 @@ class ReferenceResolver {
 
     val classes = ArrayList<String>()
 
-    private var currentScope = Scope()
+    private var currentScope = NameScope()
 
     fun enterScope() {
-        val newScope = Scope(currentScope)
+        val newScope = NameScope(currentScope)
         currentScope = newScope
     }
 

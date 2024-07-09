@@ -1,6 +1,6 @@
 package space.themelon.eia64.analysis
 
-class Scope(val before: Scope? = null) {
+class NameScope(val before: NameScope? = null) {
     val names = ArrayList<String>()
     val functions = ArrayList<String>()
 
