@@ -2,7 +2,8 @@ package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
 import space.themelon.eia64.analysis.FunctionReference
-import space.themelon.eia64.analysis.Signature
+import space.themelon.eia64.signatures.Signature
+import space.themelon.eia64.signatures.SimpleSignature
 import space.themelon.eia64.syntax.Token
 
 data class MethodCall(
@@ -35,12 +36,12 @@ data class MethodCall(
 
             val argName = argInfo.first
             val expectedArgSign = argInfo.second
-            val suppliedArgSign = argIterator.next().sig().signature
+            val suppliedArgSign = argIterator.next().sig()
 
             if (expectedArgSign != suppliedArgSign) {
                 name.error<String>("Function $name expected $expectedArgSign for argument $argName but got $suppliedArgSign")
             }
         }
-        return Signature("MethodCall", reference.returnSign)
+        return reference.returnSignature
     }
 }

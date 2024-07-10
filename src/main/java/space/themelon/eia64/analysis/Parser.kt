@@ -5,6 +5,8 @@ import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.ArrayLiteral
 import space.themelon.eia64.runtime.Executor
+import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Flag
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
@@ -240,7 +242,7 @@ class Parser(private val executor: Executor) {
                     }
                     expectType(Type.CLOSE_CURVE)
                     resolver.enterScope()
-                    resolver.defineVariable(iName, VariableMetadata(ExpressionType.INT))
+                    resolver.defineVariable(iName, Sign.INT)
                     // Manual Scopped!
                     val body = unscoppedBodyExpr()
                     resolver.leaveScope()
@@ -252,7 +254,7 @@ class Parser(private val executor: Executor) {
                     resolver.enterScope()
                     // TODO:
                     //  we will have to take a look into this later
-                    resolver.defineVariable(iName, VariableMetadata(ExpressionType.ANY))
+                    resolver.defineVariable(iName, Sign.ANY)
                     // Manual Scopped!
                     val body = unscoppedBodyExpr()
                     resolver.leaveScope()
@@ -278,13 +280,13 @@ class Parser(private val executor: Executor) {
         val name = readAlpha()
 
         expectType(Type.OPEN_CURVE)
-        val requiredArgs = ArrayList<ValueDefinition>()
+        val requiredArgs = ArrayList<Pair<String, Signature>>()
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val parameterName = readAlpha()
             expectType(Type.COLON)
             val clazz = readClass(next())
 
-            requiredArgs.add(ValueDefinition(parameterName, clazz.first, clazz.second))
+            requiredArgs.add(Pair(parameterName, clazz))
             if (!isNext(Type.COMMA)) break
             skip()
         }
@@ -316,8 +318,8 @@ class Parser(private val executor: Executor) {
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val name = readAlpha()
             expectType(Type.COLON)
-            val clazz = readClass(next())
-            resolver.defineVariable(name, clazz.second)
+            val clazzSign = readClass(next())
+            resolver.defineVariable(name, clazzSign)
             names.add(name)
             if (!isNext(Type.COMMA)) break
             skip()
@@ -385,36 +387,32 @@ class Parser(private val executor: Executor) {
         val name = readAlpha()
 
         val expr: Expression
-        val typeInfo: VariableMetadata
+        val variableSign: String
 
         if (!isNext(Type.COLON)) {
             // TODO: take a look into this later
-            val value = readVariableExpr()
-            expr = AutoVariable(where, name, value)
+            val assignmentExpr = readVariableExpr()
 
-            val valueSignature = value.signature()
-            val valueMetadata = valueSignature.metadata
-            typeInfo = valueMetadata?.copy() ?: VariableMetadata(valueSignature.type)
+            variableSign = assignmentExpr.sig().signature
+            expr = AutoVariable(where, name, assignmentExpr)
         } else {
             skip()
 
-            val pair = readClass(next())
-            val runtimeType = pair.first
-            typeInfo = pair.second
+            variableSign = readClass(next())
 
             expr = ExplicitVariable(
                 where,
-                typeInfo,
                 where.type == Type.VAR,
-                DefinitionType(name, runtimeType),
-                readVariableExpr()
+                name,
+                readVariableExpr(),
+                variableSign
             )
         }
-        resolver.defineVariable(name, typeInfo)
+        resolver.defineVariable(name, variableSign)
         return expr
     }
 
-    private fun readClass(typeClass: Token): Pair<Type, VariableMetadata> {
+    private fun readClass(typeClass: Token): String {
         val isPrimitive = typeClass.hasFlag(Flag.CLASS)
         val typeObject = typeClass.type == Type.ALPHA && resolver.classes.contains(typeClass.optionalData as String)
 
@@ -534,7 +532,7 @@ class Parser(private val executor: Executor) {
                 else expressionObject.vrType!!.getModule())
             }
             is NewObj -> expressionObject.name
-            else -> expressionObject.signature().metadata!!.getModule()
+            else -> expressionObject.sig().metadata!!.getModule()
         }
         if (module == null) {
             method.error<String>("Could not find method $methodName() for object $expressionObject")
@@ -553,10 +551,10 @@ class Parser(private val executor: Executor) {
         )
     }
 
-    private fun getFnType(name: String): ExpressionType {
+    private fun getFnType(name: String): String {
         val fn = resolver.resolveFn(name)
             ?: throw RuntimeException("Could not find function '$name' in module _")
-        return ExpressionType.translate(fn.returnType)
+        return fn.returnSign
     }
 
     private fun operatorPrecedence(type: Flag) = when (type) {
@@ -618,10 +616,10 @@ class Parser(private val executor: Executor) {
                 if (vrReference == null) {
                     // could be a function call or static invocation
                     if (resolver.resolveFn(name) != null || resolver.classes.contains(name))
-                        Alpha(token, -2, name)
+                        Alpha(token, -2, name, "_") // this is handled by the parser itself
                     else token.error<Expression>("Could not resolve name $name")
                 } else {
-                    Alpha(token, vrReference.index, name, vrReference.exprType)
+                    Alpha(token, vrReference.index, name, vrReference.sign)
                 }
             }
 

@@ -9,5 +9,5 @@ data class Scope(
 
     override fun <R> accept(v: Visitor<R>) = v.scope(this)
 
-    override fun sig() = expr.sig().holderCopy("Scope")
+    override fun sig() = expr.sig()
 }

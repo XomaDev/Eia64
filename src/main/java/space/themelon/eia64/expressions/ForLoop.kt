@@ -1,7 +1,8 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.Signature
+import space.themelon.eia64.signatures.SimpleSignature
+import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.syntax.Token
 
 data class ForLoop(
@@ -14,5 +15,5 @@ data class ForLoop(
 
     override fun <R> accept(v: Visitor<R>) = v.forLoop(this)
 
-    override fun sig() = Signature("ForLoop", Sign.NONE)
+    override fun sig() = Sign.NONE
 }

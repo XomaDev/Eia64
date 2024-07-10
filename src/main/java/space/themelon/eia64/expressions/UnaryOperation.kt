@@ -1,10 +1,11 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.Signature
+import space.themelon.eia64.signatures.SimpleSignature
+import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
-import kotlin.math.exp
 
 data class UnaryOperation(
     val where: Token,
@@ -20,7 +21,7 @@ data class UnaryOperation(
     }
 
     override fun sig(): Signature {
-        val exprSign = expr.sig().signature
+        val exprSign = expr.sig()
         if (towardsLeft) {
             when (operator) {
                 Type.NEGATE ->
@@ -42,6 +43,6 @@ data class UnaryOperation(
                 else -> where.error<String>("Unknown unary operator towards left")
             }
         }
-        return Signature("UnaryOperation", exprSign)
+        return exprSign
     }
 }

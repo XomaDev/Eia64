@@ -1,7 +1,8 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.Signature
+import space.themelon.eia64.signatures.SimpleSignature
+import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.syntax.Type
 
 data class Function(
@@ -13,5 +14,5 @@ data class Function(
 
     override fun <R> accept(v: Visitor<R>) = v.function(this)
 
-    override fun sig() = Signature("Function", Sign.NONE)
+    override fun sig() = Sign.NONE
 }

@@ -1,7 +1,9 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.Signature
+import space.themelon.eia64.signatures.SimpleSignature
+import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 
@@ -16,8 +18,8 @@ data class Interruption(
     override fun sig(): Signature {
         if (operator == Type.RETURN || operator == Type.USE) {
             if (expr == null) where.error<String>("No expression for operator $operator provided")
-            return expr!!.sig().holderCopy("Interruption")
+            return expr!!.sig()
         }
-        return Signature("Interruption", Sign.ANY)
+        return Sign.ANY
     }
 }

@@ -1,7 +1,7 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.Signature
+import space.themelon.eia64.signatures.SimpleSignature
 import space.themelon.eia64.syntax.Token
 
 data class AutoVariable(
@@ -12,5 +12,5 @@ data class AutoVariable(
 
     override fun <R> accept(v: Visitor<R>) = v.autoVariable(this)
 
-    override fun sig() = Signature("AutoVariable", expr.sig().signature)
+    override fun sig() = expr.sig()
 }

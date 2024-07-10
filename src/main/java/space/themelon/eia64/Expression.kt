@@ -1,9 +1,9 @@
 package space.themelon.eia64
 
-import space.themelon.eia64.analysis.*
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.ArrayLiteral
 import space.themelon.eia64.expressions.Function
+import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 
 abstract class Expression(
@@ -28,7 +28,7 @@ abstract class Expression(
         fun expressions(list: ExpressionList): R
         fun nativeCall(call: NativeCall): R
         fun cast(cast: Cast): R
-        fun scope(scope: space.themelon.eia64.expressions.Scope): R
+        fun scope(scope: Scope): R
         fun methodCall(call: MethodCall): R
         fun classMethodCall(call: ClassMethodCall): R
         fun unitInvoke(shadoInvoke: ShadoInvoke): R

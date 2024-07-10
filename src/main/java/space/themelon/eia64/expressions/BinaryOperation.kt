@@ -1,7 +1,9 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.Signature
+import space.themelon.eia64.signatures.SimpleSignature
+import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 
@@ -19,8 +21,8 @@ data class BinaryOperation(
     override fun <R> accept(v: Visitor<R>) = v.binaryOperation(this)
 
     override fun sig(): Signature {
-        val leftExprSign = left.sig().signature
-        val rightExprSign = right.sig().signature
+        val leftExprSign = left.sig()
+        val rightExprSign = right.sig()
 
         var resultSign = leftExprSign
         when (operator) {
@@ -69,6 +71,6 @@ data class BinaryOperation(
 
             else -> where.error("Unknown Binary Operator $operator")
         }
-        return Signature("BinaryOperation", resultSign)
+        return resultSign
     }
 }

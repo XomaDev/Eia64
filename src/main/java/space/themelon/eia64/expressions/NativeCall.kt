@@ -1,7 +1,8 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.Signature
+import space.themelon.eia64.signatures.SimpleSignature
+import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 
@@ -13,7 +14,7 @@ data class NativeCall(
 
     override fun <R> accept(v: Visitor<R>) = v.nativeCall(this)
 
-    override fun sig() = Signature("NativeCall", when (call) {
+    override fun sig() = when (call) {
         Type.PRINT,
         Type.PRINTLN,
         Type.SLEEP,
@@ -32,9 +33,9 @@ data class NativeCall(
         Type.BOOL_CAST, Type.INCLUDE -> Sign.BOOL
         Type.COPY -> {
             if (arguments.size != 1) where.error<String>("copy() expects least one argument")
-            arguments[0].sig().signature
+            arguments[0].sig()
         }
         Type.ARRAYOF, Type.ARRALLOC -> Sign.ARRAY
         else -> where.error("Unknown native call type $call")
-    })
+    }
 }

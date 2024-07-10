@@ -4,7 +4,7 @@ class NameScope(val before: NameScope? = null) {
     val names = ArrayList<String>()
     val functions = ArrayList<String>()
 
-    val variableMetadata = ArrayList<VariableMetadata>()
+    val variableSigns = ArrayList<String>()
     val funcObjs = ArrayList<FunctionReference>()
 
     fun resolveFn(name: String, travelDepth: Int): FunctionReference? {
@@ -16,7 +16,7 @@ class NameScope(val before: NameScope? = null) {
     }
 
     fun resolveVr(name: String): VariableReference? {
-        names.indexOf(name).let { if (it != -1) return VariableReference(it, variableMetadata[it]) }
+        names.indexOf(name).let { if (it != -1) return VariableReference(it, variableSigns[it]) }
         if (before != null) return before.resolveVr(name)
         return null
     }
