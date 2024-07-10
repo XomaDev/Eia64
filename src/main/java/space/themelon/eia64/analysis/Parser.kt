@@ -5,8 +5,10 @@ import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.ArrayLiteral
 import space.themelon.eia64.runtime.Executor
+import space.themelon.eia64.signatures.ObjectSignature
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
+import space.themelon.eia64.signatures.SimpleSignature
 import space.themelon.eia64.syntax.Flag
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
@@ -103,7 +105,7 @@ class Parser(private val executor: Executor) {
                     executor.addModule(file.absolutePath, moduleName)
                 }
                 Type.E_STRING -> {
-                    val sourceFile = getModulePath(next.optionalData as String + ".eia")
+                    val sourceFile = getModulePath(next.data as String + ".eia")
                     verifyFilePath(sourceFile, next)
                     val moduleName = getModuleName(sourceFile)
                     resolver.classes.add(moduleName)
@@ -127,7 +129,7 @@ class Parser(private val executor: Executor) {
         } else {
             if (path.type != Type.E_STRING)
                 path.error<String>("Expected a string type for static:")
-            File("${getModulePath(path.optionalData as String)}.eia")
+            File("${getModulePath(path.data as String)}.eia")
         }
         verifyFilePath(sourceFile, path)
         val moduleName = getModuleName(sourceFile)
@@ -280,32 +282,32 @@ class Parser(private val executor: Executor) {
         val name = readAlpha()
 
         expectType(Type.OPEN_CURVE)
-        val requiredArgs = ArrayList<Pair<String, Signature>>()
+        val requiredArgs = mutableListOf<Pair<String, Signature>>()
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val parameterName = readAlpha()
             expectType(Type.COLON)
-            val clazz = readClass(next())
+            val signature = readSignature(next())
 
-            requiredArgs.add(Pair(parameterName, clazz))
+            requiredArgs.add(Pair(parameterName, signature))
             if (!isNext(Type.COMMA)) break
             skip()
         }
         expectType(Type.CLOSE_CURVE)
-        val returnType = if (isNext(Type.COLON)) {
-            skip()
-            readClassType()
-        } else Type.E_ANY
+
+        val returnSignature = if (isNext(Type.COLON)) {
+            readSignature(next())
+        } else Sign.ANY
 
         // create a wrapper object, that can be set to actual value later
-        val reference = FunctionReference(null, requiredArgs, requiredArgs.size, returnType)
+        val reference = FunctionReference(null, requiredArgs, requiredArgs.size, returnSignature)
         resolver.defineFn(name, reference)
         resolver.enterScope()
 
-        requiredArgs.forEach { resolver.defineVariable(it.name, it.metadata) }
+        requiredArgs.forEach { resolver.defineVariable(it.first, it.second) }
 
         val body = unitBody() // Fully Manual Scopped
         resolver.leaveScope()
-        val fnExpr = Function(name, requiredArgs, returnType, body)
+        val fnExpr = Function(name, requiredArgs, returnSignature, body)
         reference.fnExpression = fnExpr
         return fnExpr
     }
@@ -318,8 +320,9 @@ class Parser(private val executor: Executor) {
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val name = readAlpha()
             expectType(Type.COLON)
-            val clazzSign = readClass(next())
-            resolver.defineVariable(name, clazzSign)
+
+            val argSignature = readSignature(next())
+            resolver.defineVariable(name, argSignature)
             names.add(name)
             if (!isNext(Type.COMMA)) break
             skip()
@@ -342,8 +345,9 @@ class Parser(private val executor: Executor) {
         val ifBody = autoBodyExpr()
 
         // All is Auto Scopped!
-        if (isEOF() || peek().type != Type.ELSE)
+        if (isEOF() || peek().type != Type.ELSE) {
             return IfStatement(where, logicalExpr, ifBody)
+        }
         skip()
 
         val elseBranch = when (peek().type) {
@@ -387,49 +391,56 @@ class Parser(private val executor: Executor) {
         val name = readAlpha()
 
         val expr: Expression
-        val variableSign: String
+        val signature: Signature
 
         if (!isNext(Type.COLON)) {
-            // TODO: take a look into this later
+            // Auto expression type, signature is decided by expression assigned to it
             val assignmentExpr = readVariableExpr()
 
-            variableSign = assignmentExpr.sig().signature
+            signature = assignmentExpr.sig()
             expr = AutoVariable(where, name, assignmentExpr)
         } else {
             skip()
-
-            variableSign = readClass(next())
+            signature = readSignature(next())
 
             expr = ExplicitVariable(
                 where,
                 where.type == Type.VAR,
                 name,
                 readVariableExpr(),
-                variableSign
+                signature
             )
         }
-        resolver.defineVariable(name, variableSign)
+        resolver.defineVariable(name, signature)
         return expr
     }
 
-    private fun readClass(typeClass: Token): String {
-        val isPrimitive = typeClass.hasFlag(Flag.CLASS)
-        val typeObject = typeClass.type == Type.ALPHA && resolver.classes.contains(typeClass.optionalData as String)
-
-        if (!(isPrimitive || typeObject)) typeClass.error<String>("Unknown class type '$typeClass'")
-
-        val runtimeType = if (typeObject) Type.E_OBJECT else typeClass.type
-        return Pair(runtimeType, VariableMetadata(
-            ExpressionType.translate(runtimeType),
-            if (isPrimitive) null else typeClass.optionalData as String
-        ))
-    }
-
-    private fun readClassType(): Type {
-        val next = next()
-        if (!next.hasFlag(Flag.CLASS))
-            next.error<String>("Expected class type token")
-        return next.type
+    private fun readSignature(token: Token): Signature {
+        if (token.hasFlag(Flag.CLASS)) {
+            // then wrap it around Simple Signature
+            return when (val classType = token.type) {
+                Type.E_INT -> Sign.INT
+                Type.E_STRING -> Sign.STRING
+                Type.E_CHAR -> Sign.CHAR
+                Type.E_BOOL -> Sign.BOOL
+                Type.E_ARRAY -> Sign.ARRAY
+                Type.E_ANY -> Sign.ANY
+                Type.E_UNIT -> Sign.UNIT
+                Type.E_OBJECT -> ObjectSignature(Sign.OBJECT.type) // Generic form
+                else -> token.error("Unknown class $classType")
+            }
+        }
+        if (token.type != Type.ALPHA) {
+            token.error<String>("Expected a class type")
+            // end of execution
+        }
+        if (resolver.classes.contains(token.data as String)) {
+            // class that was included from external files
+            // this will be an extension of Object class type
+            return ObjectSignature(token.data)
+        }
+        token.error<String>("Unknown class ${token.data}")
+        throw RuntimeException()
     }
 
     private fun readVariableExpr(): Expression {
@@ -500,10 +511,7 @@ class Parser(private val executor: Executor) {
                 }
                 Type.CAST -> {
                     skip()
-
-                    val into = next()
-                    val pair = readClass(into)
-                    Cast(into, left, pair.second)
+                    Cast(nextOp, left, readSignature(next()))
                 }
                 else -> classMethodCall(left)
             }
@@ -520,41 +528,48 @@ class Parser(private val executor: Executor) {
         else -> false
     }
 
-    private fun classMethodCall(expressionObject: Expression): Expression {
+    private fun classMethodCall(objExpr: Expression): Expression {
         skip()
 
         val method = next()
         val methodName = readAlpha(method)
 
-        val module: String? = when (expressionObject) {
-            is Alpha -> {
-                (if (resolver.classes.contains(expressionObject.value)) expressionObject.value
-                else expressionObject.vrType!!.getModule())
+        val module: String
+
+        val signature = objExpr.sig()
+        if (signature is SimpleSignature) {
+            module = when (signature) {
+                Sign.NONE -> method.error("Signature type NONE has no module")
+                Sign.ANY -> method.error("Signature type ANY has no module")
+                Sign.CHAR -> method.error("Signature type CHAR has no module")
+                Sign.UNIT -> method.error("Signature type UNIT has no module")
+                Sign.OBJECT -> method.error("Signature type OBJECT has no module") // (Raw Object sign)
+                Sign.INT -> "eint"
+                Sign.STRING -> "string"
+                Sign.BOOL -> "bool"
+                Sign.ARRAY -> "array"
+                else -> method.error("Unknown object signature $signature")
             }
-            is NewObj -> expressionObject.name
-            else -> expressionObject.sig().metadata!!.getModule()
-        }
-        if (module == null) {
-            method.error<String>("Could not find method $methodName() for object $expressionObject")
-            throw RuntimeException()
+        } else {
+            module = (signature as ObjectSignature).extensionClass
         }
         val fnReturnType =  executor.getModule(module).getFnType(methodName)
         val arguments = callArguments()
 
         return ClassMethodCall(
-            expressionObject.marking!!,
-            expressionObject is Alpha && resolver.classes.contains(expressionObject.value),
-            expressionObject,
+            objExpr.marking!!,
+            objExpr is Alpha && resolver.classes.contains(objExpr.value),
+            objExpr,
             methodName,
             arguments,
             fnReturnType
         )
     }
 
-    private fun getFnType(name: String): String {
+    private fun getFnType(name: String): Signature {
         val fn = resolver.resolveFn(name)
             ?: throw RuntimeException("Could not find function '$name' in module _")
-        return fn.returnSign
+        return fn.returnSignature
     }
 
     private fun operatorPrecedence(type: Flag) = when (type) {
@@ -607,19 +622,19 @@ class Parser(private val executor: Executor) {
     private fun parseValue(token: Token): Expression {
         return when (token.type) {
             Type.E_TRUE, Type.E_FALSE -> BoolLiteral(token, token.type == Type.E_TRUE)
-            Type.E_INT -> IntLiteral(token, token.optionalData.toString().toInt())
-            Type.E_STRING -> StringLiteral(token, token.optionalData as String)
-            Type.E_CHAR -> CharLiteral(token, token.optionalData as Char)
+            Type.E_INT -> IntLiteral(token, token.data.toString().toInt())
+            Type.E_STRING -> StringLiteral(token, token.data as String)
+            Type.E_CHAR -> CharLiteral(token, token.data as Char)
             Type.ALPHA -> {
                 val name = readAlpha(token)
                 val vrReference = resolver.resolveVr(name)
                 if (vrReference == null) {
                     // could be a function call or static invocation
                     if (resolver.resolveFn(name) != null || resolver.classes.contains(name))
-                        Alpha(token, -2, name, "_") // this is handled by the parser itself
+                        Alpha(token, -2, name, Sign.NONE) // this is handled by the parser itself
                     else token.error<Expression>("Could not resolve name $name")
                 } else {
-                    Alpha(token, vrReference.index, name, vrReference.sign)
+                    Alpha(token, vrReference.index, name, vrReference.signature)
                 }
             }
 
@@ -679,11 +694,11 @@ class Parser(private val executor: Executor) {
     private fun readAlpha(): String {
         val token = next()
         if (token.type != Type.ALPHA) return token.error("Expected alpha token got $token")
-        return token.optionalData as String
+        return token.data as String
     }
 
     private fun readAlpha(token: Token) =
-        if (token.type == Type.ALPHA) token.optionalData as String
+        if (token.type == Type.ALPHA) token.data as String
         else token.error("Was expecting an alpha token")
 
     private fun expectType(type: Type): Token {

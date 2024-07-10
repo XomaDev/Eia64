@@ -1,5 +1,7 @@
 package space.themelon.eia64.analysis
 
+import space.themelon.eia64.signatures.Signature
+
 class ReferenceResolver {
 
     val classes = ArrayList<String>()
@@ -33,11 +35,11 @@ class ReferenceResolver {
         currentScope.funcObjs += fnExpression
     }
 
-    fun defineVariable(name: String, type: VariableMetadata) {
+    fun defineVariable(name: String, signature: Signature) {
         if (name in currentScope.names)
             throw RuntimeException("Variable $name is already defined in the current scope")
         currentScope.names += name
-        currentScope.variableMetadata += type
+        currentScope.variableSigns += signature
     }
 
     fun resolveFn(name: String) = currentScope.resolveFn(name, 0)

@@ -6,7 +6,7 @@ data class Token(
     val lineCount: Int,
     val type: Type,
     val flags: Array<Flag> = arrayOf(),
-    val optionalData: Any? = null
+    val data: Any? = null
 ) {
 
     fun hasFlag(type: Flag): Boolean = flags.contains(type)
@@ -18,7 +18,7 @@ data class Token(
 
     override fun toString(): String {
         val flagsString = flags.contentToString()
-        return if (optionalData == null) "($type, $flagsString)" else "($type, $flagsString, od=$optionalData)"
+        return if (data == null) "($type, $flagsString)" else "($type, $flagsString, od=$data)"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -29,7 +29,7 @@ data class Token(
 
         if (type != other.type) return false
         if (!flags.contentEquals(other.flags)) return false
-        if (optionalData != other.optionalData) return false
+        if (data != other.data) return false
 
         return true
     }
@@ -37,7 +37,7 @@ data class Token(
     override fun hashCode(): Int {
         var result = type.hashCode()
         result = 31 * result + flags.contentHashCode()
-        result = 31 * result + (optionalData?.hashCode() ?: 0)
+        result = 31 * result + (data?.hashCode() ?: 0)
         return result
     }
 

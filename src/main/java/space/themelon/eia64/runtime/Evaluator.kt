@@ -1,9 +1,12 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
+import space.themelon.eia64.expressions.*
+import space.themelon.eia64.expressions.Function
 import space.themelon.eia64.primitives.*
 import space.themelon.eia64.runtime.Entity.Companion.getType
 import space.themelon.eia64.runtime.Entity.Companion.unbox
+import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
 import java.util.*
@@ -35,13 +38,12 @@ class Evaluator(
 
     private val memory = Memory()
 
-    override fun genericLiteral(literal: Expression.GenericLiteral) = literal.value
-    override fun intLiteral(intLiteral: Expression.IntLiteral) = EInt(intLiteral.value)
-    override fun boolLiteral(boolLiteral: Expression.BoolLiteral) = EBool(boolLiteral.value)
-    override fun stringLiteral(stringLiteral: Expression.StringLiteral) = EString(stringLiteral.value)
-    override fun charLiteral(charLiteral: Expression.CharLiteral) = EChar(charLiteral.value)
+    override fun intLiteral(literal: IntLiteral) = EInt(literal.value)
+    override fun boolLiteral(literal: BoolLiteral) = EBool(literal.value)
+    override fun stringLiteral(literal: StringLiteral) = EString(literal.value)
+    override fun charLiteral(literal: CharLiteral) = EChar(literal.value)
 
-    override fun alpha(alpha: Expression.Alpha) = memory.getVar(alpha.index, alpha.value)
+    override fun alpha(alpha: Alpha) = memory.getVar(alpha.index, alpha.value)
 
     private fun prepareArrayOf(arguments: List<Expression>): EArray {
         val evaluated = arrayOfNulls<Any>(arguments.size)
@@ -51,36 +53,37 @@ class Evaluator(
         return EArray(evaluated)
     }
 
-    override fun array(array: Expression.Array) = prepareArrayOf(array.elements)
+    override fun array(literal: ArrayLiteral) = prepareArrayOf(literal.elements)
 
     private fun update(scope: Int, name: String, value: Any) {
         (memory.getVar(scope, name) as Entity).update(value)
     }
 
-    override fun variable(variable: Expression.ExplicitVariable): Any {
+    override fun variable(variable: ExplicitVariable): Any {
+        val name = variable.name
+        val signature = variable.explicitSignature
         val value = unboxEval(variable.expr)
         val valueType = getType(value)
-        val def = variable.definition
         val mutable = variable.mutable
 
-        if (def.type != E_ANY && def.type != valueType)
-            throw RuntimeException("Variable ${def.name} has type ${def.type}, but got value type of $valueType")
+        if (signature != Sign.ANY && variable.explicitSignature != valueType)
+            throw RuntimeException("Variable '$name' has type ${def.type}, but got value type of $valueType")
         memory.declareVar(def.name, Entity(def.name, mutable, value, def.type))
         return value
     }
 
-    override fun autoVariable(autoVariable: Expression.AutoVariable): Any {
+    override fun autoVariable(autoVariable: AutoVariable): Any {
         val value = unboxEval(autoVariable.expr)
         memory.declareVar(autoVariable.name, Entity(autoVariable.name, true, unbox(value), getType(value)))
         return value
     }
 
-    override fun unaryOperation(expr: Expression.UnaryOperation): Any = when (val type = expr.operator) {
+    override fun unaryOperation(expr: UnaryOperation): Any = when (val type = expr.operator) {
         NOT -> EBool(!(booleanExpr(expr.expr, "! Not").get()))
         NEGATE -> EInt(Math.negateExact(intExpr(expr.expr, "- Negate").get()))
         INCREMENT, DECREMENT -> {
             val eInt = intExpr(expr.expr, "++ Increment")
-            EInt(if (expr.left) {
+            EInt(if (expr.towardsLeft) {
                 if (type == INCREMENT) eInt.incrementAndGet()
                 else eInt.decrementAndGet()
             } else {
@@ -103,7 +106,7 @@ class Evaluator(
         return false
     }
 
-    override fun binaryOperation(expr: Expression.BinaryOperation) = when (val type = expr.operator) {
+    override fun binaryOperation(expr: BinaryOperation) = when (val type = expr.operator) {
         PLUS -> {
             val left = unboxEval(expr.left)
             val right = unboxEval(expr.right)
@@ -135,8 +138,8 @@ class Evaluator(
             val toUpdate = expr.left
             val value = unboxEval(expr.right)
             when (toUpdate) {
-                is Expression.Alpha -> update(toUpdate.index, toUpdate.value, value)
-                is Expression.ElementAccess -> {
+                is Alpha -> update(toUpdate.index, toUpdate.value, value)
+                is ArrayAccess -> {
                     val array = unboxEval(toUpdate.expr)
                     val index = intExpr(toUpdate.index, "[] ArraySet").get()
 
@@ -197,7 +200,7 @@ class Evaluator(
         else -> throw RuntimeException("Unknown binary operator $type")
     }
 
-    override fun expressions(list: Expression.ExpressionList): Any {
+    override fun expressions(list: ExpressionList): Any {
         if (list.preserveState)
             // it is being stored somewhere, like in a variable, etc.
             //   that's why we shouldn't evaluate it
@@ -215,12 +218,12 @@ class Evaluator(
         return EInt(list.size)
     }
 
-    override fun include(include: Expression.Include): Any {
+    override fun include(include: Include): Any {
         include.names.forEach { executor.executeModule(it) }
         return EBool(true)
     }
 
-    override fun new(new: Expression.NewObj): Evaluator {
+    override fun new(new: NewObj): Evaluator {
         val evaluator = executor.newEvaluator(new.name)
         evaluator.dynamicFnCall("init", evaluateArgs(new.arguments), true)
         return evaluator
@@ -233,11 +236,11 @@ class Evaluator(
         false,
         "Class<$className>").toString()
 
-    override fun cast(cast: Expression.Cast) = eval(cast.expr)
+    override fun cast(cast: Cast) = eval(cast.expr)
 
-    override fun nativeCall(call: Expression.NativeCall): Any {
+    override fun nativeCall(call: NativeCall): Any {
         val argsSize = call.arguments.size
-        when (val type = call.type) {
+        when (val type = call.call) {
             PRINT, PRINTLN -> {
                 var printCount = 0
                 call.arguments.forEach {
@@ -268,7 +271,7 @@ class Evaluator(
                 return EInt(when (val data = unboxEval(call.arguments[0])) {
                     is EString -> data.length
                     is EArray -> data.size
-                    is Expression.ExpressionList -> data.size
+                    is ExpressionList -> data.size
                     else -> throw RuntimeException("Unknown measurable data type $data")
                 })
             }
@@ -371,11 +374,13 @@ class Evaluator(
         }
     }
 
-    override fun throwExpr(throwExpr: Expression.ThrowExpr): Any {
+    override fun throwExpr(throwExpr: ThrowExpr): Any {
+        // TODO:
+        //  in future we could also include line number when error is thrown
         throw RuntimeException(unboxEval(throwExpr.error).toString())
     }
 
-    override fun scope(scope: Expression.Scope): Any {
+    override fun scope(scope: Scope): Any {
         if (scope.imaginary) return eval(scope.expr)
         memory.enterScope()
         val result = eval(scope.expr)
@@ -383,9 +388,9 @@ class Evaluator(
         return result
     }
 
-    override fun methodCall(call: Expression.MethodCall) = fnInvoke(call.functionReference.fnExpression!!, evaluateArgs(call.arguments))
+    override fun methodCall(call: MethodCall) = fnInvoke(call.reference.fnExpression!!, evaluateArgs(call.arguments))
 
-    override fun classMethodCall(call: Expression.ClassMethodCall): Any {
+    override fun classMethodCall(call: ClassMethodCall): Any {
         val obj = call.obj
         val methodName = call.method
         val args: Array<Any>
@@ -395,7 +400,7 @@ class Evaluator(
         // we may need to do a recursive alpha parse
         if (call.static) {
             // static invocation of an included class
-            val staticClass = (obj as Expression.Alpha).value
+            val staticClass = (obj as Alpha).value
             args = evaluateArgs(call.arguments)
             evaluator = executor.getEvaluator(staticClass)
                 ?: throw RuntimeException("Could not find static class '$staticClass'")
@@ -447,7 +452,7 @@ class Evaluator(
         return fnInvoke(fn, args)
     }
 
-    private fun fnInvoke(fn: Expression.Function, callArgs: Array<Any>): Any {
+    private fun fnInvoke(fn: Function, callArgs: Array<Any>): Any {
         // Fully Manual Scopped!
         val fnName = fn.name
 
@@ -484,20 +489,20 @@ class Evaluator(
         val returnSignature = fn.returnType
         val gotReturnSignature = getType(result)
 
-        if (returnSignature != E_ANY && returnSignature != gotReturnSignature)
+        if (returnSignature != Sign.ANY && returnSignature != gotReturnSignature)
             throw RuntimeException("Expected return type $returnSignature for function $fnName but got $gotReturnSignature")
 
         return result
     }
 
-    override fun unitInvoke(shadoInvoke: Expression.ShadoInvoke): Any {
+    override fun unitInvoke(shadoInvoke: ShadoInvoke): Any {
         var operand: Any = shadoInvoke.expr
 
         // Fully Manual Scopped
-        if (operand !is Expression.Shadow)
+        if (operand !is Shadow)
             operand = unboxEval(operand as Expression)
 
-        if (operand !is Expression.Shadow)
+        if (operand !is Shadow)
             throw RuntimeException("Expected shadow element for call, but got $operand")
 
         val expectedArgs = operand.names.size
@@ -528,7 +533,7 @@ class Evaluator(
         throw RuntimeException("$type [$name()] expected $expectedArgs but got $gotArgs")
     }
 
-    override fun until(until: Expression.Until): Any {
+    override fun until(until: Until): Any {
         // Auto Scopped
         var numIterations = 0
         while (booleanExpr(until.expression, "Until Condition").get()) {
@@ -547,7 +552,7 @@ class Evaluator(
         return EInt(numIterations)
     }
 
-    override fun forEach(forEach: Expression.ForEach): Any {
+    override fun forEach(forEach: ForEach): Any {
         val iterable = unboxEval(forEach.entity)
 
         var index = 0
@@ -593,7 +598,7 @@ class Evaluator(
         return EInt(numIterations)
     }
 
-    override fun itr(itr: Expression.Itr): Any {
+    override fun itr(itr: Itr): Any {
         val named = itr.name
         var from = intExpr(itr.from, "Itr from")
         val to = intExpr(itr.to, "Itr to")
@@ -627,7 +632,7 @@ class Evaluator(
         return EInt(numIterations)
     }
 
-    override fun forLoop(forLoop: Expression.ForLoop): Any {
+    override fun forLoop(forLoop: ForLoop): Any {
         memory.enterScope()
         forLoop.initializer?.let { eval(it) }
 
@@ -664,7 +669,7 @@ class Evaluator(
         return EInt(numIterations)
     }
 
-    override fun interruption(interruption: Expression.Interruption) = when (val type = interruption.operator) {
+    override fun interruption(interruption: Interruption) = when (val type = interruption.operator) {
         // wrap it as a normal entity, this will be naturally unboxed when called unbox()
         RETURN -> Entity("FlowReturn", false, unboxEval(interruption.expr!!), RETURN)
         USE -> Entity("FlowUse", false, unboxEval(interruption.expr!!), USE)
@@ -673,7 +678,7 @@ class Evaluator(
         else -> throw RuntimeException("Unknown interruption type $type")
     }
 
-    override fun whenExpr(whenExpr: Expression.When): Any {
+    override fun whenExpr(whenExpr: When): Any {
         // Fully Auto Scopped
         val matchExpr = unboxEval(whenExpr.expr)
         for (match in whenExpr.matches)
@@ -682,7 +687,7 @@ class Evaluator(
         return unboxEval(whenExpr.defaultBranch)
     }
 
-    override fun ifFunction(ifExpr: Expression.If): Any {
+    override fun ifFunction(ifExpr: IfStatement): Any {
         val conditionSuccess = booleanExpr(ifExpr.condition, "If Condition").get()
         val body = if (conditionSuccess) ifExpr.thenBody else ifExpr.elseBody
         // Auto Scopped
@@ -690,14 +695,14 @@ class Evaluator(
         return EBool(conditionSuccess)
     }
 
-    override fun function(function: Expression.Function): Any {
+    override fun function(function: Function): Any {
         memory.declareFn(function.name, function)
         return EBool(true)
     }
 
-    override fun shado(shadow: Expression.Shadow) = shadow
+    override fun shado(shadow: Shadow) = shadow
 
-    override fun elementAccess(access: Expression.ElementAccess): Any {
+    override fun arrayAccess(access: ArrayAccess): Any {
         val entity = unboxEval(access.expr)
         val index = intExpr(access.index, "[] ArrayAccess").get()
 

@@ -11,7 +11,7 @@ data class ArrayAccess(
     val index: Expression
 ) : Expression(where) {
 
-    override fun <R> accept(v: Visitor<R>) = v.elementAccess(this)
+    override fun <R> accept(v: Visitor<R>) = v.arrayAccess(this)
 
     override fun sig(): SimpleSignature {
         val exprSig = expr.sig()

@@ -11,12 +11,12 @@ abstract class Expression(
 ) {
 
     interface Visitor<R> {
-        fun intLiteral(intLiteral: IntLiteral): R
-        fun boolLiteral(boolLiteral: BoolLiteral): R
-        fun stringLiteral(stringLiteral: StringLiteral): R
-        fun charLiteral(charLiteral: CharLiteral): R
+        fun intLiteral(literal: IntLiteral): R
+        fun boolLiteral(literal: BoolLiteral): R
+        fun stringLiteral(literal: StringLiteral): R
+        fun charLiteral(literal: CharLiteral): R
         fun alpha(alpha: Alpha): R
-        fun array(arrayLiteral: ArrayLiteral): R
+        fun array(literal: ArrayLiteral): R
         fun include(include: Include): R
         fun new(new: NewObj): R
         fun throwExpr(throwExpr: ThrowExpr): R
@@ -40,7 +40,7 @@ abstract class Expression(
         fun interruption(interruption: Interruption): R
         fun ifFunction(ifExpr: IfStatement): R
         fun function(function: Function): R
-        fun elementAccess(access: ArrayAccess): R
+        fun arrayAccess(access: ArrayAccess): R
     }
 
     abstract fun <R> accept(v: Visitor<R>): R
