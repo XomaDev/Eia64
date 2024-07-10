@@ -9,7 +9,8 @@ open class Entity(
     private val name: String,
     private val mutable: Boolean,
     var value: Any,
-    val type: Type) {
+    val type: Type
+) {
 
     open fun update(another: Any) {
         if (!mutable) throw RuntimeException("Entity $name is immutable")

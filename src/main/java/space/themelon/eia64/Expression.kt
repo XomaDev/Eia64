@@ -2,7 +2,7 @@ package space.themelon.eia64
 
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.ArrayLiteral
-import space.themelon.eia64.expressions.Function
+import space.themelon.eia64.expressions.FunctionExpr
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 
@@ -39,7 +39,7 @@ abstract class Expression(
         fun forLoop(forLoop: ForLoop): R
         fun interruption(interruption: Interruption): R
         fun ifFunction(ifExpr: IfStatement): R
-        fun function(function: Function): R
+        fun function(function: FunctionExpr): R
         fun arrayAccess(access: ArrayAccess): R
     }
 

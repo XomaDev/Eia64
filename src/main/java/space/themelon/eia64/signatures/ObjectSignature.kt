@@ -14,4 +14,6 @@ class ObjectSignature(
     }
 
     override fun hashCode() = extensionClass.hashCode()
+
+    override fun toString() = "ObjectExtension<$extensionClass>"
 }

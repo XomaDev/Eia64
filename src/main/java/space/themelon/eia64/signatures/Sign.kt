@@ -24,7 +24,18 @@ object Sign {
     val UNIT = SimpleSignature(UNIT_SIGN)
     val OBJECT = SimpleSignature(OBJECT_SIGN)
 
-    fun intoType(): Type {
-
+    fun Signature.intoType(): Type {
+        return when (this) {
+            NONE -> throw RuntimeException("No equivalent type to NONE Sign")
+            ANY -> Type.E_ANY
+            INT -> Type.E_INT
+            STRING -> Type.E_STRING
+            CHAR -> Type.E_CHAR
+            BOOL -> Type.E_BOOL
+            ARRAY -> Type.E_ARRAY
+            UNIT -> Type.E_UNIT
+            OBJECT -> Type.E_OBJECT
+            else -> throw RuntimeException("Unknown signature $this provided for translation into Type")
+        }
     }
 }

@@ -166,7 +166,7 @@ fn splitOnce(self: String, delimiter: String): Array {
 fn splitRecursive(self: String, delimiter: String) {
   if (!contains(self, delimiter)) return self
   let onceSplit = splitOnce(self, delimiter)
-  onceSplit[1] = splitRecursive(onceSplit[1], delimiter)
+  onceSplit[1] = splitRecursive(onceSplit[1]::String, delimiter)
   return onceSplit
 }
 

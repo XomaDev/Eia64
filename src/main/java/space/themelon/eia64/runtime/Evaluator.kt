@@ -2,14 +2,15 @@ package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
-import space.themelon.eia64.expressions.Function
+import space.themelon.eia64.expressions.FunctionExpr
 import space.themelon.eia64.primitives.*
 import space.themelon.eia64.runtime.Entity.Companion.getType
 import space.themelon.eia64.runtime.Entity.Companion.unbox
-import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.Sign.intoType
+import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
-import java.util.*
+import java.util.Scanner
 import kotlin.collections.ArrayList
 import kotlin.math.pow
 import kotlin.random.Random
@@ -61,14 +62,15 @@ class Evaluator(
 
     override fun variable(variable: ExplicitVariable): Any {
         val name = variable.name
-        val signature = variable.explicitSignature
+        val signature = variable.explicitSignature.intoType()
         val value = unboxEval(variable.expr)
         val valueType = getType(value)
         val mutable = variable.mutable
 
-        if (signature != Sign.ANY && variable.explicitSignature != valueType)
-            throw RuntimeException("Variable '$name' has type ${def.type}, but got value type of $valueType")
-        memory.declareVar(def.name, Entity(def.name, mutable, value, def.type))
+        if (signature != E_ANY && signature != valueType) {
+            throw RuntimeException("Variable '$name' has type $signature, but got value type of $valueType")
+        }
+        memory.declareVar(name, Entity(name, mutable, value, signature))
         return value
     }
 
@@ -452,7 +454,7 @@ class Evaluator(
         return fnInvoke(fn, args)
     }
 
-    private fun fnInvoke(fn: Function, callArgs: Array<Any>): Any {
+    private fun fnInvoke(fn: FunctionExpr, callArgs: Array<Any>): Any {
         // Fully Manual Scopped!
         val fnName = fn.name
 
@@ -464,34 +466,35 @@ class Evaluator(
         val parameters = fn.arguments.iterator()
         val callExpressions = callArgs.iterator()
 
-        val callValues = ArrayList<Pair<ValueDefinition, Any>>()
+        // Pair<Pair<Parameter Name, Signature>, Call Value>
+        val callValues = ArrayList<Pair<Pair<String, Signature>, Any>>()
         while (parameters.hasNext()) {
             val definedParameter = parameters.next()
-            val typeSignature = definedParameter.type
+            val typeSignature = definedParameter.second.intoType()
 
             val callValue = callExpressions.next()
             val gotTypeSignature = getType(callValue)
 
             if (typeSignature != E_ANY && typeSignature != gotTypeSignature)
-                throw RuntimeException("Expected type $typeSignature for arg '${definedParameter.name}' for function $fnName but got $gotTypeSignature")
+                throw RuntimeException("Expected type $typeSignature for arg '${definedParameter.first}' for function $fnName but got $gotTypeSignature")
             callValues.add(Pair(definedParameter, callValue))
         }
         memory.enterScope()
         callValues.forEach {
             val definedParameter = it.first
             val value = it.second
-            memory.declareVar(definedParameter.name,
-                Entity(definedParameter.name, true, value, definedParameter.type))
+            memory.declareVar(definedParameter.first,
+                Entity(definedParameter.first, true, value, definedParameter.second.intoType()))
         }
         val result = unboxEval(fn.body)
         memory.leaveScope()
 
-        val returnSignature = fn.returnType
+        val returnSignature = fn.returnType.intoType()
         val gotReturnSignature = getType(result)
 
-        if (returnSignature != Sign.ANY && returnSignature != gotReturnSignature)
+        if (returnSignature != E_ANY && returnSignature != gotReturnSignature) {
             throw RuntimeException("Expected return type $returnSignature for function $fnName but got $gotReturnSignature")
-
+        }
         return result
     }
 
@@ -507,6 +510,7 @@ class Evaluator(
 
         val expectedArgs = operand.names.size
         val gotArgs = shadoInvoke.arguments.size
+
         if (expectedArgs != gotArgs) {
             reportWrongArguments("AnonShado", expectedArgs, gotArgs, "Shado")
         }
@@ -695,7 +699,7 @@ class Evaluator(
         return EBool(conditionSuccess)
     }
 
-    override fun function(function: Function): Any {
+    override fun function(function: FunctionExpr): Any {
         memory.declareFn(function.name, function)
         return EBool(true)
     }

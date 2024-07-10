@@ -253,10 +253,16 @@ class Parser(private val executor: Executor) {
                     expectType(Type.IN)
                     val entity = parseNext()
                     expectType(Type.CLOSE_CURVE)
+
+                    val entitySignature = entity.sig()
+                    val elementSignature = when (entitySignature) {
+                        Sign.STRING -> Sign.CHAR
+                        Sign.ARRAY -> Sign.ANY
+                        else -> where.error("Unknown non iterable element $iName")
+                    }
+
                     resolver.enterScope()
-                    // TODO:
-                    //  we will have to take a look into this later
-                    resolver.defineVariable(iName, Sign.ANY)
+                    resolver.defineVariable(iName, elementSignature)
                     // Manual Scopped!
                     val body = unscoppedBodyExpr()
                     resolver.leaveScope()
@@ -295,6 +301,7 @@ class Parser(private val executor: Executor) {
         expectType(Type.CLOSE_CURVE)
 
         val returnSignature = if (isNext(Type.COLON)) {
+            skip()
             readSignature(next())
         } else Sign.ANY
 
@@ -307,7 +314,7 @@ class Parser(private val executor: Executor) {
 
         val body = unitBody() // Fully Manual Scopped
         resolver.leaveScope()
-        val fnExpr = Function(name, requiredArgs, returnSignature, body)
+        val fnExpr = FunctionExpr(name, requiredArgs, returnSignature, body)
         reference.fnExpression = fnExpr
         return fnExpr
     }

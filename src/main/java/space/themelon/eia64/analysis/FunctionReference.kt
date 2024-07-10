@@ -1,10 +1,10 @@
 package space.themelon.eia64.analysis
 
-import space.themelon.eia64.expressions.Function
+import space.themelon.eia64.expressions.FunctionExpr
 import space.themelon.eia64.signatures.Signature
 
 data class FunctionReference(
-    var fnExpression: Function? = null,
+    var fnExpression: FunctionExpr? = null,
     val signs: List<Pair<String, Signature>>, // List < < ParameterName, Signature >
     val argsSize: Int,
     val returnSignature: Signature
