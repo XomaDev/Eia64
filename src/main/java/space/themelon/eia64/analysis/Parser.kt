@@ -7,7 +7,6 @@ import space.themelon.eia64.expressions.ArrayLiteral
 import space.themelon.eia64.runtime.Executor
 import space.themelon.eia64.signatures.ObjectSignature
 import space.themelon.eia64.signatures.Sign
-import space.themelon.eia64.signatures.Sign.intoType
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.signatures.SimpleSignature
 import space.themelon.eia64.syntax.Flag
@@ -58,7 +57,7 @@ class Parser(private val executor: Executor) {
             Type.SHADO -> shadoDeclaration()
             Type.INCLUDE -> includeStatement()
             Type.NEW -> newStatement(token)
-            Type.THROW -> throwStatement()
+            Type.THROW -> throwStatement(token)
             Type.WHEN -> whenStatement(token)
             Type.OPEN_SQUARE -> arrayStatement(token)
             else -> {
@@ -91,7 +90,7 @@ class Parser(private val executor: Executor) {
         }
     }
 
-    private fun throwStatement() = ThrowExpr(parseNext())
+    private fun throwStatement(token: Token) = ThrowExpr(token, parseNext())
 
     private fun includeStatement(): Expression {
         expectType(Type.OPEN_CURVE)
@@ -155,7 +154,13 @@ class Parser(private val executor: Executor) {
         if (path.startsWith('/')) File(path)
         else File("${Executor.EXECUTION_DIRECTORY}/$path")
 
-    private fun newStatement(token: Token) = NewObj(token, readAlpha(), callArguments())
+    private fun newStatement(token: Token): NewObj {
+        val module = readAlpha()
+        return NewObj(token,
+            module,
+            callArguments(),
+            executor.getModule(module).getFnType("init"))
+    }
 
     private fun arrayStatement(token: Token): ArrayLiteral {
         val arrayElements = mutableListOf<Expression>()
@@ -348,7 +353,7 @@ class Parser(private val executor: Executor) {
     }
 
     private fun shadoDeclaration(): Shadow {
-        val names = ArrayList<Pair<String, Type>>()
+        val names = ArrayList<String>()
 
         resolver.enterScope()
         expectType(Type.OPEN_CURVE)
@@ -358,7 +363,7 @@ class Parser(private val executor: Executor) {
 
             val argSignature = readSignature(next())
             resolver.defineVariable(name, argSignature)
-            names.add(Pair(name, argSignature.intoType()))
+            names.add(name)
             if (!isNext(Type.COMMA)) break
             skip()
         }
@@ -527,7 +532,7 @@ class Parser(private val executor: Executor) {
         while (!isEOF()) {
             val nextOp = peek()
             if (nextOp.type != Type.DOT // (left is class) trying to call a method on an object. e.g. person.sayHello()
-                && !(nextOp.type == Type.OPEN_CURVE && !isConstantLiteralExpr(left)) // (left points/is a unit)
+                && !(nextOp.type == Type.OPEN_CURVE && !isLiteral(left)) // (left points/is a unit)
                 && nextOp.type != Type.OPEN_SQUARE // array element access
                 && nextOp.type != Type.CAST // value casting
             ) break
@@ -552,7 +557,7 @@ class Parser(private val executor: Executor) {
         return left
     }
 
-    private fun isConstantLiteralExpr(expression: Expression) = when (expression) {
+    private fun isLiteral(expression: Expression) = when (expression) {
         is IntLiteral,
         is StringLiteral, -> true
         is BoolLiteral, -> true
@@ -575,7 +580,7 @@ class Parser(private val executor: Executor) {
         } else {
             (signature as ObjectSignature).extensionClass
         }
-        val fnReturnType =  executor.getModule(module).getFnType(methodName)
+        val fnReturnType = executor.getModule(module).getFnType(methodName)
         val arguments = callArguments()
 
         return ClassMethodCall(
@@ -584,7 +589,9 @@ class Parser(private val executor: Executor) {
             objExpr,
             methodName,
             arguments,
-            fnReturnType
+
+            fnReturnType,
+            module
         )
     }
 
@@ -604,10 +611,9 @@ class Parser(private val executor: Executor) {
         else -> method.error("Unknown object signature $signature")
     }
 
-    private fun getFnType(name: String): Signature {
-        val fn = resolver.resolveFn(name)
+    private fun getFnType(name: String): FunctionReference {
+        return resolver.resolveFn(name)
             ?: throw RuntimeException("Could not find function '$name' in module _")
-        return fn.returnSignature
     }
 
     private fun operatorPrecedence(type: Flag) = when (type) {
@@ -689,9 +695,7 @@ class Parser(private val executor: Executor) {
     private fun unitCall(unitExpr: Expression): Expression {
         // only limited to functions or shado variables inside the class
         //  does not touch outside classes
-        val at = expectType(Type.OPEN_CURVE)
-        val arguments = parseArguments()
-        expectType(Type.CLOSE_CURVE)
+        val arguments = callArguments()
 
         if (unitExpr is Alpha) {
             val name = unitExpr.value
@@ -699,14 +703,9 @@ class Parser(private val executor: Executor) {
             if (fnExpr != null) {
                 if (fnExpr.argsSize == -1)
                     throw RuntimeException("[Internal] Function args size is not yet set")
-                if (fnExpr.argsSize != arguments.size)
-                    at.error<String>("Fn [$name] expected ${fnExpr.argsSize} but got ${arguments.size}")
-                // TODO: we have to test this later
                 return MethodCall(unitExpr.marking!!, fnExpr, arguments)
             }
         }
-        // TODO:
-        //  we have to test them later,
         return ShadoInvoke(unitExpr.marking!!, unitExpr, arguments)
     }
 

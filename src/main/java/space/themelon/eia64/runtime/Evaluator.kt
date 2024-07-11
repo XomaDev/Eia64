@@ -8,7 +8,6 @@ import space.themelon.eia64.runtime.Entity.Companion.getType
 import space.themelon.eia64.runtime.Entity.Companion.unbox
 import space.themelon.eia64.signatures.Sign.intoType
 import space.themelon.eia64.signatures.Signature
-import space.themelon.eia64.syntax.Type
 import space.themelon.eia64.syntax.Type.*
 import java.util.Scanner
 import kotlin.collections.ArrayList
@@ -26,16 +25,8 @@ class Evaluator(
     fun eval(expr: Expression) = expr.accept(this)
     private fun unboxEval(expr: Expression) = unbox(eval(expr))
 
-    private fun safeUnbox(expr: Expression, expectedType: Type, operation: String): Any {
-        val result = unboxEval(expr)
-        val gotType = getType(result)
-        if (gotType != expectedType)
-            throw RuntimeException("Expected type $expectedType for [$operation] but got $gotType")
-        return result
-    }
-
-    private fun booleanExpr(expr: Expression, operation: String) = safeUnbox(expr, E_BOOL, operation) as EBool
-    private fun intExpr(expr: Expression, operation: String) = safeUnbox(expr, E_INT, operation) as EInt
+    private fun booleanExpr(expr: Expression) = unboxEval(expr) as EBool
+    private fun intExpr(expr: Expression) = unboxEval(expr) as EInt
 
     private val memory = Memory()
 
@@ -60,39 +51,35 @@ class Evaluator(
         (memory.getVar(scope, name) as Entity).update(value)
     }
 
-    private fun acceptType(expectedType: Type,
-                           gotType: Type,
-                           message: String) {
-        if (expectedType != E_ANY && expectedType != gotType) {
-            throw RuntimeException(message)
-        }
-    }
-
     override fun variable(variable: ExplicitVariable): Any {
         val name = variable.name
         val signature = variable.explicitSignature.intoType()
         val value = unboxEval(variable.expr)
-        val valueType = getType(value)
         val mutable = variable.mutable
 
-        acceptType(signature,
-            valueType,
-            "Variable '$name' has type $signature, but got value type of $valueType")
         memory.declareVar(name, Entity(name, mutable, value, signature))
         return value
     }
 
     override fun autoVariable(autoVariable: AutoVariable): Any {
         val value = unboxEval(autoVariable.expr)
-        memory.declareVar(autoVariable.name, Entity(autoVariable.name, true, unbox(value), getType(value)))
+        memory.declareVar(
+            autoVariable.name,
+            Entity(
+                autoVariable.name,
+                true,
+                unbox(value),
+                getType(value)
+            )
+        )
         return value
     }
 
     override fun unaryOperation(expr: UnaryOperation): Any = when (val type = expr.operator) {
-        NOT -> EBool(!(booleanExpr(expr.expr, "! Not").get()))
-        NEGATE -> EInt(Math.negateExact(intExpr(expr.expr, "- Negate").get()))
+        NOT -> EBool(!(booleanExpr(expr.expr).get()))
+        NEGATE -> EInt(Math.negateExact(intExpr(expr.expr).get()))
         INCREMENT, DECREMENT -> {
-            val eInt = intExpr(expr.expr, "++ Increment")
+            val eInt = intExpr(expr.expr)
             EInt(if (expr.towardsLeft) {
                 if (type == INCREMENT) eInt.incrementAndGet()
                 else eInt.decrementAndGet()
@@ -125,25 +112,25 @@ class Evaluator(
                 left as EInt + right as EInt
             else EString(left.toString() + right.toString())
         }
-        NEGATE -> intExpr(expr.left, "- Subtract") - intExpr(expr.right, "- Subtract")
-        TIMES -> intExpr(expr.left, "* Multiply") * intExpr(expr.right, "* Multiply")
-        SLASH -> intExpr(expr.left, "/ Divide") / intExpr(expr.right, "/ Divide")
+        NEGATE -> intExpr(expr.left) - intExpr(expr.right)
+        TIMES -> intExpr(expr.left) * intExpr(expr.right)
+        SLASH -> intExpr(expr.left) / intExpr(expr.right)
         EQUALS, NOT_EQUALS -> {
             val left = unboxEval(expr.left)
             val right = unboxEval(expr.right)
 
             EBool(if (type == EQUALS) valueEquals(left, right) else !valueEquals(left, right))
         }
-        LOGICAL_AND -> booleanExpr(expr.left, "&& Logical And").and(booleanExpr(expr.right, "&& Logical And"))
-        LOGICAL_OR -> booleanExpr(expr.left, "|| Logical Or").or(booleanExpr(expr.right, "|| Logical Or"))
-        RIGHT_DIAMOND -> EBool(intExpr(expr.left, "> GreaterThan") > intExpr(expr.right, "> GreaterThan"))
+        LOGICAL_AND -> booleanExpr(expr.left).and(booleanExpr(expr.right))
+        LOGICAL_OR -> booleanExpr(expr.left).or(booleanExpr(expr.right))
+        RIGHT_DIAMOND -> EBool(intExpr(expr.left) > intExpr(expr.right))
         LEFT_DIAMOND -> {
-            val left = intExpr(expr.left, "< LesserThan")
-            val right = intExpr(expr.right, "< LesserThan")
+            val left = intExpr(expr.left)
+            val right = intExpr(expr.right)
             EBool(left < right)
         }
-        GREATER_THAN_EQUALS -> EBool(intExpr(expr.left, ">= GreaterThanEquals") >= intExpr(expr.right, ">= GreaterThanEquals"))
-        LESSER_THAN_EQUALS -> EBool(intExpr(expr.left, "<= LesserThan") <= intExpr(expr.right, "<= LesserThan"))
+        GREATER_THAN_EQUALS -> EBool(intExpr(expr.left) >= intExpr(expr.right))
+        LESSER_THAN_EQUALS -> EBool(intExpr(expr.left) <= intExpr(expr.right))
         ASSIGNMENT -> {
             val toUpdate = expr.left
             val value = unboxEval(expr.right)
@@ -151,7 +138,7 @@ class Evaluator(
                 is Alpha -> update(toUpdate.index, toUpdate.value, value)
                 is ArrayAccess -> {
                     val array = unboxEval(toUpdate.expr)
-                    val index = intExpr(toUpdate.index, "[] ArraySet").get()
+                    val index = intExpr(toUpdate.index).get()
 
                     @Suppress("UNCHECKED_CAST")
                     when (getType(array)) {
@@ -171,7 +158,7 @@ class Evaluator(
             val element = unboxEval(expr.left)
             when (element) {
                 is EString -> element.append(unboxEval(expr.right))
-                is EInt -> element += intExpr(expr.right, "+=")
+                is EInt -> element += intExpr(expr.right)
                 else -> throw RuntimeException("Cannot apply += operator on element $element")
             }
             element
@@ -179,7 +166,7 @@ class Evaluator(
         DEDUCTIVE_ASSIGNMENT -> {
             val element = unboxEval(expr.left)
             when (element) {
-                is EInt -> element -= intExpr(expr.right, "-=")
+                is EInt -> element -= intExpr(expr.right)
                 else -> throw RuntimeException("Cannot apply -= operator on element $element")
             }
             element
@@ -187,26 +174,26 @@ class Evaluator(
         MULTIPLICATIVE_ASSIGNMENT -> {
             val element = unboxEval(expr.left)
             when (element) {
-                is EInt -> element *= intExpr(expr.right, "*=")
+                is EInt -> element *= intExpr(expr.right)
                 else -> throw RuntimeException("Cannot apply *= operator on element $element")
             }
             element
         }
         POWER -> {
-            val left = intExpr(expr.left, "** Power")
-            val right = intExpr(expr.right, "** Power")
+            val left = intExpr(expr.left)
+            val right = intExpr(expr.right)
             EString(left.get().toDouble().pow(right.get().toDouble()).toString())
         }
         DIVIDIVE_ASSIGNMENT -> {
             val element = unboxEval(expr.left)
             when (element) {
-                is EInt -> element /= intExpr(expr.right, "/=")
+                is EInt -> element /= intExpr(expr.right)
                 else -> throw RuntimeException("Cannot apply /= operator on element $element")
             }
             element
         }
-        BITWISE_AND -> intExpr(expr.left, "& BitwiseAnd").and(intExpr(expr.right, "& BitwiseAnd"))
-        BITWISE_OR -> intExpr(expr.left, "| BitwiseOr").or(intExpr(expr.right, "| BitwiseOr"))
+        BITWISE_AND -> intExpr(expr.left).and(intExpr(expr.right))
+        BITWISE_OR -> intExpr(expr.left).or(intExpr(expr.right))
         else -> throw RuntimeException("Unknown binary operator $type")
     }
 
@@ -271,7 +258,7 @@ class Evaluator(
 
             SLEEP -> {
                 if (argsSize != 1) reportWrongArguments("sleep", 1, argsSize)
-                val millis = intExpr(call.arguments[0], "sleep()")
+                val millis = intExpr(call.arguments[0])
                 Thread.sleep(millis.get().toLong())
                 return millis
             }
@@ -360,7 +347,7 @@ class Evaluator(
 
             ARRALLOC -> {
                 if (argsSize != 1) reportWrongArguments("arralloc", 1, argsSize)
-                val size = intExpr(call.arguments[0], "arralloc()")
+                val size = intExpr(call.arguments[0])
                 return EArray(Array(size.get()) { EInt(0) })
             }
 
@@ -370,14 +357,14 @@ class Evaluator(
 
             RAND -> {
                 if (argsSize != 2) reportWrongArguments("rand", 2, argsSize)
-                val from = intExpr(call.arguments[0], "rand()")
-                val to = intExpr(call.arguments[1], "rand()")
+                val from = intExpr(call.arguments[0])
+                val to = intExpr(call.arguments[1])
                 return EInt(Random.nextInt(from.get(), to.get()))
             }
 
             EXIT -> {
                 if (argsSize != 1) reportWrongArguments("exit", 1, argsSize)
-                val exitCode = intExpr(call.arguments[0], "exit()")
+                val exitCode = intExpr(call.arguments[0])
                 exitProcess(exitCode.get())
             }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
@@ -385,9 +372,9 @@ class Evaluator(
     }
 
     override fun throwExpr(throwExpr: ThrowExpr): Any {
-        // TODO:
-        //  in future we could also include line number when error is thrown
-        throw RuntimeException(unboxEval(throwExpr.error).toString())
+        throwExpr.where.error<String>(unboxEval(throwExpr.error).toString())
+        // End of Execution
+        throw RuntimeException()
     }
 
     override fun scope(scope: Scope): Any {
@@ -478,14 +465,8 @@ class Evaluator(
         val callValues = ArrayList<Pair<Pair<String, Signature>, Any>>()
         while (parameters.hasNext()) {
             val definedParameter = parameters.next()
-            val typeSignature = definedParameter.second.intoType()
-
             val callValue = callExpressions.next()
-            val gotTypeSignature = getType(callValue)
 
-            acceptType(typeSignature,
-                gotTypeSignature,
-                "Expected type $typeSignature for arg '${definedParameter.first}' for function $fnName but got $gotTypeSignature")
             callValues.add(Pair(definedParameter, callValue))
         }
         memory.enterScope()
@@ -498,12 +479,6 @@ class Evaluator(
         val result = unboxEval(fn.body)
         memory.leaveScope()
 
-        val returnSignature = fn.returnType.intoType()
-        val gotReturnSignature = getType(result)
-
-        acceptType(returnSignature,
-            gotReturnSignature,
-            "Expected return type $returnSignature for function $fnName but got $gotReturnSignature")
         return result
     }
 
@@ -529,18 +504,7 @@ class Evaluator(
 
         memory.enterScope()
         while (exprIterator.hasNext()) {
-            val arg = argIterator.next()
-            val name = arg.first
-
-            val expr = exprIterator.next()
-            val expectedType = arg.second
-            val gotType = getType(expr)
-
-            acceptType(expectedType,
-                gotType,
-                "ShadoInvoke expected arg type $expectedType for '$name' but got $gotType")
-
-            memory.declareVar(name, exprIterator.next())
+            memory.declareVar(argIterator.next(), exprIterator.next())
         }
 
         val result = eval(operand.body)
@@ -562,7 +526,7 @@ class Evaluator(
     override fun until(until: Until): Any {
         // Auto Scopped
         var numIterations = 0
-        while (booleanExpr(until.expression, "Until Condition").get()) {
+        while (booleanExpr(until.expression).get()) {
             numIterations++
             val result = eval(until.body)
             if (result is Entity) {
@@ -626,9 +590,9 @@ class Evaluator(
 
     override fun itr(itr: Itr): Any {
         val named = itr.name
-        var from = intExpr(itr.from, "Itr from")
-        val to = intExpr(itr.to, "Itr to")
-        val by = if (itr.by == null) EInt(1) else intExpr(itr.by, "Itr by")
+        var from = intExpr(itr.from)
+        val to = intExpr(itr.to)
+        val by = if (itr.by == null) EInt(1) else intExpr(itr.by)
 
         val reverse = from > to
         if (reverse) by.set(-by.get())
@@ -667,7 +631,7 @@ class Evaluator(
         var numIterations = 0
         fun evalOperational() = forLoop.operational?.let { eval(it) }
 
-        while (if (conditional == null) true else booleanExpr(conditional, "ForLoop").get()) {
+        while (if (conditional == null) true else booleanExpr(conditional).get()) {
             numIterations++
             // Auto Scopped
             val result = eval(forLoop.body)
@@ -714,7 +678,7 @@ class Evaluator(
     }
 
     override fun ifFunction(ifExpr: IfStatement): Any {
-        val conditionSuccess = booleanExpr(ifExpr.condition, "If Condition").get()
+        val conditionSuccess = booleanExpr(ifExpr.condition).get()
         val body = if (conditionSuccess) ifExpr.thenBody else ifExpr.elseBody
         // Auto Scopped
         if (body != null) return eval(body)
@@ -730,7 +694,7 @@ class Evaluator(
 
     override fun arrayAccess(access: ArrayAccess): Any {
         val entity = unboxEval(access.expr)
-        val index = intExpr(access.index, "[] ArrayAccess").get()
+        val index = intExpr(access.index).get()
 
         if (entity !is ArrayOperable<*>)
             throw RuntimeException("Unknown non-array operable element access of $entity")

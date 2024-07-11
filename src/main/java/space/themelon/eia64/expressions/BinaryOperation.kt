@@ -25,46 +25,46 @@ data class BinaryOperation(
 
         var resultSign = leftExprSign
         when (operator) {
-            Type.PLUS -> if (!(leftExprSign == Sign.INT && rightExprSign == Sign.INT)) resultSign = Sign.STRING
+            Type.PLUS -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT) resultSign = Sign.STRING
 
-            Type.NEGATE -> if (!(leftExprSign == Sign.INT && rightExprSign == Sign.INT))
+            Type.NEGATE -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT)
                 where.error<String>("Cannot apply operator (- Minus) on non Int expressions")
 
-            Type.TIMES -> if (!(leftExprSign == Sign.INT && rightExprSign == Sign.INT))
+            Type.TIMES -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT)
                 where.error<String>("Cannot apply operator (* Times) on non Int expressions")
 
-            Type.SLASH -> if (!(leftExprSign == Sign.INT && rightExprSign == Sign.INT))
+            Type.SLASH -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT)
                 where.error<String>("Cannot apply operator (/ Divide) on non Int expressions")
 
-            Type.BITWISE_AND -> if (!(leftExprSign == Sign.INT && rightExprSign == Sign.INT))
+            Type.BITWISE_AND -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT)
                 where.error<String>("Cannot apply operator (& Bitwise And) on non Int expressions")
 
-            Type.BITWISE_OR -> if (!(leftExprSign == Sign.INT && rightExprSign == Sign.INT))
+            Type.BITWISE_OR -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT)
                 where.error<String>("Cannot apply operator (| Bitwise Or) on non Int expressions")
 
             Type.EQUALS, Type.NOT_EQUALS -> resultSign = Sign.BOOL
 
-            Type.LOGICAL_AND -> if (!(leftExprSign == Sign.BOOL && rightExprSign == Sign.BOOL))
+            Type.LOGICAL_AND -> if (leftExprSign != Sign.BOOL && rightExprSign != Sign.BOOL)
                 where.error<String>("Cannot apply logical operator (&& Logical And) on non Bool expressions")
 
-            Type.LOGICAL_OR -> if (!(leftExprSign == Sign.BOOL && rightExprSign == Sign.BOOL)) {
+            Type.LOGICAL_OR -> if (leftExprSign != Sign.BOOL && rightExprSign != Sign.BOOL) {
                 where.error<String>("Cannot apply logical operator (|| Logical Or) on non Bool expressions")
             } else resultSign = Sign.BOOL
 
-            Type.RIGHT_DIAMOND -> if (!(leftExprSign == Sign.INT && rightExprSign == Sign.INT)) {
+            Type.RIGHT_DIAMOND -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT) {
                 where.error<String>("Cannot apply logical operator (> Greater Than) on non Int expressions")
             } else resultSign = Sign.BOOL
 
-            Type.LEFT_DIAMOND -> if (!(leftExprSign == Sign.INT && rightExprSign == Sign.INT)) {
+            Type.LEFT_DIAMOND -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT) {
                 where.error<String>("Cannot apply logical operator (< Lesser Than) on non Int expressions")
             } else resultSign = Sign.BOOL
 
-            Type.GREATER_THAN_EQUALS -> if (!(leftExprSign == Sign.INT && rightExprSign == Sign.INT)) {
+            Type.GREATER_THAN_EQUALS -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT) {
                 where.error<String>("Cannot apply logical operator (>= Greater Than Equals) on non Int expressions")
                 resultSign = Sign.BOOL
             } else resultSign = Sign.BOOL
 
-            Type.LESSER_THAN_EQUALS -> if (!(leftExprSign == Sign.INT && rightExprSign == Sign.INT)) {
+            Type.LESSER_THAN_EQUALS -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT) {
                 where.error<String>("Cannot apply logical operator (<= Lesser Than Equals) on non Int expressions")
             } else resultSign = Sign.BOOL
 
@@ -75,6 +75,9 @@ data class BinaryOperation(
                 Sign.INT -> resultSign = Sign.INT
                 else -> where.error("Unknown expression signature for operator (+= Additive Assignment): $rightExprSign")
             }
+
+            Type.POWER -> if (leftExprSign != Sign.INT || rightExprSign != Sign.INT)
+                where.error<String>("Value for operation (** Power) requires Int expression")
 
             Type.DEDUCTIVE_ASSIGNMENT -> if (rightExprSign != Sign.INT)
                 where.error<String>("Value for operation (-= Deductive Assignment) requires Int expression")
