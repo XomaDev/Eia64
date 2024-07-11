@@ -60,6 +60,14 @@ class Evaluator(
         (memory.getVar(scope, name) as Entity).update(value)
     }
 
+    private fun acceptType(expectedType: Type,
+                           gotType: Type,
+                           message: String) {
+        if (expectedType != E_ANY && expectedType != gotType) {
+            throw RuntimeException(message)
+        }
+    }
+
     override fun variable(variable: ExplicitVariable): Any {
         val name = variable.name
         val signature = variable.explicitSignature.intoType()
@@ -67,9 +75,9 @@ class Evaluator(
         val valueType = getType(value)
         val mutable = variable.mutable
 
-        if (signature != E_ANY && signature != valueType) {
-            throw RuntimeException("Variable '$name' has type $signature, but got value type of $valueType")
-        }
+        acceptType(signature,
+            valueType,
+            "Variable '$name' has type $signature, but got value type of $valueType")
         memory.declareVar(name, Entity(name, mutable, value, signature))
         return value
     }
@@ -475,8 +483,9 @@ class Evaluator(
             val callValue = callExpressions.next()
             val gotTypeSignature = getType(callValue)
 
-            if (typeSignature != E_ANY && typeSignature != gotTypeSignature)
-                throw RuntimeException("Expected type $typeSignature for arg '${definedParameter.first}' for function $fnName but got $gotTypeSignature")
+            acceptType(typeSignature,
+                gotTypeSignature,
+                "Expected type $typeSignature for arg '${definedParameter.first}' for function $fnName but got $gotTypeSignature")
             callValues.add(Pair(definedParameter, callValue))
         }
         memory.enterScope()
@@ -492,9 +501,9 @@ class Evaluator(
         val returnSignature = fn.returnType.intoType()
         val gotReturnSignature = getType(result)
 
-        if (returnSignature != E_ANY && returnSignature != gotReturnSignature) {
-            throw RuntimeException("Expected return type $returnSignature for function $fnName but got $gotReturnSignature")
-        }
+        acceptType(returnSignature,
+            gotReturnSignature,
+            "Expected return type $returnSignature for function $fnName but got $gotReturnSignature")
         return result
     }
 
@@ -515,11 +524,24 @@ class Evaluator(
             reportWrongArguments("AnonShado", expectedArgs, gotArgs, "Shado")
         }
 
-        val namesIterator = operand.names.iterator()
+        val argIterator = operand.names.iterator()
         val exprIterator = evaluateArgs(shadoInvoke.arguments).iterator()
 
         memory.enterScope()
-        while (exprIterator.hasNext()) memory.declareVar(namesIterator.next(), exprIterator.next())
+        while (exprIterator.hasNext()) {
+            val arg = argIterator.next()
+            val name = arg.first
+
+            val expr = exprIterator.next()
+            val expectedType = arg.second
+            val gotType = getType(expr)
+
+            acceptType(expectedType,
+                gotType,
+                "ShadoInvoke expected arg type $expectedType for '$name' but got $gotType")
+
+            memory.declareVar(name, exprIterator.next())
+        }
 
         val result = eval(operand.body)
         memory.leaveScope()

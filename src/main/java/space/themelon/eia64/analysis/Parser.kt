@@ -7,6 +7,7 @@ import space.themelon.eia64.expressions.ArrayLiteral
 import space.themelon.eia64.runtime.Executor
 import space.themelon.eia64.signatures.ObjectSignature
 import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.Sign.intoType
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.signatures.SimpleSignature
 import space.themelon.eia64.syntax.Flag
@@ -23,6 +24,10 @@ class Parser(private val executor: Executor) {
     private var size = 0
 
     lateinit var parsed: ExpressionList
+
+    // Variable questions: are we in a scope that is of loops?
+    // and so should we allow `continue` and `break` statement?
+    private var forIterativeScope = false
 
     fun parse(tokens: List<Token>): ExpressionList {
         index = 0
@@ -165,10 +170,18 @@ class Parser(private val executor: Executor) {
         return ArrayLiteral(token, arrayElements)
     }
 
-    private fun whenStatement(where: Token): Expression {
+    private fun parseNextInBrace(): Expression {
+        // we do it this way, just calling parseNext() would work, but it increases code flow
+        // which may make it harder to debug the Parser.
+
         expectType(Type.OPEN_CURVE)
         val expr = parseNext()
         expectType(Type.CLOSE_CURVE)
+        return expr
+    }
+
+    private fun whenStatement(where: Token): Expression {
+        val expr = parseNextInBrace()
 
         // Scope: Automatic
         fun readStatement(): Scope {
@@ -200,11 +213,12 @@ class Parser(private val executor: Executor) {
     private fun loop(where: Token): Expression {
         when (where.type) {
             Type.UNTIL -> {
-                expectType(Type.OPEN_CURVE)
-                val expr = parseNext()
-                expectType(Type.CLOSE_CURVE)
+                val expr = parseNextInBrace()
                 // Scope: Automatic
-                return Until(where, expr, autoBodyExpr())
+                forIterativeScope = true // this allows for `continue` and `break` statement
+                val body = autoBodyExpr()
+                forIterativeScope = false
+                return Until(where, expr, body)
             }
 
             Type.FOR -> {
@@ -218,7 +232,9 @@ class Parser(private val executor: Executor) {
                 val operational = if (isNext(Type.CLOSE_CURVE)) null else parseNext()
                 expectType(Type.CLOSE_CURVE)
                 // double layer scope wrapping
+                forIterativeScope = true
                 val body = autoBodyExpr() // Scope: Automatic
+                forIterativeScope = false
                 resolver.leaveScope()
                 return ForLoop(
                     where,
@@ -246,7 +262,9 @@ class Parser(private val executor: Executor) {
                     resolver.enterScope()
                     resolver.defineVariable(iName, Sign.INT)
                     // Manual Scopped!
+                    forIterativeScope = true
                     val body = unscoppedBodyExpr()
+                    forIterativeScope = false
                     resolver.leaveScope()
                     return Itr(where, iName, from, to, by, body)
                 } else {
@@ -264,7 +282,9 @@ class Parser(private val executor: Executor) {
                     resolver.enterScope()
                     resolver.defineVariable(iName, elementSignature)
                     // Manual Scopped!
+                    forIterativeScope = true
                     val body = unscoppedBodyExpr()
+                    forIterativeScope = false
                     resolver.leaveScope()
                     return ForEach(where, iName, entity, body)
                 }
@@ -274,15 +294,23 @@ class Parser(private val executor: Executor) {
         }
     }
 
-    private fun interruption(token: Token) = Interruption(
-        token,
-        token.type,
-        when (token.type) {
-            Type.RETURN -> parseNext()
-            Type.USE -> parseNext()
-            else -> null
+    private fun interruption(token: Token): Interruption {
+        // checks if `continue and `break` statement are allowed
+        if ((token.type == Type.CONTINUE || token.type == Type.BREAK) && !forIterativeScope) {
+            val type = if (token.type == Type.CONTINUE) "Continue" else "Break"
+            token.error<String>("$type statement is not allowed here") // End of Execution
+            throw RuntimeException()
         }
-    )
+        return Interruption(
+            token,
+            token.type,
+            when (token.type) {
+                Type.RETURN -> parseNext()
+                Type.USE -> parseNext()
+                else -> null
+            }
+        )
+    }
 
     private fun fnDeclaration(): Expression {
         val name = readAlpha()
@@ -320,7 +348,7 @@ class Parser(private val executor: Executor) {
     }
 
     private fun shadoDeclaration(): Shadow {
-        val names = ArrayList<String>()
+        val names = ArrayList<Pair<String, Type>>()
 
         resolver.enterScope()
         expectType(Type.OPEN_CURVE)
@@ -330,7 +358,7 @@ class Parser(private val executor: Executor) {
 
             val argSignature = readSignature(next())
             resolver.defineVariable(name, argSignature)
-            names.add(name)
+            names.add(Pair(name, argSignature.intoType()))
             if (!isNext(Type.COMMA)) break
             skip()
         }
@@ -346,9 +374,7 @@ class Parser(private val executor: Executor) {
     } else expressions()
 
     private fun ifDeclaration(where: Token): Expression {
-        expectType(Type.OPEN_CURVE)
-        val logicalExpr = parseNext()
-        expectType(Type.CLOSE_CURVE)
+        val logicalExpr = parseNextInBrace()
         val ifBody = autoBodyExpr()
 
         // All is Auto Scopped!
@@ -544,21 +570,10 @@ class Parser(private val executor: Executor) {
         val module: String
 
         val signature = objExpr.sig()
-        if (signature is SimpleSignature) {
-            module = when (signature) {
-                Sign.NONE -> method.error("Signature type NONE has no module")
-                Sign.ANY -> method.error("Signature type ANY has no module")
-                Sign.CHAR -> method.error("Signature type CHAR has no module")
-                Sign.UNIT -> method.error("Signature type UNIT has no module")
-                Sign.OBJECT -> method.error("Signature type OBJECT has no module") // (Raw Object sign)
-                Sign.INT -> "eint"
-                Sign.STRING -> "string"
-                Sign.BOOL -> "bool"
-                Sign.ARRAY -> "array"
-                else -> method.error("Unknown object signature $signature")
-            }
+        module = if (signature is SimpleSignature) {
+            translateModule(signature, method)
         } else {
-            module = (signature as ObjectSignature).extensionClass
+            (signature as ObjectSignature).extensionClass
         }
         val fnReturnType =  executor.getModule(module).getFnType(methodName)
         val arguments = callArguments()
@@ -571,6 +586,22 @@ class Parser(private val executor: Executor) {
             arguments,
             fnReturnType
         )
+    }
+
+    private fun translateModule(
+        signature: Signature,
+        method: Token
+    ) = when (signature) {
+        Sign.NONE -> method.error("Signature type NONE has no module")
+        Sign.ANY -> method.error("Signature type ANY has no module")
+        Sign.CHAR -> method.error("Signature type CHAR has no module")
+        Sign.UNIT -> method.error("Signature type UNIT has no module")
+        Sign.OBJECT -> method.error("Signature type OBJECT has no module") // (Raw Object sign)
+        Sign.INT -> "eint"
+        Sign.STRING -> "string"
+        Sign.BOOL -> "bool"
+        Sign.ARRAY -> "array"
+        else -> method.error("Unknown object signature $signature")
     }
 
     private fun getFnType(name: String): Signature {
