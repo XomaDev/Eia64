@@ -1,0 +1,34 @@
+include(
+  static:std:string
+)
+
+fn binarySearch(array: Array, x: Int) {
+  var left = 0
+  var right = len(array) - 1
+
+  until (left <= right) {
+    let mid = left + (right - left) / 2
+    if (array[mid] == x) {
+      return mid
+    }
+    if (array[mid] < x) {
+      left = mid + 1
+    } else {
+      right = mid - 1
+    }
+  }
+  return -1
+}
+
+println("Hello! I'm a binary searcher")
+until (true) {
+  print("Enter few numbers seperated by commas")
+  var input = readln().trim()
+  until (input.contains(" ")) {
+    input = input.replace(" ", "")
+  }
+  let numbers = input.split(",")
+  println("Now enter a number to search")
+  let target = int(readln())
+  println("Located at index " + binarySearch(numbers, target))
+}

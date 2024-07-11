@@ -10,6 +10,7 @@ import space.themelon.eia64.syntax.Token
 data class ClassMethodCall(
     val where: Token,
     val static: Boolean,
+    val objectInvocation: Boolean,
     val obj: Expression,
     val method: String,
     val arguments: List<Expression>,
@@ -27,7 +28,12 @@ data class ClassMethodCall(
         val argSigns = reference.signs
 
         val expectedArgsSize = argSigns.size
-        val suppliedArgsSize = arguments.size
+        var suppliedArgsSize = arguments.size
+
+        if (objectInvocation) {
+            //
+            suppliedArgsSize--
+        }
 
         if (expectedArgsSize != suppliedArgsSize) {
             where.error<String>("Function $method in module [$module] expected $expectedArgsSize arguments but got $suppliedArgsSize")

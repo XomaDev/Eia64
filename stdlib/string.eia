@@ -97,6 +97,22 @@ fn part(self: String, from: Int, till: Int): String {
 
 fn substring(self: String, from: Int): String = part(copy(self), from, len(self))
 
+
+fn trim(self: String) {
+  let copy = copy(self)
+  until (startsWith(copy, " ")
+        || startsWith(copy, "\t")
+        || startsWith(copy, "\n")) {
+    copy = copy.substring(1)
+  }
+  until (endsWith(copy, " ")
+        || endsWith(copy, "\t")
+        || endsWith(copy, "\n")) {
+      copy = copy.substring(1)
+  }
+  return copy
+}
+
 fn replace(self: String, match: String, replacement: String): String {
   let matchSize = len(match)
   let selfSize = len(self)

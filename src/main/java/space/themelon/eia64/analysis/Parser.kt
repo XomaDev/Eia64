@@ -109,6 +109,7 @@ class Parser(private val executor: Executor) {
                     executor.addModule(file.absolutePath, moduleName)
                 }
                 Type.E_STRING -> {
+                    // include("simulationenv/HelloProgram")
                     val sourceFile = getModulePath(next.data as String + ".eia")
                     verifyFilePath(sourceFile, next)
                     val moduleName = getModuleName(sourceFile)
@@ -138,6 +139,8 @@ class Parser(private val executor: Executor) {
         verifyFilePath(sourceFile, path)
         val moduleName = getModuleName(sourceFile)
         resolver.classes.add(moduleName)
+        println("static class: $moduleName")
+        resolver.staticClasses.add(moduleName)
         executor.addModule(sourceFile.absolutePath, moduleName)
         return moduleName
     }
@@ -159,7 +162,7 @@ class Parser(private val executor: Executor) {
         return NewObj(token,
             module,
             callArguments(),
-            executor.getModule(module).getFnType("init"))
+            executor.getModule(module).getFn("init"))
     }
 
     private fun arrayStatement(token: Token): ArrayLiteral {
@@ -574,23 +577,26 @@ class Parser(private val executor: Executor) {
 
         val module: String
 
+        // value: Alpha(where=(alpha, [VALUE], od=Person), index=-2, value=Person, sign=SimpleSignature<sig_none>) todo fix it
+        println("value: ${objExpr}")
         val signature = objExpr.sig()
         module = if (signature is SimpleSignature) {
             translateModule(signature, method)
         } else {
             (signature as ObjectSignature).extensionClass
         }
-        val fnReturnType = executor.getModule(module).getFnType(methodName)
+        val fnReference = executor.getModule(module).getFn(methodName)
+            ?: throw RuntimeException("Could not find function '$methodName' in module _")
         val arguments = callArguments()
 
         return ClassMethodCall(
             objExpr.marking!!,
-            objExpr is Alpha && resolver.classes.contains(objExpr.value),
+            objExpr is Alpha && resolver.staticClasses.contains(objExpr.value),
+            false,
             objExpr,
             methodName,
             arguments,
-
-            fnReturnType,
+            fnReference,
             module
         )
     }
@@ -611,10 +617,7 @@ class Parser(private val executor: Executor) {
         else -> method.error("Unknown object signature $signature")
     }
 
-    private fun getFnType(name: String): FunctionReference {
-        return resolver.resolveFn(name)
-            ?: throw RuntimeException("Could not find function '$name' in module _")
-    }
+    private fun getFn(name: String) = resolver.resolveFn(name)
 
     private fun operatorPrecedence(type: Flag) = when (type) {
         Flag.ASSIGNMENT_TYPE -> 1
@@ -640,7 +643,7 @@ class Parser(private val executor: Executor) {
                 return expr
             }
 
-            Type.OPEN_CURLY -> Shadow(emptyList(), autoScopeBody().expr)
+            Type.OPEN_CURLY -> return Shadow(emptyList(), autoScopeBody().expr)
 
             else -> {}
         }

@@ -68,6 +68,7 @@ class Memory {
     }
 
     fun declareFn(name: String, value: FunctionExpr) {
+        // we need to define it so that external classes can access it
         currentFrame.functions.add(Pair(name, value))
     }
 

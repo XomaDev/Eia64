@@ -392,19 +392,14 @@ class Evaluator(
         val methodName = call.method
         val args: Array<Any>
 
-        val evaluator: Evaluator
-
         // we may need to do a recursive alpha parse
         if (call.static) {
             // static invocation of an included class
-            val staticClass = (obj as Alpha).value
             args = evaluateArgs(call.arguments)
-            evaluator = executor.getEvaluator(staticClass)
-                ?: throw RuntimeException("Could not find static class '$staticClass'")
         } else {
             val evaluatedObj = unboxEval(obj)
             call.arguments as ArrayList
-            evaluator = when (evaluatedObj) {
+            args = when (evaluatedObj) {
                 is Primitive<*> -> {
                     val evaluatedArgs = arrayOfNulls<Any>(call.arguments.size + 1)
                     for ((index, expression) in call.arguments.withIndex())
@@ -413,19 +408,13 @@ class Evaluator(
                     evaluatedArgs[0] = evaluatedObj
                     @Suppress("UNCHECKED_CAST")
                     evaluatedArgs as Array<Any>
-                    args = evaluatedArgs
-                    val stdlibName = evaluatedObj.stdlibName()
-                    executor.getEvaluator(stdlibName)
-                        ?: throw RuntimeException("Could not find executor for stdlib '$stdlibName'")
+                    evaluatedArgs
                 }
-                is Evaluator -> {
-                    args = evaluateArgs(call.arguments)
-                    evaluatedObj
-                }
+                is Evaluator -> evaluateArgs(call.arguments)
                 else -> throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
             }
         }
-        return evaluator.dynamicFnCall(methodName, args, false)!!
+        return fnInvoke(call.reference.fnExpression!!, args)
     }
 
     private fun evaluateArgs(args: List<Expression>): Array<Any> {

@@ -26,20 +26,26 @@ data class UnaryOperation(
             when (operator) {
                 Type.NEGATE ->
                     if (exprSign != Sign.INT) where.error<String>("Expected expression type Int for (- Negate)")
+
                 Type.INCREMENT ->
                     if (exprSign != Sign.INT) where.error<String>("Expected expression type Int for (++ Increment)")
+
                 Type.DECREMENT ->
                     if (exprSign != Sign.INT) where.error<String>("Expected expression type Int for (-- Decrement)")
+
                 Type.NOT ->
                     if (exprSign != Sign.BOOL) where.error<String>("Expected expression type Bool for (! Not)")
+
                 else -> where.error<String>("Unknown unary operator towards left")
             }
         } else {
             when (operator) {
                 Type.INCREMENT ->
                     if (exprSign != Sign.INT) where.error<String>("Expected expression type Int for (++ Increment)")
+
                 Type.DECREMENT ->
                     if (exprSign != Sign.INT) where.error<String>("Expected expression type Int for (-- Decrement)")
+
                 else -> where.error<String>("Unknown unary operator towards left")
             }
         }

@@ -5,6 +5,7 @@ import space.themelon.eia64.signatures.Signature
 class ReferenceResolver {
 
     val classes = ArrayList<String>()
+    val staticClasses = ArrayList<String>()
 
     private var currentScope = NameScope()
 
