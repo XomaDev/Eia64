@@ -575,14 +575,27 @@ class Parser(private val executor: Executor) {
         val method = next()
         val methodName = readAlpha(method)
 
-        val module: String
+        // First Case: Pure static invocation `Person.sayHello()`
+        // Second Case: Linked Static Invocation
+        //    let myString = " Meow "
+        //    println(myString.trim())
+        // Third Case: Object Invocation
+        //    let myPerson = new Person("Miaw")
+        //    println(myPerson.sayHello())
 
-        // value: Alpha(where=(alpha, [VALUE], od=Person), index=-2, value=Person, sign=SimpleSignature<sig_none>) todo fix it
-        println("value: ${objExpr}")
+        println(objExpr)
+        val module: String
         val signature = objExpr.sig()
-        module = if (signature is SimpleSignature) {
+        var linked = false
+        module = if (objExpr is Alpha && objExpr.index == -2) {
+            // Pure static invocation
+            objExpr.value
+        } else if (signature is SimpleSignature) {
+            // Linked Static Invocation
+            linked = true
             translateModule(signature, method)
         } else {
+            // Object Invocation
             (signature as ObjectSignature).extensionClass
         }
         val fnReference = executor.getModule(module).getFn(methodName)
@@ -592,7 +605,7 @@ class Parser(private val executor: Executor) {
         return ClassMethodCall(
             objExpr.marking!!,
             objExpr is Alpha && resolver.staticClasses.contains(objExpr.value),
-            false,
+            linked,
             objExpr,
             methodName,
             arguments,
@@ -677,8 +690,10 @@ class Parser(private val executor: Executor) {
                 val vrReference = resolver.resolveVr(name)
                 if (vrReference == null) {
                     // could be a function call or static invocation
-                    if (resolver.resolveFn(name) != null || resolver.classes.contains(name))
-                        Alpha(token, -2, name, Sign.NONE) // this is handled by the parser itself
+                    if (resolver.resolveFn(name) != null)
+                        Alpha(token, -3, name, Sign.NONE)
+                    else if (resolver.staticClasses.contains(name))
+                        Alpha(token, -2, name, Sign.NONE)
                     else token.error<Expression>("Could not resolve name $name")
                 } else {
                     Alpha(token, vrReference.index, name, vrReference.signature)

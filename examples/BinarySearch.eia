@@ -8,10 +8,10 @@ fn binarySearch(array: Array, x: Int) {
 
   until (left <= right) {
     let mid = left + (right - left) / 2
-    if (array[mid] == x) {
+    if (int(array[mid]) == x) {
       return mid
     }
-    if (array[mid] < x) {
+    if (int(array[mid]) < x) {
       left = mid + 1
     } else {
       right = mid - 1
@@ -19,10 +19,9 @@ fn binarySearch(array: Array, x: Int) {
   }
   return -1
 }
-
 println("Hello! I'm a binary searcher")
 until (true) {
-  print("Enter few numbers seperated by commas")
+  print("Enter numbers in ascending numbers seperated by commas: ")
   var input = readln().trim()
   until (input.contains(" ")) {
     input = input.replace(" ", "")

@@ -61,7 +61,7 @@ fn endsWith(self: String, suffix: String): Bool {
   let selfLastIndex = selfSize - 1
   let suffixLastIndex = suffixSize - 1
 
-  for (var i = suffixLastIndex, i != 0, i--)
+  for (var i = suffixLastIndex, i >= 0, i--)
     if (suffix[i] != self[selfLastIndex--])
       return false
   return true
@@ -97,20 +97,19 @@ fn part(self: String, from: Int, till: Int): String {
 
 fn substring(self: String, from: Int): String = part(copy(self), from, len(self))
 
-
-fn trim(self: String) {
-  let copy = copy(self)
-  until (startsWith(copy, " ")
-        || startsWith(copy, "\t")
-        || startsWith(copy, "\n")) {
-    copy = copy.substring(1)
+fn trim(self: String): String {
+  let copySelf = copy(self)
+  until (startsWith(copySelf, " ")
+        || startsWith(copySelf, "\t")
+        || startsWith(copySelf, "\n")) {
+    copySelf = substring(copySelf, 1)
   }
-  until (endsWith(copy, " ")
-        || endsWith(copy, "\t")
-        || endsWith(copy, "\n")) {
-      copy = copy.substring(1)
+  until (endsWith(copySelf, " ")
+        || endsWith(copySelf, "\t")
+        || endsWith(copySelf, "\n")) {
+      copySelf = substring(copySelf, 1)
   }
-  return copy
+  return copySelf
 }
 
 fn replace(self: String, match: String, replacement: String): String {

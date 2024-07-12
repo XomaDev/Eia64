@@ -414,7 +414,7 @@ class Evaluator(
                 else -> throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
             }
         }
-        return fnInvoke(call.reference.fnExpression!!, args)
+        return executor.getEvaluator(call.module)!!.fnInvoke(call.reference.fnExpression!!, args)
     }
 
     private fun evaluateArgs(args: List<Expression>): Array<Any> {

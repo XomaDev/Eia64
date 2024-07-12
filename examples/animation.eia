@@ -2,7 +2,9 @@
 ; You type in some text in the terminal and he steals them! 👀
 ; https://zac.cy/trashguy/
 
-include(static:std:string)
+include(
+  static:std:string
+)
 
 let TRASH = "🗑"
 let HAPPY_RIGHT = "(> ^_^)>"
