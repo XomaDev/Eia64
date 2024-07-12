@@ -1,0 +1,9 @@
+; testing the PriorityQueue.eia standard library module
+
+include(
+  std:structs:PriorityQueue
+  std:structs:PriorityElement
+)
+
+let queue = new PriorityQueue()
+queue.add(new PriorityElement("hi", 2))

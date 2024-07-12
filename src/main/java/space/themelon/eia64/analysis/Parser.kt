@@ -28,6 +28,10 @@ class Parser(private val executor: Executor) {
     // and so should we allow `continue` and `break` statement?
     private var forIterativeScope = false
 
+    // maintain a list of externally included classes
+    private val classes = ArrayList<String>()
+    private val staticClasses = ArrayList<String>()
+
     fun parse(tokens: List<Token>): ExpressionList {
         index = 0
         size = tokens.size
@@ -105,7 +109,7 @@ class Parser(private val executor: Executor) {
                     val file = File("${Executor.STD_LIB}/${readAlpha()}.eia")
                     val moduleName = getModuleName(file)
                     staticClasses.add(moduleName)
-                    resolver.classes.add(moduleName)
+                    classes.add(moduleName)
                     executor.addModule(file.absolutePath, moduleName)
                 }
                 Type.E_STRING -> {
@@ -113,7 +117,7 @@ class Parser(private val executor: Executor) {
                     val sourceFile = getModulePath(next.data as String + ".eia")
                     verifyFilePath(sourceFile, next)
                     val moduleName = getModuleName(sourceFile)
-                    resolver.classes.add(moduleName)
+                    classes.add(moduleName)
                     executor.addModule(sourceFile.absolutePath, moduleName)
                 }
                 else -> next.error("Unexpected token")
@@ -138,9 +142,8 @@ class Parser(private val executor: Executor) {
         }
         verifyFilePath(sourceFile, path)
         val moduleName = getModuleName(sourceFile)
-        resolver.classes.add(moduleName)
-        println("static class: $moduleName")
-        resolver.staticClasses.add(moduleName)
+        classes.add(moduleName)
+        staticClasses.add(moduleName)
         executor.addModule(sourceFile.absolutePath, moduleName)
         return moduleName
     }
@@ -475,7 +478,7 @@ class Parser(private val executor: Executor) {
             token.error<String>("Expected a class type")
             // end of execution
         }
-        if (resolver.classes.contains(token.data as String)) {
+        if (classes.contains(token.data as String)) {
             // class that was included from external files
             // this will be an extension of Object class type
             return ObjectSignature(token.data)
@@ -583,7 +586,6 @@ class Parser(private val executor: Executor) {
         //    let myPerson = new Person("Miaw")
         //    println(myPerson.sayHello())
 
-        println(objExpr)
         val module: String
         val signature = objExpr.sig()
         var linked = false
@@ -604,7 +606,7 @@ class Parser(private val executor: Executor) {
 
         return ClassMethodCall(
             objExpr.marking!!,
-            objExpr is Alpha && resolver.staticClasses.contains(objExpr.value),
+            objExpr is Alpha && staticClasses.contains(objExpr.value),
             linked,
             objExpr,
             methodName,
@@ -692,7 +694,7 @@ class Parser(private val executor: Executor) {
                     // could be a function call or static invocation
                     if (resolver.resolveFn(name) != null)
                         Alpha(token, -3, name, Sign.NONE)
-                    else if (resolver.staticClasses.contains(name))
+                    else if (staticClasses.contains(name))
                         Alpha(token, -2, name, Sign.NONE)
                     else token.error<Expression>("Could not resolve name $name")
                 } else {

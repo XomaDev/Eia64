@@ -1,0 +1,76 @@
+; Priority Queue is a module that maintains an array of elements in order according
+; to their priority/frequency. Elements with higher priority are served first before
+; other elements with lower priority. PriorityElement.eia is a wrapper utility that holds
+; the element and its priority.
+
+include(
+  "structs/PriorityElement",
+  static:std:string
+)
+
+var elements: Array = arrayOf()
+
+var capacity = 0
+var index = 0
+
+fn init(len: Int) {
+  capacity = len
+  elements = arralloc(len)
+}
+
+fn shift(element: PriorityElement) {
+  var last = index - 1
+
+  until (--last > 0) {
+    let before = elements[last]
+    if (before.priority() > element.priority()) {
+      let next = elements[last + 1]
+      elements[last + 1] = elements[last]
+      elements[last] = next
+    } else {
+      break
+    }
+  }
+}
+
+fn add(element: PriorityElement) {
+  elements[index++] = element
+  shift(element)
+}
+
+fn merge() {
+  let first = elements[0]
+  let second = elements[1]
+
+  let recap = capacity - 2
+  for (var i = 0, i < recap, i++) {
+    elements[i] = elements[i + 2]
+  }
+  index -= 2
+
+  ; for better readability
+  elements[capacity - 1] = null
+  elements[capacity - 2] = null
+
+  add(new PriorityElement(first, second))
+}
+
+fn poll(): PriorityElement {
+  until (index != -1) {
+    merge()
+  }
+  return elements[0]
+}
+
+fn string() {
+  ; this method will be called by the evaluator when we try
+  ; to print this object
+  if (size == 0) return "[]"
+  var result = "["
+  itr (element in elements) {
+    result += str(element) + ", "
+  }
+  result = result.part(0, result.size() - 2)
+  result += "]"
+  return result
+}

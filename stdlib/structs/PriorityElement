@@ -1,0 +1,13 @@
+; Structure that holds an element and it's priority
+
+var element: Any = ""
+var priority = 0
+
+fn init(_element: Any, _priority: Int) {
+  element = _element
+  priority = _priority
+}
+
+fn element(): Any = element
+
+fn priority(): Int = priority
