@@ -245,9 +245,9 @@ class Evaluator(
                     printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
 
                     printCount += printable.length
-                    print(printable)
+                    executor.STANDARD_OUTPUT.print(printable)
                 }
-                if (type == PRINTLN) print('\n')
+                if (type == PRINTLN) executor.STANDARD_OUTPUT.print('\n')
                 return EInt(printCount)
             }
 
