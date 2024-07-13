@@ -245,15 +245,15 @@ class Evaluator(
                     printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
 
                     printCount += printable.length
-                    executor.STANDARD_OUTPUT.print(printable)
+                    executor.standardOutput.print(printable)
                 }
-                if (type == PRINTLN) executor.STANDARD_OUTPUT.print('\n')
+                if (type == PRINTLN) executor.standardOutput.print('\n')
                 return EInt(printCount)
             }
 
             READ, READLN -> {
                 if (argsSize != 0) reportWrongArguments("read/readln", 0, argsSize)
-                return EString(Scanner(System.`in`).let { if (type == READ) it.next() else it.nextLine() })
+                return EString(Scanner(executor.standardInput).let { if (type == READ) it.next() else it.nextLine() })
             }
 
             SLEEP -> {

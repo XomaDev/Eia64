@@ -19,8 +19,8 @@ class Executor {
     // why do we do this? sometimes while we are developing demonstrable
     // APIs for Eia64, we would want the output to be captured in memory and
     // sent somewhere else
-    var STANDARD_OUTPUT = System.out
-    var allowInput = true
+    var standardOutput = System.out
+    var standardInput = System.`in`
 
     private val externalExecutors = HashMap<String, Evaluator>()
     private val mainEvaluator = Evaluator("Main", this)
