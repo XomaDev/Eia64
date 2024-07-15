@@ -29,11 +29,26 @@ class Executor {
     private val mainParser = Parser(this)
 
     fun loadMainFile(sourceFile: String) {
-        mainEvaluator.eval(mainParser.parse(getTokens(sourceFile)))
+        try {
+            mainEvaluator.eval(mainParser.parse(getTokens(sourceFile)))
+        } catch (e: ShutdownException) {
+            standardOutput.println("Executor was shutdown")
+        }
     }
 
     fun loadMainSource(source: String) {
-        mainEvaluator.eval(mainParser.parse(Lexer(source).tokens))
+        try {
+            mainEvaluator.eval(mainParser.parse(Lexer(source).tokens))
+        } catch (e: ShutdownException) {
+            standardOutput.println("Executor was shutdown")
+        }
+    }
+
+    // this can be used to enforce restriction on the execution time
+    // of the program, while in demonstration environments
+
+    fun shutdownEvaluator() {
+        mainEvaluator.shutdown()
     }
 
     // called by parsers, parse the included module

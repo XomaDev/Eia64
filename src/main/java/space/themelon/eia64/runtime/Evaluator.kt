@@ -22,7 +22,15 @@ class Evaluator(
 
     private val startupTime = System.currentTimeMillis()
 
-    fun eval(expr: Expression) = expr.accept(this)
+    private var evaluator: Expression.Visitor<Any> = this
+
+    fun shutdown() {
+        // Reroute all the traffic to Void, which would raise ShutdownException.
+        // We use this strategy to cause an efficient shutdown than checking fields each time
+        evaluator = VoidEvaluator()
+    }
+
+    fun eval(expr: Expression) = expr.accept(evaluator)
     private fun unboxEval(expr: Expression) = unbox(eval(expr))
 
     private fun booleanExpr(expr: Expression) = unboxEval(expr) as EBool
