@@ -38,6 +38,10 @@ class Evaluator(
 
     private val memory = Memory()
 
+    fun clearMemory() {
+        memory.clearMemory()
+    }
+
     override fun intLiteral(literal: IntLiteral) = EInt(literal.value)
     override fun boolLiteral(literal: BoolLiteral) = EBool(literal.value)
     override fun stringLiteral(literal: StringLiteral) = EString(literal.value)
@@ -374,6 +378,12 @@ class Evaluator(
                 if (argsSize != 1) reportWrongArguments("exit", 1, argsSize)
                 val exitCode = intExpr(call.arguments[0])
                 exitProcess(exitCode.get())
+            }
+
+            MEM_CLEAR -> {
+                // for clearing memory of the current class
+                memory.clearMemory()
+                return EBool(true)
             }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }

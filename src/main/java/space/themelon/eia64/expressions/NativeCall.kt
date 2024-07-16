@@ -30,7 +30,7 @@ data class NativeCall(
         Type.STRING_CAST,
         Type.TYPE -> Sign.STRING
 
-        Type.BOOL_CAST, Type.INCLUDE -> Sign.BOOL
+        Type.BOOL_CAST, Type.INCLUDE, Type.MEM_CLEAR -> Sign.BOOL
         Type.COPY -> {
             if (arguments.size != 1) where.error<String>("copy() expects least one argument")
             arguments[0].sig()

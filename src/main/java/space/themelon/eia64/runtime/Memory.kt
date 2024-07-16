@@ -23,7 +23,7 @@ class Memory {
             return fSuper?.searchFn(name)
         }
 
-        fun reset(newSuper: Frame) {
+        fun reset(newSuper: Frame?) {
             fSuper = newSuper
             functions.clear()
             values.clear()
@@ -56,6 +56,7 @@ class Memory {
     }
 
     fun leaveScope() {
+        // We move backwards
         val reusable = currentFrame
         currentFrame = reusable.fSuper ?: throw RuntimeException("Already reached super scope")
 
@@ -78,5 +79,14 @@ class Memory {
         if (frameStack.size != 1)
             throw RuntimeException("Dynamic search can only be requested from master scope")
         return currentFrame.searchFn(name)
+    }
+
+    fun clearMemory() {
+        // move fully backwards
+        while (currentFrame.fSuper != null) {
+            leaveScope()
+        }
+        // we also need to reset the head node
+        currentFrame.reset(null)
     }
 }

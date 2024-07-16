@@ -51,6 +51,14 @@ class Executor {
         mainEvaluator.shutdown()
     }
 
+    // maybe for internal testing only
+    private fun clearMemories() {
+        mainEvaluator.clearMemory()
+        externalExecutors.values.forEach {
+            it.clearMemory()
+        }
+    }
+
     // called by parsers, parse the included module
     fun addModule(sourceFile: String, name: String): Boolean {
         if (externalParsers[name] != null) return false

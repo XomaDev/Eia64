@@ -40,7 +40,7 @@ enum class Type {
     ITR, TO, IN, BY, AS,
     FOR, UNTIL,
     FUN,
-    COPY, ARRALLOC, ARRAYOF, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT,
+    COPY, ARRALLOC, ARRAYOF, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT, MEM_CLEAR,
     INCLUDE, STD, STATIC, NEW,
     THROW,
 
@@ -138,6 +138,7 @@ enum class Type {
                 it["len"] = StaticToken(LEN, arrayOf(Flag.NATIVE_CALL))
                 it["format"] = StaticToken(FORMAT, arrayOf(Flag.NATIVE_CALL))
                 it["exit"] = StaticToken(EXIT, arrayOf(Flag.NATIVE_CALL))
+                it["memclear"] = StaticToken(MEM_CLEAR, arrayOf(Flag.NATIVE_CALL))
 
                 it["std"] = StaticToken(STD)
                 it["static"] = StaticToken(STATIC)
