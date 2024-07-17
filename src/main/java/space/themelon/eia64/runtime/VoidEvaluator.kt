@@ -24,7 +24,11 @@ class VoidEvaluator : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
-    override fun arrayCreation(arrayCreation: ArrayCreation): Any {
+    override fun arrayCreation(arrayCreation: StrictArrayCreation): Any {
+        throw ShutdownException()
+    }
+
+    override fun arrayAllocation(arrayAllocation: ArrayAllocation): Any {
         throw ShutdownException()
     }
 

@@ -33,6 +33,7 @@ class Evaluator(
     fun eval(expr: Expression): Any {
         return expr.accept(evaluator)
     }
+
     private fun unboxEval(expr: Expression) = unbox(eval(expr))
 
     private fun booleanExpr(expr: Expression) = unboxEval(expr) as EBool
@@ -61,7 +62,12 @@ class Evaluator(
 
     override fun array(literal: ArrayLiteral) = prepareArrayOf(literal.elements)
 
-    override fun arrayCreation(arrayCreation: ArrayCreation) = prepareArrayOf(arrayCreation.elements)
+    override fun arrayCreation(arrayCreation: StrictArrayCreation) = prepareArrayOf(arrayCreation.elements)
+
+    override fun arrayAllocation(arrayAllocation: ArrayAllocation): Any {
+        val size = intExpr(arrayAllocation.size)
+        return EArray(Array(size.get()) { EInt(0) })
+    }
 
     private fun update(scope: Int, name: String, value: Any) {
         (memory.getVar(scope, name) as Entity).update(value)

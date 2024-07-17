@@ -181,6 +181,7 @@ class Parser(private val executor: Executor) {
     }
 
     private fun arrayStatement(token: Token): ArrayLiteral {
+        // an array declared using [ ]
         val arrayElements = mutableListOf<Expression>()
         if (peek().type != Type.CLOSE_SQUARE) {
             while (true) {

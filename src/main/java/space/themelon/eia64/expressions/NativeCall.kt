@@ -35,7 +35,6 @@ data class NativeCall(
             if (arguments.size != 1) where.error<String>("copy() expects least one argument")
             arguments[0].sig()
         }
-        Type.ARRAYOF, Type.ARRALLOC -> Sign.ARRAY
         else -> where.error("Unknown native call type $call")
     }
 }
