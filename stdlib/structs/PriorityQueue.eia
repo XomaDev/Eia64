@@ -4,7 +4,7 @@
 ; the element and its priority.
 
 include(
-  "structs/PriorityElement",
+  "stdlib/structs/PriorityElement",
   static:std:string
 )
 
@@ -13,9 +13,10 @@ var elements: Array = arrayOf()
 var capacity = 0
 var index = 0
 
-fn init(len: Int) {
-  capacity = len
-  elements = arralloc(len)
+fn init(cap: Int) {
+  capacity = cap
+  elements = arralloc(cap)
+  println("elements: " + elements)
 }
 
 fn shift(element: PriorityElement) {
@@ -23,7 +24,7 @@ fn shift(element: PriorityElement) {
 
   until (--last > 0) {
     let before = elements[last]
-    if (before.priority() > element.priority()) {
+    if (before::PriorityElement.priority() > element.priority()) {
       let next = elements[last + 1]
       elements[last + 1] = elements[last]
       elements[last] = next
@@ -49,10 +50,14 @@ fn merge() {
   index -= 2
 
   ; for better readability
-  elements[capacity - 1] = null
-  elements[capacity - 2] = null
+  elements[capacity - 1] = -1
+  elements[capacity - 2] = -1
 
-  add(new PriorityElement(first, second))
+  println("first: " + first)
+  println("second: " + second + " | " + type(second))
+  let combinedPriority = first::PriorityElement.priority() + second::PriorityElement.priority()
+  let newElement = new PriorityElement(arrayOf(first, second), combinedPriority)
+  add(newElement)
 }
 
 fn poll(): PriorityElement {
@@ -62,10 +67,10 @@ fn poll(): PriorityElement {
   return elements[0]
 }
 
-fn string() {
+fn string(): String {
   ; this method will be called by the evaluator when we try
   ; to print this object
-  if (size == 0) return "[]"
+  if (capacity == 0) return "[]"
   var result = "["
   itr (element in elements) {
     result += str(element) + ", "

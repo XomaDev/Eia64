@@ -11,3 +11,7 @@ fn init(_element: Any, _priority: Int) {
 fn element(): Any = element
 
 fn priority(): Int = priority
+
+fn string(): String {
+  return "(" + priority + ", " + element + ")"
+}

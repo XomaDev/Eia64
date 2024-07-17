@@ -242,7 +242,7 @@ class Evaluator(
     @Override
     override fun toString() = dynamicFnCall("string",
         emptyArray(),
-        false,
+        true,
         "Class<$className>").toString()
 
     override fun cast(cast: Cast) = eval(cast.expr)
@@ -410,6 +410,7 @@ class Evaluator(
         val methodName = call.method
         val args: Array<Any>
 
+        var evaluator: Evaluator? = null
         // we may need to do a recursive alpha parse
         if (call.static) {
             // static invocation of an included class
@@ -428,11 +429,16 @@ class Evaluator(
                     evaluatedArgs as Array<Any>
                     evaluatedArgs
                 }
-                is Evaluator -> evaluateArgs(call.arguments)
+                is Evaluator -> {
+                    evaluator = evaluatedObj
+                    evaluateArgs(call.arguments)
+                }
                 else -> throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
             }
         }
-        return executor.getEvaluator(call.module)!!.fnInvoke(call.reference.fnExpression!!, args)
+        val finalEvaluator = evaluator ?: executor.getEvaluator(call.module)
+        ?: throw RuntimeException("Could not find module ${call.module}")
+        return finalEvaluator.fnInvoke(call.reference.fnExpression!!, args)
     }
 
     private fun evaluateArgs(args: List<Expression>): Array<Any> {

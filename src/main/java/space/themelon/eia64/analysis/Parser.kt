@@ -98,23 +98,35 @@ class Parser(private val executor: Executor) {
 
     private fun includeStatement(): Expression {
         expectType(Type.OPEN_CURVE)
-        val staticClasses = mutableListOf<String>()
+        val classNames = mutableListOf<String>()
         while (true) {
             val next = next()
             when (next.type) {
                 // means importing only one static instance of the class
-                Type.STATIC -> staticClasses.add(includeStatic())
+                Type.STATIC -> classNames.add(includeStatic())
                 Type.STD -> {
                     expectType(Type.COLON)
-                    val file = File("${Executor.STD_LIB}/${readAlpha()}.eia")
+
+                    println(peek())
+                    val filePath = if (isNext(Type.ALPHA)) readAlpha()
+                    else expectType(Type.E_STRING).data as String
+
+                    val file = File("${Executor.STD_LIB}/$filePath.eia")
                     val moduleName = getModuleName(file)
-                    staticClasses.add(moduleName)
+                    classNames.add(moduleName)
+
+                    println(file)
                     classes.add(moduleName)
                     executor.addModule(file.absolutePath, moduleName)
                 }
                 Type.E_STRING -> {
                     // include("simulationenv/HelloProgram")
-                    val sourceFile = getModulePath(next.data as String + ".eia")
+                    var path = next.data as String + ".eia"
+                    if (path.startsWith("stdlib")) {
+                        path = path.replaceFirst("stdlib", Executor.STD_LIB)
+                    }
+                    val sourceFile = getModulePath(path)
+
                     verifyFilePath(sourceFile, next)
                     val moduleName = getModuleName(sourceFile)
                     classes.add(moduleName)
@@ -126,7 +138,7 @@ class Parser(private val executor: Executor) {
             expectType(Type.COMMA)
         }
         expectType(Type.CLOSE_CURVE)
-        return Include(staticClasses)
+        return Include(classNames)
     }
 
     private fun includeStatic(): String {
