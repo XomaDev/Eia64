@@ -23,7 +23,9 @@ class Parser(private val executor: Executor) {
 
     // Variable questions: are we in a scope that is of loops?
     // and so should we allow `continue` and `break` statement?
-    private var forIterativeScope = false
+    // 0 => Not allowed
+    // > 0 => Allowed
+    private var iterativeScope = 0
 
     // maintain a list of externally included classes
     private val classes = ArrayList<String>()
@@ -222,9 +224,11 @@ class Parser(private val executor: Executor) {
             Type.UNTIL -> {
                 val expr = parseNextInBrace()
                 // Scope: Automatic
-                forIterativeScope = true // this allows for `continue` and `break` statement
+                iterativeScope++ // this allows for `continue` and `break` statement
+                println("start allowing")
                 val body = autoBodyExpr()
-                forIterativeScope = false
+                println("end allowing")
+                iterativeScope--
                 return Until(where, expr, body)
             }
 
@@ -239,9 +243,9 @@ class Parser(private val executor: Executor) {
                 val operational = if (isNext(Type.CLOSE_CURVE)) null else parseNext()
                 expectType(Type.CLOSE_CURVE)
                 // double layer scope wrapping
-                forIterativeScope = true
+                iterativeScope++
                 val body = autoBodyExpr() // Scope: Automatic
-                forIterativeScope = false
+                iterativeScope--
                 resolver.leaveScope()
                 return ForLoop(
                     where,
@@ -269,9 +273,9 @@ class Parser(private val executor: Executor) {
                     resolver.enterScope()
                     resolver.defineVariable(iName, Sign.INT)
                     // Manual Scopped!
-                    forIterativeScope = true
+                    iterativeScope++
                     val body = unscoppedBodyExpr()
-                    forIterativeScope = false
+                    iterativeScope--
                     resolver.leaveScope()
                     return Itr(where, iName, from, to, by, body)
                 } else {
@@ -289,14 +293,12 @@ class Parser(private val executor: Executor) {
                         }
                     }
 
-                    println("element signature: $elementSignature")
-
                     resolver.enterScope()
                     resolver.defineVariable(iName, elementSignature)
                     // Manual Scopped!
-                    forIterativeScope = true
+                    iterativeScope++
                     val body = unscoppedBodyExpr()
-                    forIterativeScope = false
+                    iterativeScope--
                     resolver.leaveScope()
                     return ForEach(where, iName, entity, body)
                 }
@@ -308,7 +310,7 @@ class Parser(private val executor: Executor) {
 
     private fun interruption(token: Token): Interruption {
         // checks if `continue and `break` statement are allowed
-        if ((token.type == Type.CONTINUE || token.type == Type.BREAK) && !forIterativeScope) {
+        if ((token.type == Type.CONTINUE || token.type == Type.BREAK) && iterativeScope == 0) {
             val type = if (token.type == Type.CONTINUE) "Continue" else "Break"
             token.error<String>("$type statement is not allowed here") // End of Execution
             throw RuntimeException()

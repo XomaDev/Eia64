@@ -1,15 +1,17 @@
 ; calculates levenshtein distance between two strings
 ; also an example demonstrating use of arrays
 
-stdlib(math)
+include(
+  static:std:math
+)
 
 fn compute(first: String, second: String) {
   let lenFirst = len(first)
   let lenSecond = len(second)
 
-  let dist = arralloc(lenFirst + 1)
+  let dist = arrayOf<Array<Int>>(lenFirst + 1, 0)
   for (var i = 0, i < lenFirst + 1, i++)
-    dist[i] = arralloc(lenSecond + 1)
+    dist[i] = arrayOf<Int>(lenSecond + 1, 0)
 
   for (var i = 0, i <= lenFirst, i++) dist[i][0] = copy(i)
   for (var j = 0, j <= lenSecond, j++) dist[0][j] = copy(j)

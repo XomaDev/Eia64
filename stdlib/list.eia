@@ -2,12 +2,12 @@ include(
   static:std:string
 )
 
-var list = arralloc(0)
+var list = arrayOf<Any>(0, 0)
 var size = 0
 var index = 0
 
 fn init(initSize: Int) {
-  list = arralloc(initSize)
+  list = arrayOf<Any>(initSize, 0)
   size = initSize
   index = 0
 }
@@ -20,7 +20,7 @@ fn initArray(array: Array) {
 
 fn enlarge() {
   let newSize = size * 2
-  let newList = arralloc(newSize)
+  let newList = arrayOf<Any>(newSize, 0)
   for (var i = 0, i < index, i++) {
     newList[i] = list[i]
   }
@@ -34,7 +34,7 @@ fn checkBounds(at: Int) {
   }
 }
 
-fn get(at: Int) {
+fn get(at: Int): Any {
   checkBounds(at)
   := list[at]
 }
@@ -44,8 +44,8 @@ fn set(element: Any, at: Int) {
   list[at] = element
 }
 
-fn size() = index
-fn isEmpty() = size == 0
+fn size(): Int = index
+fn isEmpty(): Bool = size == 0
 
 fn add(element: Any) {
   if (index == size) enlarge()
@@ -54,7 +54,7 @@ fn add(element: Any) {
 
 fn addAt(element: Any, at: Int) {
   checkBounds(at)
-  let newList = arralloc(size + 1)
+  let newList = arrayOf<Any>(size + 1, 0)
   var j = 0
   for (var i = 0, i < size, i++) {
     if (i == at) {
@@ -67,16 +67,16 @@ fn addAt(element: Any, at: Int) {
   index++
 }
 
-fn indexOf(match: Any) {
+fn indexOf(match: Any): Int {
   for (var i = 0, i < index, i++) {
     if (list[i] == match) return i
   }
   return -1
 }
 
-fn contains(match: Any) = indexOf(match) != -1
+fn contains(match: Any): Bool = indexOf(match) != -1
 
-fn remove(at: Int) {
+fn remove(at: Int): Any {
   checkBounds(at)
   let element = list[at]
   for (var i = copy(at), i < index - 1, i++) {
@@ -86,7 +86,7 @@ fn remove(at: Int) {
   return element
 }
 
-fn removeElement(element: Any) {
+fn removeElement(element: Any): Any {
   let index = indexOf(element)
   if (index == -1) return false
   return remove(index)
@@ -101,7 +101,7 @@ fn arrayOfRange(from: Int, end: Int) {
   checkBounds(end)
 
   let sublistSize = end - from
-  let subarray = arralloc(sublistSize)
+  let subarray = arrayOf<Any>(sublistSize, 0)
 
   for (var i = 0, i < sublistSize, i++) {
     subarray[i] = list[from + i]
@@ -109,10 +109,10 @@ fn arrayOfRange(from: Int, end: Int) {
   return subarray
 }
 
-fn string() {
+fn string(): String {
   if (size == 0) return "[]"
   var result = "["
-  itr (element in list) {
+  each (element in list) {
     result += str(element) + ", "
   }
   result = result.part(0, result.size() - 2)

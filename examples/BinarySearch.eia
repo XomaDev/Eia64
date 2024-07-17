@@ -22,13 +22,22 @@ fn binarySearch(array: Array<Int>, x: Int) {
 
 println("Hello! I'm a binary searcher")
 
+fn toNumberArray(array: Array<String>): Array<Int> {
+  let size = len(array)
+  let numeric = arrayOf<Int>(size, 0)
+  for (var i = 0, i < size, i++) {
+    numeric[i] = int(array[i])
+  }
+  return numeric
+}
+
 until (true) {
   print("Enter numbers in ascending numbers seperated by commas: ")
   var input = readln().trim()
   until (input.contains(" ")) {
     input = input.replace(" ", "")
   }
-  let numbers = input.split(",")
+  let numbers = toNumberArray(input.split(","))
   println("Now enter a number to search")
   let target = int(readln())
   println("Located at index " + binarySearch(numbers, target))

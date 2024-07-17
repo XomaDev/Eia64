@@ -1,4 +1,6 @@
-include(std:list)
+include(
+  "stdlib/list"
+)
 
 let names = new list(1)
 names.add("melon")

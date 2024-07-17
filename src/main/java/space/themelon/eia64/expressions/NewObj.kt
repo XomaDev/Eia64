@@ -2,6 +2,7 @@ package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
 import space.themelon.eia64.analysis.FunctionReference
+import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.signatures.ObjectExtension
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
@@ -47,7 +48,7 @@ data class NewObj(
             val expectedArgSign = argInfo.second
             val suppliedArgSign = argIterator.next().sig()
 
-            if (expectedArgSign != Sign.ANY && expectedArgSign != suppliedArgSign) {
+            if (!matches(expectedArgSign, suppliedArgSign)) {
                 where.error<String>("init() expected $expectedArgSign for argument $argName but got $suppliedArgSign")
             }
         }

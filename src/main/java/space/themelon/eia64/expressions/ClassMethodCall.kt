@@ -2,9 +2,11 @@ package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
 import space.themelon.eia64.analysis.FunctionReference
+import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
+import kotlin.math.exp
 
 data class ClassMethodCall(
     val where: Token,
@@ -47,6 +49,7 @@ data class ClassMethodCall(
         if (linkedInvocation) {
             val selfSignature = signIterator.next().second
             val providedSignature = obj.sig()
+            // We cannot use matches() here. selfSignature is never ANY
             if (selfSignature != providedSignature) {
                 where.error<String>("Self argument mismatch, expected $selfSignature, got $providedSignature")
             }
@@ -58,7 +61,7 @@ data class ClassMethodCall(
             val expectedArgSign = argInfo.second
             val suppliedArgSign = argIterator.next().sig()
 
-            if (expectedArgSign != Sign.ANY && expectedArgSign != suppliedArgSign) {
+            if (!matches(expectedArgSign, suppliedArgSign)) {
                 where.error<String>("Function $method in module [$module] expected $expectedArgSign for argument $argName but got $suppliedArgSign")
             }
         }

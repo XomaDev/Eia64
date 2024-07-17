@@ -16,33 +16,33 @@ let MULTIPLY = "*"
 
 let SUPPORTED_OPERATORS = arrayOf(PLUS, MINUS, DIVIDE, MULTIPLY)
 
-fn isNumeric(token: String) {
+fn isNumeric(token: String): Bool {
   if (len(token) == 0) return false
-  itr (ch in token) {
+  each (ch in token) {
     if (!("1234567890".contains(str(ch))))
       return false
   }
   return true
 }
 
-fn tokenize(expr: String) {
+fn tokenize(expr: String): Array<String> {
   expr = expr.replace("\t", " ")
   until (expr.contains("  "))
     expr = expr.replace("  ", " ")
   return expr.split(" ")
 }
 
-var tokens: Array = arrayOf()
+var tokens: Array<String> = arrayOf<String>(0, "")
 var i = 0
 var size = 0
 
-fn isEOF() = i == size
+fn isEOF(): Bool = i == size
 
-fn peek() = tokens[i]
-fn next() = tokens[i++]
+fn peek(): String = tokens[i]
+fn next(): String = tokens[i++]
 
 fn eatNumeric() {
-  let value: Any = next()
+  let value = next()
   if (!isNumeric(value)) {
     println("Expected numeric type token but got " + value)
     exit(1)
@@ -76,7 +76,7 @@ fn parse() {
 
 fn execute(node: Array) {
   var left: Any = node[0]
-  let op = node[1]
+  let op = node[1]::String
   var right: Any = node[2]
 
   if (type(left) == "e_array") left = execute(left)
@@ -85,10 +85,10 @@ fn execute(node: Array) {
   left = int(left)
   right = int(right)
 
-  return if (op == PLUS) left + right
-         else if (op == MINUS) left - right
-         else if (op == MULTIPLY) left * right
-         else if (op == DIVIDE) left / right
+  return if (op == PLUS) left::Int + right::Int
+         else if (op == MINUS) left::Int - right::Int
+         else if (op == MULTIPLY) left::Int * right::Int
+         else if (op == DIVIDE) left::Int / right::Int
          else {
            println("Unknown operator code: " + op)
            exit(1)

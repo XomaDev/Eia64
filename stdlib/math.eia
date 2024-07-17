@@ -1,11 +1,11 @@
-fn min(a: Int, b: Int) = if (a <= b) a else b
-fn max(a: Int, b: Int) = if (a >= b) a else b
+fn min(a: Int, b: Int): Int = if (a <= b) a else b
+fn max(a: Int, b: Int): Int = if (a >= b) a else b
 
-fn abs(a: Int) = if (a < 0) -a else a
+fn abs(a: Int): Int = if (a < 0) -a else a
 
-fn avg(nums: Array) {
+fn avg(nums: Array): Int {
     var sum = 0
-    itr (num in nums)
+    each (num in nums)
         sum = sum + num
     return sum / len(nums)
 }

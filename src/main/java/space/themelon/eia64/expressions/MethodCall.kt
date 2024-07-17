@@ -2,9 +2,11 @@ package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
 import space.themelon.eia64.analysis.FunctionReference
+import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
+import kotlin.math.exp
 
 data class MethodCall(
     val name: Token,
@@ -38,7 +40,7 @@ data class MethodCall(
             val expectedArgSign = argInfo.second
             val suppliedArgSign = argIterator.next().sig()
 
-            if (expectedArgSign != Sign.ANY && expectedArgSign != suppliedArgSign) {
+            if (!matches(expectedArgSign, suppliedArgSign)) {
                 name.error<String>("Function $name expected $expectedArgSign for argument $argName but got $suppliedArgSign")
             }
         }
