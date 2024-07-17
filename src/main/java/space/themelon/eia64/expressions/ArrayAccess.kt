@@ -4,6 +4,7 @@ import space.themelon.eia64.Expression
 import space.themelon.eia64.signatures.ArraySignature
 import space.themelon.eia64.signatures.SimpleSignature
 import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 
 data class ArrayAccess(
@@ -14,10 +15,10 @@ data class ArrayAccess(
 
     override fun <R> accept(v: Visitor<R>) = v.arrayAccess(this)
 
-    override fun sig(): SimpleSignature {
+    override fun sig(): Signature {
         when (val exprSig = expr.sig()) {
             Sign.STRING -> return Sign.CHAR
-            is ArraySignature -> exprSig.elementSignature
+            is ArraySignature -> return exprSig.elementSignature
             else -> where.error<String>("Unknown element to perform array operation")
         }
         throw RuntimeException()

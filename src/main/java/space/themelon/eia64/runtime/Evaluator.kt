@@ -66,7 +66,7 @@ class Evaluator(
 
     override fun arrayAllocation(arrayAllocation: ArrayAllocation): Any {
         val size = intExpr(arrayAllocation.size)
-        return EArray(Array(size.get()) { EInt(0) })
+        return EArray(Array(size.get()) { unboxEval(arrayAllocation.defaultValue) })
     }
 
     private fun update(scope: Int, name: String, value: Any) {
@@ -256,10 +256,13 @@ class Evaluator(
             emptyArray(),
             true,
             "Class<$className>")
-        if (result !is String) {
-            throw RuntimeException("string() returned a non-string")
+        if (result is String) {
+            return result
         }
-        return result
+        if (result is EString) {
+            return result.get()
+        }
+        throw RuntimeException("string() returned a non string $result")
     }
 
     override fun cast(cast: Cast) = eval(cast.expr)
@@ -374,13 +377,14 @@ class Evaluator(
                 return obj.copy()!!
             }
 
-            ARRALLOC -> {
-                if (argsSize != 1) reportWrongArguments("arralloc", 1, argsSize)
-                val size = intExpr(call.arguments[0])
-                return EArray(Array(size.get()) { EInt(0) })
-            }
+            //ARRALLOC -> {
+                //if (argsSize != 1) reportWrongArguments("arralloc", 1, argsSize)
+                //val size = intExpr(call.arguments[0])
+                //return EArray(Array(size.get()) { EInt(0) })
+            //}
 
-            ARRAYOF -> return prepareArrayOf(call.arguments)
+            // Deprecated, we've switched over to array initializers [ ]
+            // ARRAYOF -> return prepareArrayOf(call.arguments)
 
             TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())
 

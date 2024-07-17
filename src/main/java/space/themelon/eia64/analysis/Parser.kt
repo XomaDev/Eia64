@@ -63,7 +63,7 @@ class Parser(private val executor: Executor) {
             Type.NEW -> newStatement(token)
             Type.THROW -> throwStatement(token)
             Type.WHEN -> whenStatement(token)
-            Type.OPEN_SQUARE -> arrayStatement(token)
+            //Type.OPEN_SQUARE -> arrayStatement(token)
             else -> {
                 back()
                 return parseExpr(0)
@@ -88,7 +88,7 @@ class Parser(private val executor: Executor) {
             Type.NEW,
             Type.THROW,
             Type.SHADO,
-            Type.OPEN_SQUARE,
+            //Type.OPEN_SQUARE,
             Type.WHEN -> true
             else -> false
         }
@@ -178,22 +178,6 @@ class Parser(private val executor: Executor) {
             module,
             callArguments(),
             executor.getModule(module).getFn("init"))
-    }
-
-    private fun arrayStatement(token: Token): ArrayLiteral {
-        // an array declared using [ ]
-        val arrayElements = mutableListOf<Expression>()
-        if (peek().type != Type.CLOSE_SQUARE) {
-            while (true) {
-                arrayElements.add(parseNext())
-                val next = next()
-                if (next.type == Type.CLOSE_SQUARE) break
-                else if (next.type != Type.COMMA) next.error<String>("Expected comma for array element separator")
-            }
-        }
-        // this would be an auto array, signature is decided based on the elements
-        // present inside it
-        return ArrayLiteral(token, arrayElements)
     }
 
     private fun parseNextInBrace(): Expression {
@@ -493,6 +477,8 @@ class Parser(private val executor: Executor) {
             token.error<String>("Expected a class type")
             // end of execution
         }
+        // TODO:
+        //  in future we need to add an array type extension
         if (classes.contains(token.data as String)) {
             // class that was included from external files
             // this will be an extension of Object class type
@@ -690,10 +676,45 @@ class Parser(private val executor: Executor) {
         } else if (token.hasFlag(Flag.NATIVE_CALL)) {
             val arguments = callArguments()
             return NativeCall(token, token.type, arguments)
+        } else if (token.type == Type.ARRAY_OF) {
+            // Used to allocate arrays
+            // let names = arralloc<String>(5, "default value")
+            // println(names[0])
+            if (isNext(Type.OPEN_CURVE)) {
+                skip()
+                return arrayStatement(token)
+            } else {
+                expectType(Type.LEFT_DIAMOND)
+                val elementSignature = readSignature(next())
+                expectType(Type.RIGHT_DIAMOND)
+
+                expectType(Type.OPEN_CURVE)
+                val size = parseNext()
+                expectType(Type.COMMA)
+                val defaultValue = parseNext()
+                expectType(Type.CLOSE_CURVE)
+
+                return ArrayAllocation(token, elementSignature, size, defaultValue)
+            }
         }
         back()
         if (canParseNext()) return parseNext()
         return token.error("Unexpected token")
+    }
+
+    private fun arrayStatement(token: Token): ArrayLiteral {
+        // an array declared using [ ]
+        val arrayElements = mutableListOf<Expression>()
+        if (peek().type != Type.CLOSE_CURVE) {
+            while (true) {
+                arrayElements.add(parseNext())
+                val next = next()
+                if (next.type == Type.CLOSE_CURVE) break
+                else if (next.type != Type.COMMA) next.error<String>("Expected comma for array element separator")
+            }
+        }
+        // Auto array, element-signature is selected based on array content
+        return ArrayLiteral(token, arrayElements)
     }
 
     private fun parseValue(token: Token): Expression {

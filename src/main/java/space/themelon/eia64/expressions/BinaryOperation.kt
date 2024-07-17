@@ -68,7 +68,16 @@ data class BinaryOperation(
                 where.error<String>("Cannot apply logical operator (<= Lesser Than Equals) on non Int expressions")
             } else resultSign = Sign.BOOL
 
-            Type.ASSIGNMENT -> resultSign = rightExprSign
+            Type.ASSIGNMENT -> {
+                if (left is ArrayAccess) {
+                    // Array Assignment Safety Check
+                    // Can we really assign *this type* to that *array type*?
+                    if (leftExprSign != Sign.ANY && leftExprSign != rightExprSign) {
+                        where.error<String>("Cannot assign type $rightExprSign to an array of type $leftExprSign")
+                    }
+                }
+                resultSign = rightExprSign
+            }
 
             Type.ADDITIVE_ASSIGNMENT -> when (rightExprSign) {
                 Sign.STRING, Sign.CHAR -> resultSign = Sign.STRING

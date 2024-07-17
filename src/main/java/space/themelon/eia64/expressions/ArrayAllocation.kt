@@ -8,13 +8,17 @@ import space.themelon.eia64.syntax.Token
 
 class ArrayAllocation(
     val where: Token,
-    val signature: Signature,
+    private val elementSignature: Signature,
     val size: Expression,
+    val defaultValue: Expression,
 ): Expression(where) {
 
     init {
         if (size.sig() != Sign.INT) {
             where.error<String>("Array allocation expects an Int for array length, but got $size")
+        }
+        if (elementSignature != defaultValue.sig()) {
+            where.error<String>("arralloc() element signature and default value does not match (type mismatch)")
         }
     }
 
@@ -23,6 +27,6 @@ class ArrayAllocation(
     }
 
     override fun sig(): Signature {
-        return ArraySignature(signature)
+        return ArraySignature(elementSignature)
     }
 }
