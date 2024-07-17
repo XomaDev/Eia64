@@ -190,6 +190,8 @@ class Parser(private val executor: Executor) {
                 else if (next.type != Type.COMMA) next.error<String>("Expected comma for array element separator")
             }
         }
+        // this would be an auto array, signature is decided based on the elements
+        // present inside it
         return ArrayLiteral(token, arrayElements)
     }
 

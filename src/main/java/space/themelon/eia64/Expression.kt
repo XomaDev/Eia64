@@ -16,6 +16,7 @@ abstract class Expression(
         fun stringLiteral(literal: StringLiteral): R
         fun charLiteral(literal: CharLiteral): R
         fun alpha(alpha: Alpha): R
+        fun arrayCreation(arrayCreation: ArrayCreation): R
         fun array(literal: ArrayLiteral): R
         fun include(include: Include): R
         fun new(new: NewObj): R

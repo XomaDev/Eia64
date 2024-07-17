@@ -30,7 +30,9 @@ class Evaluator(
         evaluator = VoidEvaluator()
     }
 
-    fun eval(expr: Expression) = expr.accept(evaluator)
+    fun eval(expr: Expression): Any {
+        return expr.accept(evaluator)
+    }
     private fun unboxEval(expr: Expression) = unbox(eval(expr))
 
     private fun booleanExpr(expr: Expression) = unboxEval(expr) as EBool
@@ -58,6 +60,8 @@ class Evaluator(
     }
 
     override fun array(literal: ArrayLiteral) = prepareArrayOf(literal.elements)
+
+    override fun arrayCreation(arrayCreation: ArrayCreation) = prepareArrayOf(arrayCreation.elements)
 
     private fun update(scope: Int, name: String, value: Any) {
         (memory.getVar(scope, name) as Entity).update(value)
@@ -240,10 +244,17 @@ class Evaluator(
 
     // try to call a string() method located in local class if available
     @Override
-    override fun toString() = dynamicFnCall("string",
-        emptyArray(),
-        true,
-        "Class<$className>").toString()
+    override fun toString(): String {
+        val result = dynamicFnCall(
+            "string",
+            emptyArray(),
+            true,
+            "Class<$className>")
+        if (result !is String) {
+            throw RuntimeException("string() returned a non-string")
+        }
+        return result
+    }
 
     override fun cast(cast: Cast) = eval(cast.expr)
 

@@ -10,6 +10,10 @@ data class ArrayLiteral(
     val elements: List<Expression>
 ) : Expression(where) {
 
+    init {
+        // signature verification
+    }
+
     override fun <R> accept(v: Visitor<R>) = v.array(this)
 
     override fun sig() = Sign.ARRAY
