@@ -73,7 +73,7 @@ let UPPER_CASE = arrayOf( 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
 let LOWER_CASE = arrayOf( 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
                     'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' )
 
-fn invert(self: String, target: Array, replacement: Array): String {
+fn invert(self: String, target: Array, replacement: Array<Char>): String {
   let size = len(self)
   for (var i = 0, i < size, i++) {
     if ((let index = target.indexOf(self[i])) != -1)
@@ -138,7 +138,7 @@ fn replace(self: String, match: String, replacement: String): String {
 }
 
 fn isAlpha(self: String): Bool {
-  itr (char in self) {
+  each (char in self) {
     if (!(UPPER_CASE.contains(char) || LOWER_CASE.contains(char))) {
      return false
     }
@@ -150,7 +150,7 @@ fn isNumeric(self: String): Bool {
   if (startsWith(self, "-")) {
     self = substring(self, 1)
   }
-  itr (char in self) {
+  each (char in self) {
     if (!contains("1234567890.", str(char))) return false
   }
  return true
@@ -158,7 +158,8 @@ fn isNumeric(self: String): Bool {
 
 fn toCharArray(self: String): Array {
   let charCount = len(self)
-  let chars = arralloc(charCount)
+  ; Allocate a char array
+  let chars = arrayOf<Char>(charCount, ' ')
   for (var i = 0, i < charCount, i++)
     chars[i] = self[i]
   return chars

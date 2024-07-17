@@ -1,10 +1,10 @@
 package space.themelon.eia64.signatures
 
-class ObjectSignature(
+class ObjectExtension(
     val extensionClass: String // could be `Object` or a `Car` (Object extension) or a `Bus`
 ) : Signature() {
     override fun equals(other: Any?): Boolean {
-        if (other is ObjectSignature) {
+        if (other is ObjectExtension) {
             if (extensionClass == Sign.OBJECT.type) {
                 // <Object Extension> can be assigned to <Object>
                 // e.g. let vehicle: Object = new Car()

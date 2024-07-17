@@ -37,7 +37,7 @@ enum class Type {
 
     LET, VAR, SHADO, WHEN,
     IF, ELSE,
-    ITR, TO, IN, BY, AS,
+    EACH, TO, IN, BY, AS,
     FOR, UNTIL,
     FUN,
     COPY, ARRAY_OF, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT, MEM_CLEAR,
@@ -151,7 +151,7 @@ enum class Type {
                 it["throw"] = StaticToken(THROW)
 
                 it["until"] = StaticToken(UNTIL, arrayOf(Flag.LOOP)) // auto scope
-                it["itr"] = StaticToken(ITR, arrayOf(Flag.LOOP)) // TODO check this later
+                it["each"] = StaticToken(EACH, arrayOf(Flag.LOOP)) // TODO check this later
                 it["to"] = StaticToken(TO)
                 it["in"] = StaticToken(IN)
                 it["by"] = StaticToken(BY)

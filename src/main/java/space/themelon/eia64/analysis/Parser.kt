@@ -5,10 +5,7 @@ import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.ArrayLiteral
 import space.themelon.eia64.runtime.Executor
-import space.themelon.eia64.signatures.ObjectSignature
-import space.themelon.eia64.signatures.Sign
-import space.themelon.eia64.signatures.Signature
-import space.themelon.eia64.signatures.SimpleSignature
+import space.themelon.eia64.signatures.*
 import space.themelon.eia64.syntax.Flag
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
@@ -254,7 +251,7 @@ class Parser(private val executor: Executor) {
                     body)
             }
 
-            Type.ITR -> {
+            Type.EACH -> {
                 expectType(Type.OPEN_CURVE)
                 val iName = readAlpha()
                 if (isNext(Type.COLON)) {
@@ -282,12 +279,17 @@ class Parser(private val executor: Executor) {
                     val entity = parseNext()
                     expectType(Type.CLOSE_CURVE)
 
-                    val entitySignature = entity.sig()
-                    val elementSignature = when (entitySignature) {
+                    val elementSignature = when (val iterableSignature = entity.sig()) {
+                        is ArrayExtension -> iterableSignature.elementSignature
                         Sign.STRING -> Sign.CHAR
-                        Sign.ARRAY -> Sign.ANY
-                        else -> where.error("Unknown non iterable element $iName")
+
+                        else -> {
+                            where.error<String>("Unknown non iterable element for '$iName'")
+                            throw RuntimeException()
+                        }
                     }
+
+                    println("element signature: $elementSignature")
 
                     resolver.enterScope()
                     resolver.defineVariable(iName, elementSignature)
@@ -433,6 +435,9 @@ class Parser(private val executor: Executor) {
     private fun variableDeclaration(where: Token): Expression {
         val name = readAlpha()
 
+        //if (name == "index") {
+            //where.error<String>("not here!")
+        //}
         val expr: Expression
         val signature: Signature
 
@@ -466,13 +471,24 @@ class Parser(private val executor: Executor) {
                 Type.E_STRING -> Sign.STRING
                 Type.E_CHAR -> Sign.CHAR
                 Type.E_BOOL -> Sign.BOOL
-                Type.E_ARRAY -> Sign.ARRAY
                 Type.E_ANY -> Sign.ANY
                 Type.E_UNIT -> Sign.UNIT
-                Type.E_OBJECT -> ObjectSignature(Sign.OBJECT.type) // Generic form
+                Type.E_ARRAY -> {
+                    val elementSignature: Signature
+                    if (isNext(Type.LEFT_DIAMOND)) {
+                        skip()
+                        elementSignature = readSignature(next())
+                        expectType(Type.RIGHT_DIAMOND)
+                    } else {
+                        elementSignature = Sign.ANY
+                    }
+                    return ArrayExtension(elementSignature)
+                }
+                Type.E_OBJECT -> ObjectExtension(Sign.OBJECT.type) // Generic form
                 else -> token.error("Unknown class $classType")
             }
         }
+
         if (token.type != Type.ALPHA) {
             token.error<String>("Expected a class type")
             // end of execution
@@ -482,7 +498,7 @@ class Parser(private val executor: Executor) {
         if (classes.contains(token.data as String)) {
             // class that was included from external files
             // this will be an extension of Object class type
-            return ObjectSignature(token.data)
+            return ObjectExtension(token.data)
         }
         token.error<String>("Unknown class ${token.data}")
         throw RuntimeException()
@@ -597,9 +613,15 @@ class Parser(private val executor: Executor) {
             // Linked Static Invocation
             linked = true
             translateModule(signature, method)
-        } else {
+        } else if (signature is ObjectExtension) {
             // Object Invocation
-            (signature as ObjectSignature).extensionClass
+            signature.extensionClass
+        } else {
+            // TODO: we'll have to work on a fix for this
+            println("module is: $signature")
+            signature as ArrayExtension
+            linked = true
+            "array"
         }
         val fnReference = executor.getModule(module).getFn(methodName)
             ?: throw RuntimeException("Could not find function '$methodName' in module _")
@@ -619,18 +641,18 @@ class Parser(private val executor: Executor) {
 
     private fun translateModule(
         signature: Signature,
-        method: Token
+        where: Token
     ) = when (signature) {
-        Sign.NONE -> method.error("Signature type NONE has no module")
-        Sign.ANY -> method.error("Signature type ANY has no module")
-        Sign.CHAR -> method.error("Signature type CHAR has no module")
-        Sign.UNIT -> method.error("Signature type UNIT has no module")
-        Sign.OBJECT -> method.error("Signature type OBJECT has no module") // (Raw Object sign)
+        Sign.NONE -> where.error("Signature type NONE has no module")
+        Sign.ANY -> where.error("Signature type ANY has no module")
+        Sign.CHAR -> where.error("Signature type CHAR has no module")
+        Sign.UNIT -> where.error("Signature type UNIT has no module")
+        Sign.OBJECT -> where.error("Signature type OBJECT has no module") // (Raw Object sign)
         Sign.INT -> "eint"
         Sign.STRING -> "string"
         Sign.BOOL -> "bool"
         Sign.ARRAY -> "array"
-        else -> method.error("Unknown object signature $signature")
+        else -> where.error("Unknown object signature $signature")
     }
 
     private fun getFn(name: String) = resolver.resolveFn(name)

@@ -1,7 +1,7 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.signatures.ArraySignature
+import space.themelon.eia64.signatures.ArrayExtension
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 
@@ -29,6 +29,6 @@ class StrictArrayCreation(
         // Self-signature is an Array, but elements are of $elementSignature.
         // We need to store element signatures.
         // Just like an Object extension
-        return ArraySignature(elementSignature)
+        return ArrayExtension(elementSignature)
     }
 }

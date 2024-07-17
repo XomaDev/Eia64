@@ -2,8 +2,7 @@ package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
 import space.themelon.eia64.analysis.FunctionReference
-import space.themelon.eia64.signatures.ObjectSignature
-import space.themelon.eia64.signatures.SimpleSignature
+import space.themelon.eia64.signatures.ObjectExtension
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
@@ -27,7 +26,7 @@ data class NewObj(
                 where.error<String>("init() expects no arguments but ${arguments.size} were provided")
                 throw RuntimeException()
             }
-            return ObjectSignature(name)
+            return ObjectExtension(name)
         }
         val argSigns = reference.signs
 
@@ -52,6 +51,6 @@ data class NewObj(
                 where.error<String>("init() expected $expectedArgSign for argument $argName but got $suppliedArgSign")
             }
         }
-        return ObjectSignature(name)
+        return ObjectExtension(name)
     }
 }
