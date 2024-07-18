@@ -57,7 +57,7 @@ fn eatOperator() {
   exit(1)
 }
 
-fn parse() {
+fn parse(): Array {
   var left: Any = eatNumeric()
   until (!isEOF()) {
     var op = eatOperator()
@@ -71,6 +71,10 @@ fn parse() {
     left = arrayOf(left, op, right)
   }
 
+  ; here we need parser time verification
+  ; we need to verify the return values over here
+  ; Case when only one single number is typed in, a non-array is returned
+  ; which crashes the executor
   return left
 }
 
@@ -79,20 +83,22 @@ fn execute(node: Array) {
   let op = node[1]::String
   var right: Any = node[2]
 
-  if (type(left) == "e_array") left = execute(left)
-  if (type(right) == "e_array") right = execute(right)
+  if (type(left) == "e_array") left = execute(left::Array)
+  if (type(right) == "e_array") right = execute(right::Array)
 
   left = int(left)
   right = int(right)
 
-  return if (op == PLUS) left::Int + right::Int
-         else if (op == MINUS) left::Int - right::Int
-         else if (op == MULTIPLY) left::Int * right::Int
-         else if (op == DIVIDE) left::Int / right::Int
-         else {
-           println("Unknown operator code: " + op)
-           exit(1)
-         }
+  return when (op) {
+    PLUS -> { left::Int + right::Int }
+    MINUS -> { left::Int - right::Int }
+    MULTIPLY -> { left::Int * right::Int }
+    DIVIDE -> { left::Int / right::Int }
+    else -> {
+      println("Unknown operator code: " + op)
+      exit(1)
+    }
+  }
 }
 
 fn evaluate(expr: String) {

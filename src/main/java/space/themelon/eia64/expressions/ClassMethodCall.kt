@@ -49,8 +49,7 @@ data class ClassMethodCall(
         if (linkedInvocation) {
             val selfSignature = signIterator.next().second
             val providedSignature = obj.sig()
-            // We cannot use matches() here. selfSignature is never ANY
-            if (selfSignature != providedSignature) {
+            if (!matches(selfSignature, providedSignature)) {
                 where.error<String>("Self argument mismatch, expected $selfSignature, got $providedSignature")
             }
         }

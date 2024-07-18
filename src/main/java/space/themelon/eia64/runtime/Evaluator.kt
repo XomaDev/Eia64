@@ -268,7 +268,7 @@ class Evaluator(
 
     override fun cast(cast: Cast): Any {
         val result = unboxEval(cast.expr)
-        val castInto = cast.signatureCast
+        val castInto = cast.expectSignature
 
         if (castInto is ObjectExtension) {
             if (result !is Evaluator) {
