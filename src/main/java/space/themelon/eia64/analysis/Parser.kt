@@ -388,7 +388,20 @@ class Parser(private val executor: Executor) {
         val ifBody = autoBodyExpr()
 
         // All is Auto Scopped!
+
+        // Here we need to know if the If Statement is terminative or not
+        //
+        // Case 1 => Terminative (meaning end-of execution if body is executed)
+        //   then => then we treat rest of the body as a else function
+
         if (isEOF() || peek().type != Type.ELSE) {
+            val terminativeIf = ifBody.sig().terminative
+            if (terminativeIf) {
+                // if (terminativeIf) means end of execution
+                //  treat the rest of the code in the else body
+                return IfStatement(where, logicalExpr, ifBody, parseImaginaryElse())
+            }
+
             return IfStatement(where, logicalExpr, ifBody)
         }
         skip()
@@ -398,6 +411,19 @@ class Parser(private val executor: Executor) {
             else -> autoBodyExpr()
         }
         return IfStatement(where, logicalExpr, ifBody, elseBranch)
+    }
+
+    // Parses the remaining expressions into a body, we treat this
+    // as an *else* body when we encounter terminativeIf
+
+    private fun parseImaginaryElse(): Scope {
+        resolver.enterScope()
+        val expressions = ArrayList<Expression>()
+        while (!isEOF() && peek().type != Type.CLOSE_CURLY)
+            expressions.add(parseNext())
+        // Do not do any optimizations as of now
+        val imaginaryElse = ExpressionList(expressions)
+        return Scope(imaginaryElse, resolver.leaveScope())
     }
 
     private fun autoBodyExpr(): Scope {

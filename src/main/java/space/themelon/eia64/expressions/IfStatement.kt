@@ -17,7 +17,14 @@ data class IfStatement(
 
     override fun sig(): Signature {
         val thenSig = thenBody.sig()
-        if (elseBody == null) return thenSig
+        // if else body is null, we cannot conclude on
+        // signature, so we HAVE to return Sign NONE
+
+        // We need to know if the `If` function is terminative or not
+        if (elseBody == null) {
+            // Transfer metadata from lower to upper
+            return Sign.NONE.copyMetadata(thenSig)
+        }
         val elseSig = elseBody.sig()
         if (thenSig == elseSig) return thenSig
         return Sign.ANY

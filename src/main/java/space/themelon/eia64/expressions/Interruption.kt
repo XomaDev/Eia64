@@ -6,6 +6,7 @@ import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
+import kotlin.math.exp
 
 data class Interruption(
     val where: Token,
@@ -18,7 +19,11 @@ data class Interruption(
     override fun sig(): Signature {
         if (operator == Type.RETURN || operator == Type.USE) {
             if (expr == null) where.error<String>("No expression for operator $operator provided")
-            return expr!!.sig()
+            val signature = expr!!.sig()
+            if (operator == Type.RETURN) {
+                signature.returnMetadata = signature
+            }
+            return signature
         }
         return Sign.ANY
     }

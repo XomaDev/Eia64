@@ -29,6 +29,13 @@ data class FunctionExpr(
         //
         //  println(hi)
         //
+        // Fn(name='hi', body={..
+        //    if(cond=a,
+        //       then=<Scope, Metada={return=Int}>{ return Int(0) } else=<>{ return Int(2) })
+        // }
+
+        val bodySignature = body.sig()
+        println("Body signature: $bodySignature")
     }
 
     override fun <R> accept(v: Visitor<R>) = v.function(this)

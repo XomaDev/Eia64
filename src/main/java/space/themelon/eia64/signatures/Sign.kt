@@ -14,15 +14,26 @@ object Sign {
     const val UNIT_SIGN = "sig_unit"
     const val OBJECT_SIGN = "sig_object"
 
-    val NONE = SimpleSignature(NONE_SIGN)
-    val ANY = SimpleSignature(ANY_SIGN)
-    val INT = SimpleSignature(INT_SIGN)
-    val STRING = SimpleSignature(STRING_SIGN)
-    val CHAR = SimpleSignature(CHAR_SIGN)
-    val BOOL = SimpleSignature(BOOL_SIGN)
-    val ARRAY = SimpleSignature(ARRAY_SIGN)
-    val UNIT = SimpleSignature(UNIT_SIGN)
-    val OBJECT = SimpleSignature(OBJECT_SIGN)
+    // Always return new instance, since we are testing
+    // Metadata could be altered of the original one's
+    val NONE
+        get() = SimpleSignature(NONE_SIGN)
+    val ANY
+        get() = SimpleSignature(ANY_SIGN)
+    val INT
+        get() = SimpleSignature(INT_SIGN)
+    val STRING
+        get() = SimpleSignature(STRING_SIGN)
+    val CHAR
+        get() = SimpleSignature(CHAR_SIGN)
+    val BOOL
+        get() = SimpleSignature(BOOL_SIGN)
+    val ARRAY
+        get() = SimpleSignature(ARRAY_SIGN)
+    val UNIT
+        get() = SimpleSignature(UNIT_SIGN)
+    val OBJECT
+        get() = SimpleSignature(OBJECT_SIGN)
 
     fun Signature.intoType(): Type {
         return when (this) {
