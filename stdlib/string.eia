@@ -98,6 +98,7 @@ fn part(self: String, from: Int, till: Int): String {
 fn substring(self: String, from: Int): String = part(copy(self), from, len(self))
 
 fn trim(self: String): String {
+  ; println(type(self))
   let copySelf = copy(self)
   until (startsWith(copySelf, " ")
         || startsWith(copySelf, "\t")

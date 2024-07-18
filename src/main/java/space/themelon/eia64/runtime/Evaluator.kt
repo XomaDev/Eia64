@@ -6,6 +6,7 @@ import space.themelon.eia64.expressions.FunctionExpr
 import space.themelon.eia64.primitives.*
 import space.themelon.eia64.runtime.Entity.Companion.getType
 import space.themelon.eia64.runtime.Entity.Companion.unbox
+import space.themelon.eia64.signatures.ObjectExtension
 import space.themelon.eia64.signatures.Sign.intoType
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type.*
@@ -265,7 +266,32 @@ class Evaluator(
         throw RuntimeException("string() returned a non string $result")
     }
 
-    override fun cast(cast: Cast) = eval(cast.expr)
+    override fun cast(cast: Cast): Any {
+        val result = unboxEval(cast.expr)
+        val castInto = cast.signatureCast
+
+        if (castInto is ObjectExtension) {
+            if (result !is Evaluator) {
+                cast.where.error<String>("${getType(result)} cannot be cast into class ${castInto.extensionClass}")
+                throw RuntimeException()
+            }
+            val castClass = castInto.extensionClass
+            val gotClass = result.className
+
+            if (castClass != gotClass) {
+                cast.where.error<String>("Class $gotClass cannot be cast into $castClass")
+                throw RuntimeException()
+            }
+        }
+
+        val castType = castInto.intoType()
+        val gotType = getType(result)
+        if (castType != gotType) {
+            cast.where.error<String>("Type $gotType cannot be cast into $castType")
+            throw RuntimeException()
+        }
+        return result
+    }
 
     override fun nativeCall(call: NativeCall): Any {
         val argsSize = call.arguments.size

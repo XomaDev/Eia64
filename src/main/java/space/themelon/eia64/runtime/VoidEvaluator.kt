@@ -3,7 +3,10 @@ package space.themelon.eia64.runtime
 import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
 
-class VoidEvaluator : Expression.Visitor<Any> {
+class VoidEvaluator() : Expression.Visitor<Any> {
+    val className
+        get() = "VoidEvaluator"
+
     override fun intLiteral(literal: IntLiteral): Any {
         throw ShutdownException()
     }

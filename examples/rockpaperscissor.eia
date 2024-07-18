@@ -7,7 +7,7 @@ include(
 
 let choices = arrayOf("rock", "paper", "scissor")
 
-fn robotChoose(user: String): Array {
+fn robotChoose(user: String): Array<Int> {
   let robot = choices[rand(0, 2)]
   if (user == robot) return arrayOf(robot, 0)
 
@@ -21,6 +21,7 @@ fn robotChoose(user: String): Array {
 }
 
 println("Pick 'rock' 'paper' or 'scissor'")
+
 until (true) {
   print("Enter your choice: ")
   let input = readln().lowercase()

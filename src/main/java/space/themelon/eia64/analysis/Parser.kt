@@ -106,7 +106,6 @@ class Parser(private val executor: Executor) {
                 Type.STD -> {
                     expectType(Type.COLON)
 
-                    println(peek())
                     val filePath = if (isNext(Type.ALPHA)) readAlpha()
                     else expectType(Type.E_STRING).data as String
 
@@ -114,7 +113,6 @@ class Parser(private val executor: Executor) {
                     val moduleName = getModuleName(file)
                     classNames.add(moduleName)
 
-                    println(file)
                     classes.add(moduleName)
                     executor.addModule(file.absolutePath, moduleName)
                 }
@@ -225,9 +223,7 @@ class Parser(private val executor: Executor) {
                 val expr = parseNextInBrace()
                 // Scope: Automatic
                 iterativeScope++ // this allows for `continue` and `break` statement
-                println("start allowing")
                 val body = autoBodyExpr()
-                println("end allowing")
                 iterativeScope--
                 return Until(where, expr, body)
             }
@@ -537,7 +533,7 @@ class Parser(private val executor: Executor) {
             if (precedence >= minPrecedence) {
                 skip() // operator token
                 val right =
-                    if (opToken.hasFlag(Flag.PRESERVE_ORDER)) parseTerm()
+                    if (opToken.hasFlag(Flag.PRESERVE_ORDER)) parseElement()
                     else parseExpr(precedence)
                 left = BinaryOperation(
                     opToken,
@@ -620,7 +616,6 @@ class Parser(private val executor: Executor) {
             signature.extensionClass
         } else {
             // TODO: we'll have to work on a fix for this
-            println("module is: $signature")
             signature as ArrayExtension
             linked = true
             "array"

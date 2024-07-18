@@ -12,8 +12,8 @@ data class Cast(
     val signatureCast: Signature
 ) : Expression(where) {
 
-    // we do not require evaluating this node at runtime
-    override fun <R> accept(v: Visitor<R>) = expr.accept(v)
+    // we actually do require evaluating this node at runtime
+    override fun <R> accept(v: Visitor<R>) = v.cast(this)
 
     override fun sig(): Signature {
         // this ensures casting is only done from type Any to <T>
