@@ -1,19 +1,15 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.signatures.ArrayExtension
-import space.themelon.eia64.signatures.Matching
+import space.themelon.eia64.signatures.*
 import space.themelon.eia64.signatures.Matching.matches
-import space.themelon.eia64.signatures.Sign
-import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
-import space.themelon.eia64.syntax.Type
 
 class ArrayAllocation(
     val where: Token,
     private val elementSignature: Signature,
-    val size: Expression,
-    val defaultValue: Expression,
+    @Consumable("Unexpected void expression for array size") val size: Expression,
+    @Consumable("Cannot use a void expression as a default value for array") val defaultValue: Expression,
 ) : Expression(where) {
 
     init {

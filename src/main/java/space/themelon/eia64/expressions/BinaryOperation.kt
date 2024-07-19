@@ -2,6 +2,7 @@ package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
 import space.themelon.eia64.signatures.Matching.matches
+import space.themelon.eia64.signatures.Consumable
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
@@ -9,8 +10,8 @@ import space.themelon.eia64.syntax.Type
 
 data class BinaryOperation(
     val where: Token,
-    val left: Expression,
-    val right: Expression,
+    @Consumable("Cannot apply binary operation on void element") val left: Expression,
+    @Consumable("Cannot apply binary operation on void element") val right: Expression,
     val operator: Type
 ) : Expression(where) {
 

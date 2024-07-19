@@ -1,8 +1,12 @@
 package space.themelon.eia64.signatures
 
+import space.themelon.eia64.Expression
+import space.themelon.eia64.syntax.Token
+
 object Matching {
     fun matches(expect: Signature, got: Signature): Boolean {
-        if (expect == Sign.ANY) return true
+        // Void != Any
+        if (expect == Sign.ANY) return got != Sign.VOID
         if (expect is SimpleSignature) return expect == got
 
         if (expect is ArrayExtension) {
@@ -18,5 +22,15 @@ object Matching {
             return expect.extensionClass == got.extensionClass
         }
         return false
+    }
+
+    fun verifyNonVoids(expressions: List<Expression>, where: Token, message: String) {
+        for (expression in expressions) {
+            val signature = expression.sig()
+            if (signature == Sign.VOID) {
+                where.error<String>(message)
+                throw RuntimeException()
+            }
+        }
     }
 }

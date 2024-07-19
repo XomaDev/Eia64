@@ -1,6 +1,7 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
+import space.themelon.eia64.signatures.Consumable
 import space.themelon.eia64.signatures.SimpleSignature
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
@@ -10,7 +11,7 @@ import space.themelon.eia64.syntax.Type
 data class UnaryOperation(
     val where: Token,
     val operator: Type,
-    val expr: Expression,
+    @Consumable("Cannot apply unary on void expression") val expr: Expression,
     val towardsLeft: Boolean
 ) : Expression(where) {
 

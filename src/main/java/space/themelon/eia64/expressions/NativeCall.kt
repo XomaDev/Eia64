@@ -1,6 +1,8 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
+import space.themelon.eia64.signatures.Consumable
+import space.themelon.eia64.signatures.Matching.verifyNonVoids
 import space.themelon.eia64.signatures.SimpleSignature
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.syntax.Token
@@ -9,8 +11,13 @@ import space.themelon.eia64.syntax.Type
 data class NativeCall(
     val where: Token,
     val call: Type,
+    @Consumable("Native call cannot have void arguments")
     val arguments: List<Expression>,
 ) : Expression(where) {
+
+    init {
+        verifyNonVoids(arguments, where, "Cannot accept a void expression")
+    }
 
     override fun <R> accept(v: Visitor<R>) = v.nativeCall(this)
 
