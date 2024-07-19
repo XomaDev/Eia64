@@ -721,7 +721,12 @@ class Evaluator(
 
     override fun interruption(interruption: Interruption) = when (val type = interruption.operator) {
         // wrap it as a normal entity, this will be naturally unboxed when called unbox()
-        RETURN -> Entity("FlowReturn", false, unboxEval(interruption.expr!!), RETURN)
+        RETURN -> {
+            // could be of a void type, so it could be null
+            val expr = if (interruption.expr == null) 0
+                else unboxEval(interruption.expr)
+            Entity("FlowReturn", false, expr, RETURN)
+        }
         USE -> Entity("FlowUse", false, unboxEval(interruption.expr!!), USE)
         BREAK -> Entity("FlowBreak", false, 0, BREAK)
         CONTINUE -> Entity("FlowContinue", false, 0, CONTINUE)

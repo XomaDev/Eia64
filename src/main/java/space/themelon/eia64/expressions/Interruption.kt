@@ -22,6 +22,7 @@ data class Interruption(
             val signature = expr!!.sig()
             if (operator == Type.RETURN) {
                 signature.returnMetadata = signature
+                signature.terminative = true
             }
             return signature
         }

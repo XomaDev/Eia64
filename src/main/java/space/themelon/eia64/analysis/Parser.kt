@@ -6,6 +6,7 @@ import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.ArrayLiteral
 import space.themelon.eia64.runtime.Executor
 import space.themelon.eia64.signatures.*
+import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.syntax.Flag
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
@@ -21,15 +22,17 @@ class Parser(private val executor: Executor) {
 
     lateinit var parsed: ExpressionList
 
+    // maintain a list of externally included classes
+    private val classes = ArrayList<String>()
+    private val staticClasses = ArrayList<String>()
+
     // Variable questions: are we in a scope that is of loops?
     // and so should we allow `continue` and `break` statement?
     // 0 => Not allowed
     // > 0 => Allowed
     private var iterativeScope = 0
 
-    // maintain a list of externally included classes
-    private val classes = ArrayList<String>()
-    private val staticClasses = ArrayList<String>()
+    private val expectingReturnSignatures = mutableListOf<Signature>()
 
     fun parse(tokens: List<Token>): ExpressionList {
         index = 0
@@ -315,7 +318,20 @@ class Parser(private val executor: Executor) {
             token,
             token.type,
             when (token.type) {
-                Type.RETURN -> parseNext()
+                Type.RETURN -> {
+                    val expectedSignature = expectingReturnSignatures.last()
+                    if (expectedSignature == Sign.VOID) {
+                        null
+                    } else {
+                        val expr = parseNext()
+                        val gotSignature = expr.sig()
+                        if (!matches(expectedSignature, gotSignature)) {
+                            token.error<String>("Was expecting return type of $expectedSignature but got $gotSignature")
+                            throw RuntimeException()
+                        }
+                        expr
+                    }
+                }
                 Type.USE -> parseNext()
                 else -> null
             }
@@ -341,10 +357,13 @@ class Parser(private val executor: Executor) {
         val returnSignature = if (isNext(Type.COLON)) {
             skip()
             readSignature(next())
-        } else Sign.ANY
+        } else Sign.VOID
 
         // create a wrapper object, that can be set to actual value later
         val reference = FunctionReference(null, requiredArgs, requiredArgs.size, returnSignature)
+
+        // Specify the type that can be returned
+        expectingReturnSignatures.add(returnSignature)
         resolver.defineFn(name, reference)
         resolver.enterScope()
 
@@ -352,6 +371,8 @@ class Parser(private val executor: Executor) {
 
         val body = unitBody() // Fully Manual Scopped
         resolver.leaveScope()
+        expectingReturnSignatures.removeLast()
+
         val fnExpr = FunctionExpr(name, requiredArgs, returnSignature, body)
         reference.fnExpression = fnExpr
         return fnExpr
@@ -396,6 +417,9 @@ class Parser(private val executor: Executor) {
 
         if (isEOF() || peek().type != Type.ELSE) {
             val terminativeIf = ifBody.sig().terminative
+            //println("of: " + ifBody)
+            //println("of: " + ifBody.sig().terminative)
+            //println("signature: " + ifBody.sig())
             if (terminativeIf) {
                 // if (terminativeIf) means end of execution
                 //  treat the rest of the code in the else body

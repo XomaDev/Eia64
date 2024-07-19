@@ -26,6 +26,7 @@ enum class Type {
     OPEN_CURLY, CLOSE_CURLY,
     COMMA,
 
+    E_VOID,
     E_INT, E_BOOL, E_STRING, E_CHAR,
     E_ARRAY, E_ANY, E_UNIT, E_OBJECT,
 
@@ -107,6 +108,7 @@ enum class Type {
             }
 
             KEYWORDS.let {
+                it["Void"] = StaticToken(E_VOID, arrayOf(Flag.CLASS))
                 it["Int"] = StaticToken(E_INT, arrayOf(Flag.CLASS))
                 it["Bool"] = StaticToken(E_BOOL, arrayOf(Flag.CLASS))
                 it["String"] = StaticToken(E_STRING, arrayOf(Flag.CLASS))

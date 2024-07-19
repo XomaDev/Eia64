@@ -19,6 +19,7 @@ data class ExpressionList(
             if (expression is Interruption) {
                 if (expression.operator == Type.RETURN) {
                     // a return statement, pass on it's signature
+                    println("got return interruption: $expression")
                     return expression.sig()
                 }
                 break
@@ -33,6 +34,7 @@ data class ExpressionList(
         // }
         // println(a)
         // ; 5
+        println("yeah using last signature")
         return expressions.last().sig()
     }
 }

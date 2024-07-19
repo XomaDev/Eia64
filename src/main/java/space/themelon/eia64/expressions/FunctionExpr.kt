@@ -36,6 +36,7 @@ data class FunctionExpr(
 
         val bodySignature = body.sig()
         println("Body signature: $bodySignature")
+        println("is terminative: ${bodySignature.terminative}")
     }
 
     override fun <R> accept(v: Visitor<R>) = v.function(this)
