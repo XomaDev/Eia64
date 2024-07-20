@@ -142,6 +142,8 @@ class Evaluator(
             val left = unboxEval(expr.left)
             val right = unboxEval(expr.right)
 
+            //println("eq test left $left")
+            //println("eq test right $right")
             EBool(if (type == EQUALS) valueEquals(left, right) else !valueEquals(left, right))
         }
         LOGICAL_AND -> booleanExpr(expr.left).and(booleanExpr(expr.right))

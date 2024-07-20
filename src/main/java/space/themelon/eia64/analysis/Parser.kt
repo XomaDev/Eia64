@@ -442,13 +442,16 @@ class Parser(private val executor: Executor) {
 
         if (isEOF() || peek().type != Type.ELSE) {
             val terminativeIf = ifBody.sig().terminative
+
             //println("of: " + ifBody)
             //println("of: " + ifBody.sig().terminative)
             //println("signature: " + ifBody.sig())
+
+            // TODO:turn of imaginary parsing for testing
             if (terminativeIf) {
                 // if (terminativeIf) means end of execution
                 //  treat the rest of the code in the else body
-                return IfStatement(where, logicalExpr, ifBody, parseImaginaryElse())
+                //return IfStatement(where, logicalExpr, ifBody, parseImaginaryElse())
             }
 
             return IfStatement(where, logicalExpr, ifBody)
