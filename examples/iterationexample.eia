@@ -16,7 +16,7 @@ fn iterateEveryN(n: Int, text: String, callback: Unit) {
   }
 }
 
-let callback(sequence) {
+let callback(sequence: String) {
   println("Callback received: " + sequence)
 }
 iterateEveryN(4, "HACKCLUB!", callback)

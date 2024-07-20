@@ -2,7 +2,7 @@ include(
   static:std:string
 )
 
-fn binarySearch(array: Array<Int>, x: Int) {
+fn binarySearch(array: Array<Int>, x: Int): Int {
   var left = 0
   var right = len(array) - 1
 

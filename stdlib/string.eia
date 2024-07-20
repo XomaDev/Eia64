@@ -180,16 +180,16 @@ fn splitOnce(self: String, delimiter: String): Array {
             substring(self, splitIndex + 1) )
 }
 
-fn splitRecursive(self: String, delimiter: String) {
+fn splitRecursive(self: String, delimiter: String): Any {
   if (!contains(self, delimiter)) return self
   let onceSplit = splitOnce(self, delimiter)
   onceSplit[1] = splitRecursive(onceSplit[1]::String, delimiter)
   return onceSplit
 }
 
-fn split(self: String, delimiter: String): Array {
+fn split(self: String, delimiter: String): Array<String> {
   if (contains(self, delimiter)) {
-    return splitRecursive(self, delimiter)::Array.flatten()
+    return (splitRecursive(self, delimiter)::Array.flatten())::Array<String>
   }
   return arrayOf(self)
 }

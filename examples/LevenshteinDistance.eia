@@ -5,11 +5,11 @@ include(
   static:std:math
 )
 
-fn compute(first: String, second: String) {
+fn compute(first: String, second: String): Int {
   let lenFirst = len(first)
   let lenSecond = len(second)
 
-  let dist = arrayOf<Array<Int>>(lenFirst + 1, 0)
+  let dist = arrayOf<Array<Int>>(lenFirst + 1, arrayOf(0))
   for (var i = 0, i < lenFirst + 1, i++)
     dist[i] = arrayOf<Int>(lenSecond + 1, 0)
 

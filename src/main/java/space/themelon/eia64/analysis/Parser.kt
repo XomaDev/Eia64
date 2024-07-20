@@ -116,7 +116,7 @@ class Parser(private val executor: Executor) {
         val token = peek()
         val expression = parseNext()
         if (expression.sig() == Sign.VOID) {
-            token.error<String>("Expression cannot be void")
+            token.error<String>("Expression cannot return void")
         }
         return expression
     }

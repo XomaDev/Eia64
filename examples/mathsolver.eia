@@ -41,23 +41,22 @@ fn isEOF(): Bool = i == size
 fn peek(): String = tokens[i]
 fn next(): String = tokens[i++]
 
-fn eatNumeric() {
+fn eatNumeric(): Int {
   let value = next()
   if (!isNumeric(value)) {
     println("Expected numeric type token but got " + value)
     exit(1)
   }
-  return value
+  return int(value)
 }
 
-fn eatOperator() {
-  let op = next()
-  if (SUPPORTED_OPERATORS.contains(op))return op
-  println("Unknown OP Code: " + op)
-  exit(1)
+fn eatOperator(): String {
+  let op = next().trim()
+  if (SUPPORTED_OPERATORS.contains(op)) return op
+  throw "Unknown OP Code: " + op
 }
 
-fn parse(): Array {
+fn parse(): Any {
   var left: Any = eatNumeric()
   until (!isEOF()) {
     var op = eatOperator()
@@ -78,10 +77,10 @@ fn parse(): Array {
   return left
 }
 
-fn execute(node: Array) {
-  var left: Any = node[0]
-  let op = node[1]::String
-  var right: Any = node[2]
+fn execute(node: Any): Int {
+  var left: Any = node::Array[0]
+  let op = node::Array[1]::String
+  var right: Any = node::Array[2]
 
   if (type(left) == "e_array") left = execute(left::Array)
   if (type(right) == "e_array") right = execute(right::Array)

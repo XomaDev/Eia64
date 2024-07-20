@@ -19,7 +19,12 @@ data class Interruption(
 
     override fun sig(): Signature {
         if (operator == Type.RETURN || operator == Type.USE) {
-            if (expr == null) where.error<String>("No expression for operator $operator provided")
+            if (expr == null) {
+                // `return` may not have an expression, but `use` must.
+                if (operator == Type.USE) {
+                    where.error<String>("No expression for operator $operator provided")
+                } else return Sign.ANY
+            }
             val signature = expr!!.sig()
             if (operator == Type.RETURN) {
                 signature.returnMetadata = signature
