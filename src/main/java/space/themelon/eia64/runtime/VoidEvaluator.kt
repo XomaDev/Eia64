@@ -91,6 +91,10 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
+    override fun classPropertyAccess(propertyAccess: ClassPropertyAccess): Any {
+        throw ShutdownException()
+    }
+
     override fun classMethodCall(call: ClassMethodCall): Any {
         throw ShutdownException()
     }

@@ -11,7 +11,7 @@ import space.themelon.eia64.syntax.Token
 data class ClassMethodCall(
     val where: Token,
     val static: Boolean,
-    val obj: Expression,
+    val objectExpression: Expression,
     val method: String,
     @Consumable("Arguments cannot contain void expressions") val arguments: List<Expression>,
     val reference: FunctionReference,
@@ -47,7 +47,7 @@ data class ClassMethodCall(
 
         if (moduleInfo.linked) {
             val selfSignature = signIterator.next().second
-            val providedSignature = obj.sig()
+            val providedSignature = objectExpression.sig()
             if (!matches(selfSignature, providedSignature)) {
                 where.error<String>("Self argument mismatch, expected $selfSignature, got $providedSignature")
             }

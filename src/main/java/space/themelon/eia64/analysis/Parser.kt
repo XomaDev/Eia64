@@ -186,10 +186,11 @@ class Parser(private val executor: Executor) {
 
     private fun newStatement(token: Token): NewObj {
         val module = readAlpha()
+        val arguments = callArguments()
         return NewObj(token,
             module,
-            callArguments(),
-            executor.getModule(module).resolveFn("init", 0))
+            arguments,
+            executor.getModule(module).resolveFn("init", arguments.size))
     }
 
     private fun parseNextInBrace(): Expression {
@@ -686,13 +687,21 @@ class Parser(private val executor: Executor) {
         objectExpression: Expression,
         moduleInfo: ModuleInfo,
         property: String
-    ): Expression {
+    ): ClassPropertyAccess {
         // Plan:
         //  Global variables of other class are located in scope 0
         //  So we need to just maintain position of that variable in
         //  super scope, then access it at runtime
         val uniqueVariable = executor.getModule(moduleInfo.name).resolveGlobalVr(property)
             ?: moduleInfo.where.error("Could not find global variable '$property' in module ${moduleInfo.name}")
+        return ClassPropertyAccess(
+            where = moduleInfo.where,
+            static = isStatic(objectExpression),
+            objectExpression = objectExpression,
+            property = property,
+            uniqueVariable,
+            moduleInfo,
+        )
     }
 
     private fun classMethodCall(
@@ -711,14 +720,19 @@ class Parser(private val executor: Executor) {
 
         return ClassMethodCall(
             where = objectExpression.marking!!,
-            static = objectExpression is Alpha && manager.staticClasses.contains(objectExpression.value),
-            obj = objectExpression,
+            static = isStatic(objectExpression),
+            objectExpression = objectExpression,
             method = elementName,
             arguments = arguments,
             reference = fnReference,
             moduleInfo = moduleInfo
         )
     }
+
+    // Whether the expression references an externally static
+    // included class
+    private fun isStatic(expression: Expression)
+        = expression is Alpha && manager.staticClasses.contains(expression.value)
 
     private fun getModuleInfo(
         where: Token,
@@ -734,17 +748,17 @@ class Parser(private val executor: Executor) {
         val signature = objectExpression.sig()
         if (objectExpression is Alpha && objectExpression.index == -2) {
             // Pure static invocation
-            return ModuleInfo(objectExpression.value, false)
+            return ModuleInfo(where, objectExpression.value, false)
         } else if (signature is SimpleSignature) {
             // Linked Static Invocation (String, Int, Array)
-            return ModuleInfo(getLinkedModule(signature, where), true)
+            return ModuleInfo(where, getLinkedModule(signature, where), true)
         } else if (signature is ObjectExtension) {
             // Object Invocation
-            return ModuleInfo(signature.extensionClass, false)
+            return ModuleInfo(where, signature.extensionClass, false)
         } else {
             // TODO: we'll have to work on a fix for this
             signature as ArrayExtension
-            return ModuleInfo("array", true)
+            return ModuleInfo(where, "array", true)
         }
     }
 

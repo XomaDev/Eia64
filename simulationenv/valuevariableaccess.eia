@@ -2,5 +2,5 @@ include(
   "simulationenv/ValueClass"
 )
 
-let value = new ValueClass()
+let value = new ValueClass("Meow")
 println(value.personName)

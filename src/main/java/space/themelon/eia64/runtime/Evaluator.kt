@@ -472,10 +472,35 @@ class Evaluator(
         return result
     }
 
-    override fun methodCall(call: MethodCall) = fnInvoke(call.reference.fnExpression!!, evaluateArgs(call.arguments))
+    override fun classPropertyAccess(propertyAccess: ClassPropertyAccess): Any {
+        val property = propertyAccess.property
+        val moduleName = propertyAccess.moduleInfo.name
+
+        var evaluator: Evaluator? = null
+        if (propertyAccess.static) {
+            evaluator = executor.getEvaluator(moduleName)
+        } else {
+            when (val evaluatedObject = unboxEval(propertyAccess.objectExpression)) {
+                is Evaluator -> evaluator = evaluatedObject
+                is Primitive<*> -> executor.getEvaluator(moduleName)
+                else -> throw RuntimeException("Could not find property $property of object $evaluatedObject")
+            }
+        }
+        if (evaluator == null) {
+            throw RuntimeException("Could not find module $moduleName")
+        }
+        val uniqueVariable = propertyAccess.uniqueVariable
+        return evaluator.memory.getVar(
+            uniqueVariable.index,
+            property
+        )
+    }
+
+    override fun methodCall(call: MethodCall)
+        = fnInvoke(call.reference.fnExpression!!, evaluateArgs(call.arguments))
 
     override fun classMethodCall(call: ClassMethodCall): Any {
-        val obj = call.obj
+        val obj = call.objectExpression
         val methodName = call.method
         val args: Array<Any>
 
