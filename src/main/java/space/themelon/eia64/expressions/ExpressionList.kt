@@ -14,27 +14,32 @@ data class ExpressionList(
     val size = expressions.size
     override fun <R> accept(v: Visitor<R>) = v.expressions(this)
 
-    override fun sig(): Signature {
-        for (expression in expressions) {
-            if (expression is Interruption) {
-                if (expression.operator == Type.RETURN) {
-                    // a return statement, pass on it's signature
-                    println("got return interruption: $expression")
-                    return expression.sig()
+    fun returnSig(): Signature {
+        val expressionItr = expressions.iterator()
+        while (expressionItr.hasNext()) {
+            val expr = expressionItr.next()
+            if (expr is Interruption && expr.operator == Type.RETURN) {
+                if (expressionItr.hasNext()) {
+                    expr.where.error<String>("Cannot have more statements after return")
                 }
-                break
+                return expr.sig()
             }
         }
-        // return signature of last statement, this is what Kotlin does sometimes (I guess)
-        // let a = if (true) {
-        //   println("hello")
-        //   7
-        // } else {
-        //   2
-        // }
-        // println(a)
-        // ; 5
-        println("yeah using last signature")
+        return Sign.NONE
+    }
+
+    override fun sig(): Signature {
+        val expressionItr = expressions.iterator()
+        while (expressionItr.hasNext()) {
+            val expr = expressionItr.next()
+            if (expr is Interruption && expr.operator == Type.RETURN) {
+                if (expressionItr.hasNext()) {
+                    expr.where.error<String>("Cannot have more statements after return")
+                }
+                return expr.sig()
+            }
+        }
+        // return last signature of the expression, useful for units
         return expressions.last().sig()
     }
 }

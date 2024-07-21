@@ -1,8 +1,39 @@
 package space.themelon.eia64.analysis
 
+import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 
-class ReferenceResolver {
+class ScopeManager {
+
+    val classes = ArrayList<String>()
+    val staticClasses = ArrayList<String>()
+
+    // Helps us to know if `continue` and `break` statements
+    // are allowed in the current scope
+    // 0 => Not Allowed
+    // > 0 => Allowed
+    private var iterativeScopes = 0
+    val isIterativeScope
+        get() = iterativeScopes > 0
+
+    fun <T> iterativeScope(block: () -> T): T {
+        iterativeScopes++
+        val t = block()
+        iterativeScopes--
+        return t
+    }
+
+    private var expectedReturnSignature: Signature = Sign.NONE
+    val getPromisedSignature
+        get() = expectedReturnSignature
+
+    fun <T> expectReturn(signature: Signature, block: () -> T): T {
+        val parentSignature = expectedReturnSignature
+        expectedReturnSignature = signature
+        val t = block()
+        expectedReturnSignature = parentSignature
+        return t
+    }
 
     private var currentScope = NameScope()
 

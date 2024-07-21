@@ -11,29 +11,16 @@ import space.themelon.eia64.syntax.Flag
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 import java.io.File
-import kotlin.math.exp
 
 class Parser(private val executor: Executor) {
 
-    private val resolver = ReferenceResolver()
+    private val manager = ScopeManager()
 
     private lateinit var tokens: List<Token>
     private var index = 0
     private var size = 0
 
     lateinit var parsed: ExpressionList
-
-    // maintain a list of externally included classes
-    private val classes = ArrayList<String>()
-    private val staticClasses = ArrayList<String>()
-
-    // Variable questions: are we in a scope that is of loops?
-    // and so should we allow `continue` and `break` statement?
-    // 0 => Not allowed
-    // > 0 => Allowed
-    private var iterativeScope = 0
-
-    private val expectingReturnSignatures = mutableListOf<Signature>()
 
     fun parse(tokens: List<Token>): ExpressionList {
         index = 0
@@ -99,7 +86,7 @@ class Parser(private val executor: Executor) {
 
 
     private fun usable(where: Token, expression: Expression): Expression {
-        if (expression.sig() == Sign.VOID) {
+        if (expression.sig() == Sign.NONE) {
             where.error<String>("Expression cannot be void")
         }
         return expression
@@ -115,7 +102,7 @@ class Parser(private val executor: Executor) {
     private fun useNext(): Expression {
         val token = peek()
         val expression = parseNext()
-        if (expression.sig() == Sign.VOID) {
+        if (expression.sig() == Sign.NONE) {
             token.error<String>("Expression cannot return void")
         }
         return expression
@@ -141,7 +128,7 @@ class Parser(private val executor: Executor) {
                     val moduleName = getModuleName(file)
                     classNames.add(moduleName)
 
-                    classes.add(moduleName)
+                    manager.classes.add(moduleName)
                     executor.addModule(file.absolutePath, moduleName)
                 }
                 Type.E_STRING -> {
@@ -154,7 +141,7 @@ class Parser(private val executor: Executor) {
 
                     verifyFilePath(sourceFile, next)
                     val moduleName = getModuleName(sourceFile)
-                    classes.add(moduleName)
+                    manager.classes.add(moduleName)
                     executor.addModule(sourceFile.absolutePath, moduleName)
                 }
                 else -> next.error("Unexpected token")
@@ -179,8 +166,8 @@ class Parser(private val executor: Executor) {
         }
         verifyFilePath(sourceFile, path)
         val moduleName = getModuleName(sourceFile)
-        classes.add(moduleName)
-        staticClasses.add(moduleName)
+        manager.classes.add(moduleName)
+        manager.staticClasses.add(moduleName)
         executor.addModule(sourceFile.absolutePath, moduleName)
         return moduleName
     }
@@ -250,15 +237,13 @@ class Parser(private val executor: Executor) {
             Type.UNTIL -> {
                 val expr = parseNextInBrace()
                 // Scope: Automatic
-                iterativeScope++ // this allows for `continue` and `break` statement
-                val body = autoBodyExpr()
-                iterativeScope--
+                val body = manager.iterativeScope { autoScopeBody() }
                 return Until(where, expr, body)
             }
 
             Type.FOR -> {
                 // we cannot expose initializers outside the for loop
-                resolver.enterScope()
+                manager.enterScope()
                 expectType(Type.OPEN_CURVE)
                 val initializer = if (isNext(Type.COMMA)) null else useNext()
                 expectType(Type.COMMA)
@@ -267,10 +252,9 @@ class Parser(private val executor: Executor) {
                 val operational = if (isNext(Type.CLOSE_CURVE)) null else useNext()
                 expectType(Type.CLOSE_CURVE)
                 // double layer scope wrapping
-                iterativeScope++
-                val body = autoBodyExpr() // Scope: Automatic
-                iterativeScope--
-                resolver.leaveScope()
+                // Scope: Automatic
+                val body = manager.iterativeScope { autoBodyExpr() }
+                manager.leaveScope()
                 return ForLoop(
                     where,
                     initializer,
@@ -294,13 +278,11 @@ class Parser(private val executor: Executor) {
                         by = useNext()
                     }
                     expectType(Type.CLOSE_CURVE)
-                    resolver.enterScope()
-                    resolver.defineVariable(iName, Sign.INT)
+                    manager.enterScope()
+                    manager.defineVariable(iName, Sign.INT)
                     // Manual Scopped!
-                    iterativeScope++
-                    val body = unscoppedBodyExpr()
-                    iterativeScope--
-                    resolver.leaveScope()
+                    val body = manager.iterativeScope { unscoppedBodyExpr() }
+                    manager.leaveScope()
                     return Itr(where, iName, from, to, by, body)
                 } else {
                     expectType(Type.IN)
@@ -317,13 +299,11 @@ class Parser(private val executor: Executor) {
                         }
                     }
 
-                    resolver.enterScope()
-                    resolver.defineVariable(iName, elementSignature)
+                    manager.enterScope()
+                    manager.defineVariable(iName, elementSignature)
                     // Manual Scopped!
-                    iterativeScope++
-                    val body = unscoppedBodyExpr()
-                    iterativeScope--
-                    resolver.leaveScope()
+                    val body = manager.iterativeScope { unscoppedBodyExpr() }
+                    manager.leaveScope()
                     return ForEach(where, iName, entity, body)
                 }
             }
@@ -334,7 +314,7 @@ class Parser(private val executor: Executor) {
 
     private fun interruption(token: Token): Interruption {
         // checks if `continue and `break` statement are allowed
-        if ((token.type == Type.CONTINUE || token.type == Type.BREAK) && iterativeScope == 0) {
+        if ((token.type == Type.CONTINUE || token.type == Type.BREAK) && !manager.isIterativeScope) {
             val type = if (token.type == Type.CONTINUE) "Continue" else "Break"
             token.error<String>("$type statement is not allowed here") // End of Execution
             throw RuntimeException()
@@ -344,8 +324,8 @@ class Parser(private val executor: Executor) {
             token.type,
             when (token.type) {
                 Type.RETURN -> {
-                    val expectedSignature = expectingReturnSignatures.last()
-                    if (expectedSignature == Sign.VOID) {
+                    val expectedSignature = manager.getPromisedSignature
+                    if (expectedSignature == Sign.NONE) {
                         null
                     } else {
                         val expr = useNext()
@@ -364,7 +344,8 @@ class Parser(private val executor: Executor) {
     }
 
     private fun fnDeclaration(): FunctionExpr {
-        val name = readAlpha()
+        val where = next()
+        val name = readAlpha(where)
 
         expectType(Type.OPEN_CURVE)
         val requiredArgs = mutableListOf<Pair<String, Signature>>()
@@ -382,23 +363,23 @@ class Parser(private val executor: Executor) {
         val returnSignature = if (isNext(Type.COLON)) {
             skip()
             readSignature(next())
-        } else Sign.VOID
+        } else Sign.NONE
 
         // create a wrapper object, that can be set to actual value later
         val reference = FunctionReference(null, requiredArgs, requiredArgs.size, returnSignature)
 
-        // Specify the type that can be returned
-        expectingReturnSignatures.add(returnSignature)
-        resolver.defineFn(name, reference)
-        resolver.enterScope()
+        manager.defineFn(name, reference)
+        manager.enterScope()
 
-        requiredArgs.forEach { resolver.defineVariable(it.first, it.second) }
+        requiredArgs.forEach { manager.defineVariable(it.first, it.second) }
 
-        val body = unitBody() // Fully Manual Scopped
-        resolver.leaveScope()
-        expectingReturnSignatures.removeLast()
+        // Fully Manual Scoped
+        //  expectReturn() ensures the return type matches the one
+        //  promised at function signature
+        val body = manager.expectReturn(returnSignature) { unitBody() }
+        manager.leaveScope()
 
-        val fnExpr = FunctionExpr(name, requiredArgs, returnSignature, body)
+        val fnExpr = FunctionExpr(where, name, requiredArgs, returnSignature, body)
         reference.fnExpression = fnExpr
         return fnExpr
     }
@@ -406,21 +387,21 @@ class Parser(private val executor: Executor) {
     private fun shadoDeclaration(): Shadow {
         val names = ArrayList<String>()
 
-        resolver.enterScope()
+        manager.enterScope()
         expectType(Type.OPEN_CURVE)
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val name = readAlpha()
             expectType(Type.COLON)
 
             val argSignature = readSignature(next())
-            resolver.defineVariable(name, argSignature)
+            manager.defineVariable(name, argSignature)
             names.add(name)
             if (!isNext(Type.COMMA)) break
             skip()
         }
         expectType(Type.CLOSE_CURVE)
         val body = unitBody() // Fully Manual Scopped
-        resolver.leaveScope()
+        manager.leaveScope()
         return Shadow(names, body)
     }
 
@@ -469,26 +450,26 @@ class Parser(private val executor: Executor) {
     // as an *else* body when we encounter terminativeIf
 
     private fun parseImaginaryElse(): Scope {
-        resolver.enterScope()
+        manager.enterScope()
         val expressions = ArrayList<Expression>()
         while (!isEOF() && peek().type != Type.CLOSE_CURLY)
             expressions.add(parseNext())
         // Do not do any optimizations as of now
         val imaginaryElse = ExpressionList(expressions)
-        return Scope(imaginaryElse, resolver.leaveScope())
+        return Scope(imaginaryElse, manager.leaveScope())
     }
 
     private fun autoBodyExpr(): Scope {
         // used everywhere where there is no manual scope management is required,
         //  e.g., IfExpr, Until, For
         if (peek().type == Type.OPEN_CURLY) return autoScopeBody()
-        resolver.enterScope()
-        return Scope(parseNext(), resolver.leaveScope())
+        manager.enterScope()
+        return Scope(parseNext(), manager.leaveScope())
     }
 
     private fun autoScopeBody(): Scope {
-        resolver.enterScope()
-        return Scope(expressions(), resolver.leaveScope())
+        manager.enterScope()
+        return Scope(expressions(), manager.leaveScope())
     }
 
     private fun unscoppedBodyExpr(): Expression {
@@ -535,7 +516,7 @@ class Parser(private val executor: Executor) {
                 signature
             )
         }
-        resolver.defineVariable(name, signature)
+        manager.defineVariable(name, signature)
         return expr
     }
 
@@ -571,7 +552,7 @@ class Parser(private val executor: Executor) {
         }
         // TODO:
         //  in future we need to add an array type extension
-        if (classes.contains(token.data as String)) {
+        if (manager.classes.contains(token.data as String)) {
             // class that was included from external files
             // this will be an extension of Object class type
             return ObjectExtension(token.data)
@@ -659,9 +640,9 @@ class Parser(private val executor: Executor) {
     private fun isLiteral(expression: Expression) = when (expression) {
         is IntLiteral,
         is StringLiteral, -> true
-        is BoolLiteral, -> true
-        is CharLiteral, -> true
-        is ArrayLiteral, -> true
+        is BoolLiteral -> true
+        is CharLiteral -> true
+        is ArrayLiteral -> true
         else -> false
     }
 
@@ -704,7 +685,7 @@ class Parser(private val executor: Executor) {
 
         return ClassMethodCall(
             objExpr.marking!!,
-            objExpr is Alpha && staticClasses.contains(objExpr.value),
+            objExpr is Alpha && manager.staticClasses.contains(objExpr.value),
             linked,
             objExpr,
             methodName,
@@ -730,7 +711,7 @@ class Parser(private val executor: Executor) {
         else -> where.error("Unknown object signature $signature")
     }
 
-    private fun getFn(name: String) = resolver.resolveFn(name)
+    private fun getFn(name: String) = manager.resolveFn(name)
 
     private fun operatorPrecedence(type: Flag) = when (type) {
         Flag.ASSIGNMENT_TYPE -> 1
@@ -823,12 +804,12 @@ class Parser(private val executor: Executor) {
             Type.E_CHAR -> CharLiteral(token, token.data as Char)
             Type.ALPHA -> {
                 val name = readAlpha(token)
-                val vrReference = resolver.resolveVr(name)
+                val vrReference = manager.resolveVr(name)
                 if (vrReference == null) {
                     // could be a function call or static invocation
-                    if (resolver.resolveFn(name) != null)
+                    if (manager.resolveFn(name) != null)
                         Alpha(token, -3, name, Sign.NONE)
-                    else if (staticClasses.contains(name))
+                    else if (manager.staticClasses.contains(name))
                         Alpha(token, -2, name, Sign.NONE)
                     else token.error<Expression>("Could not resolve name $name")
                 } else {
@@ -853,7 +834,7 @@ class Parser(private val executor: Executor) {
 
         if (unitExpr is Alpha) {
             val name = unitExpr.value
-            val fnExpr = resolver.resolveFn(name)
+            val fnExpr = manager.resolveFn(name)
             if (fnExpr != null) {
                 if (fnExpr.argsSize == -1)
                     throw RuntimeException("[Internal] Function args size is not yet set")

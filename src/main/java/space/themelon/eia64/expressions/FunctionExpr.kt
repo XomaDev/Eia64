@@ -1,16 +1,18 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.signatures.Consumable
+import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
+import space.themelon.eia64.syntax.Token
 
 data class FunctionExpr(
+    val where: Token,
     val name: String,
     val arguments: List<Pair<String, Signature>>, // List< <Parameter Name, Sign> >
-    val returnType: Signature,
+    val returnSignature: Signature,
     val body: Expression
-) : Expression(null) {
+) : Expression(where) {
 
     init {
         // TODO: Verifying correct returns of functions according to their signature
@@ -34,10 +36,14 @@ data class FunctionExpr(
         //    if(cond=a,
         //       then=<Scope, Metada={return=Int}>{ return Int(0) } else=<>{ return Int(2) })
         // }
+        checkSignature()
+    }
 
-        val bodySignature = body.sig()
-        println("Body signature: $bodySignature")
-        println("is terminative: ${bodySignature.terminative}")
+    private fun checkSignature() {
+        val receivedSignature = if (body is ExpressionList) body.returnSig() else body.sig()
+        if (!matches(returnSignature, receivedSignature)) {
+            where.error<String>("Promised return signature $returnSignature but got $returnSignature")
+        }
     }
 
     override fun <R> accept(v: Visitor<R>) = v.function(this)

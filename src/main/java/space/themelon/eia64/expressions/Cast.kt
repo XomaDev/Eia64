@@ -48,6 +48,10 @@ data class Cast(
             // they already are of the same type
             return expectSignature
         }
+        // TODO:
+        //  actually some casts are not just limited to parse-time
+        //  they actually sometimes mean runtime
+        //  e.g from int (letter 65 => 'A')
         where.error<String>("Cannot cast $expr to $expectSignature")
         throw RuntimeException()
     }

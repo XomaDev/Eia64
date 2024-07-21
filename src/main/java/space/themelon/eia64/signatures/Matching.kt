@@ -6,7 +6,7 @@ import space.themelon.eia64.syntax.Token
 object Matching {
     fun matches(expect: Signature, got: Signature): Boolean {
         // Void != Any
-        if (expect == Sign.ANY) return got != Sign.VOID
+        if (expect == Sign.ANY) return got != Sign.NONE
         if (expect is SimpleSignature) return expect == got
 
         if (expect is ArrayExtension) {
@@ -27,7 +27,7 @@ object Matching {
     fun verifyNonVoids(expressions: List<Expression>, where: Token, message: String) {
         for (expression in expressions) {
             val signature = expression.sig()
-            if (signature == Sign.VOID) {
+            if (signature == Sign.NONE) {
                 where.error<String>(message)
                 throw RuntimeException()
             }
