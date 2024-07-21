@@ -231,8 +231,9 @@ class Evaluator(
             // it is being stored somewhere, like in a variable, etc.
             //   that's why we shouldn't evaluate it
             return list
+        var result: Any? = null
         for (expression in list.expressions) {
-            val result = eval(expression)
+            result = eval(expression)
             if (result is Entity) {
                 // flow interruption is just forwarded
                 when (result.type) {
@@ -241,7 +242,7 @@ class Evaluator(
                 }
             }
         }
-        return EInt(list.size)
+        return result!!
     }
 
     override fun include(include: Include): Any {
@@ -504,8 +505,9 @@ class Evaluator(
                 else -> throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
             }
         }
-        val finalEvaluator = evaluator ?: executor.getEvaluator(call.module)
-        ?: throw RuntimeException("Could not find module ${call.module}")
+        val moduleName = call.moduleInfo.name
+        val finalEvaluator = evaluator ?: executor.getEvaluator(moduleName)
+            ?: throw RuntimeException("Could not find module $moduleName")
         return finalEvaluator.fnInvoke(call.reference.fnExpression!!, args)
     }
 
@@ -559,7 +561,7 @@ class Evaluator(
         }
         val result = unboxEval(fn.body)
         memory.leaveScope()
-
+        if (fn.isVoid) return fn
         return result
     }
 

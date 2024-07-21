@@ -35,10 +35,11 @@ class ScopeManager {
         return t
     }
 
-    private var currentScope = NameScope()
+    private val headScope = ResolutionScope()
+    private var currentScope = headScope
 
     fun enterScope() {
-        val newScope = NameScope(currentScope)
+        val newScope = ResolutionScope(currentScope)
         currentScope = newScope
     }
 
@@ -77,4 +78,5 @@ class ScopeManager {
     fun resolveFn(name: String, numArgs: Int) = currentScope.resolveFn(UniqueFunction(name, numArgs))
 
     fun resolveVr(name: String) = currentScope.resolveVr(name)
+    fun resolveGlobalVr(name: String) = currentScope.variables[name]
 }

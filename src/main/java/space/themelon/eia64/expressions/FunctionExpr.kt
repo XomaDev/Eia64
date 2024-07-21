@@ -10,6 +10,7 @@ data class FunctionExpr(
     val where: Token,
     val name: String,
     val arguments: List<Pair<String, Signature>>, // List< <Parameter Name, Sign> >
+    val isVoid: Boolean,
     val returnSignature: Signature,
     val body: Expression
 ) : Expression(where) {

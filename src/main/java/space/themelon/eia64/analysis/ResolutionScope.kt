@@ -2,7 +2,7 @@ package space.themelon.eia64.analysis
 
 import space.themelon.eia64.signatures.Signature
 
-class NameScope(val before: NameScope? = null) {
+class ResolutionScope(val before: ResolutionScope? = null) {
     val uniqueFunctionNames = LinkedHashSet<String>()
 
     val functions = HashMap<UniqueFunction, FunctionReference>()

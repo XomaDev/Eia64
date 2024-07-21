@@ -189,7 +189,7 @@ class Parser(private val executor: Executor) {
         return NewObj(token,
             module,
             callArguments(),
-            executor.getModule(module).getFn("init", 0))
+            executor.getModule(module).resolveFn("init", 0))
     }
 
     private fun parseNextInBrace(): Expression {
@@ -362,10 +362,15 @@ class Parser(private val executor: Executor) {
         }
         expectType(Type.CLOSE_CURVE)
 
+        val isVoid: Boolean
         var returnSignature = if (isNext(Type.COLON)) {
             skip()
+            isVoid = false
             readSignature(next())
-        } else Sign.NONE
+        } else {
+            isVoid = true
+            Sign.UNIT
+        }
 
         // create a wrapper object, that can be set to actual value later
         val reference = FunctionReference(null, requiredArgs, requiredArgs.size, returnSignature)
@@ -399,7 +404,7 @@ class Parser(private val executor: Executor) {
         }
         manager.leaveScope()
 
-        val fnExpr = FunctionExpr(where, name, requiredArgs, returnSignature, body)
+        val fnExpr = FunctionExpr(where, name, requiredArgs, isVoid, returnSignature, body)
         reference.fnExpression = fnExpr
         return fnExpr
     }
@@ -650,7 +655,7 @@ class Parser(private val executor: Executor) {
                     skip()
                     Cast(nextOp, usable(nextOp, left), readSignature(next()))
                 }
-                else -> classMethodCall(left)
+                else -> classElementCall(left)
             }
         }
         return left
@@ -665,12 +670,60 @@ class Parser(private val executor: Executor) {
         else -> false
     }
 
-    private fun classMethodCall(objExpr: Expression): Expression {
+    private fun classElementCall(objExpr: Expression): Expression {
         skip()
 
-        val method = next()
-        val methodName = readAlpha(method)
+        val element = next()
+        val elementName = readAlpha(element)
 
+        val moduleInfo = getModuleInfo(element, objExpr)
+        if (isNext(Type.OPEN_CURVE))
+            return classMethodCall(objExpr, moduleInfo, elementName)
+        return classPropertyAccess(objExpr, moduleInfo, elementName)
+    }
+
+    private fun classPropertyAccess(
+        objectExpression: Expression,
+        moduleInfo: ModuleInfo,
+        property: String
+    ): Expression {
+        // Plan:
+        //  Global variables of other class are located in scope 0
+        //  So we need to just maintain position of that variable in
+        //  super scope, then access it at runtime
+        val uniqueVariable = executor.getModule(moduleInfo.name).resolveGlobalVr(property)
+            ?: moduleInfo.where.error("Could not find global variable '$property' in module ${moduleInfo.name}")
+    }
+
+    private fun classMethodCall(
+        objectExpression: Expression,
+        moduleInfo: ModuleInfo,
+        elementName: String
+    ): ClassMethodCall {
+        val arguments = callArguments()
+
+        // bump argsSize if it's linked invocation
+        val argsSize = if (moduleInfo.linked) arguments.size + 1 else arguments.size
+
+        val fnReference = executor.getModule(moduleInfo.name)
+            .resolveFn(elementName, argsSize)
+            ?: moduleInfo.where.error("Could not find function '$elementName' in module ${moduleInfo.name}")
+
+        return ClassMethodCall(
+            where = objectExpression.marking!!,
+            static = objectExpression is Alpha && manager.staticClasses.contains(objectExpression.value),
+            obj = objectExpression,
+            method = elementName,
+            arguments = arguments,
+            reference = fnReference,
+            moduleInfo = moduleInfo
+        )
+    }
+
+    private fun getModuleInfo(
+        where: Token,
+        objectExpression: Expression
+    ): ModuleInfo {
         // First Case: Pure static invocation `Person.sayHello()`
         // Second Case: Linked Static Invocation
         //    let myString = " Meow "
@@ -678,46 +731,24 @@ class Parser(private val executor: Executor) {
         // Third Case: Object Invocation
         //    let myPerson = new Person("Miaw")
         //    println(myPerson.sayHello())
-
-        val module: String
-        val signature = objExpr.sig()
-        var linked = false
-        module = if (objExpr is Alpha && objExpr.index == -2) {
+        val signature = objectExpression.sig()
+        if (objectExpression is Alpha && objectExpression.index == -2) {
             // Pure static invocation
-            objExpr.value
+            return ModuleInfo(objectExpression.value, false)
         } else if (signature is SimpleSignature) {
-            // Linked Static Invocation
-            linked = true
-            translateModule(signature, method)
+            // Linked Static Invocation (String, Int, Array)
+            return ModuleInfo(getLinkedModule(signature, where), true)
         } else if (signature is ObjectExtension) {
             // Object Invocation
-            signature.extensionClass
+            return ModuleInfo(signature.extensionClass, false)
         } else {
             // TODO: we'll have to work on a fix for this
             signature as ArrayExtension
-            linked = true
-            "array"
+            return ModuleInfo("array", true)
         }
-        val arguments = callArguments()
-        // here comes the issues of different modules
-        var argsSize = arguments.size
-        if (linked) argsSize += 1
-        val fnReference = executor.getModule(module).getFn(methodName, argsSize)
-            ?: throw RuntimeException("Could not find function '$methodName' in module _")
-
-        return ClassMethodCall(
-            objExpr.marking!!,
-            objExpr is Alpha && manager.staticClasses.contains(objExpr.value),
-            linked,
-            objExpr,
-            methodName,
-            arguments,
-            fnReference,
-            module
-        )
     }
 
-    private fun translateModule(
+    private fun getLinkedModule(
         signature: Signature,
         where: Token
     ) = when (signature) {
@@ -733,7 +764,8 @@ class Parser(private val executor: Executor) {
         else -> where.error("Unknown object signature $signature")
     }
 
-    private fun getFn(name: String, numArgs: Int) = manager.resolveFn(name, numArgs)
+    private fun resolveGlobalVr(name: String) = manager.resolveGlobalVr(name)
+    private fun resolveFn(name: String, numArgs: Int) = manager.resolveFn(name, numArgs)
 
     private fun operatorPrecedence(type: Flag) = when (type) {
         Flag.ASSIGNMENT_TYPE -> 1
@@ -834,7 +866,7 @@ class Parser(private val executor: Executor) {
                         // but different args, this just marks it as a function
                         Alpha(token, -3, name, Sign.NONE)
                     else if (manager.staticClasses.contains(name))
-                        // probably referencing a method from a outer class
+                        // probably referencing a method from an outer class
                         Alpha(token, -2, name, Sign.NONE)
                     else token.error<Expression>("Could not resolve name $name")
                 } else {

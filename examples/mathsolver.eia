@@ -27,8 +27,9 @@ fn isNumeric(token: String): Bool {
 
 fn tokenize(expr: String): Array<String> {
   expr = expr.replace("\t", " ")
-  until (expr.contains("  "))
+  until (expr.contains("  ")) {
     expr = expr.replace("  ", " ")
+  }
   return expr.split(" ")
 }
 
@@ -88,16 +89,21 @@ fn execute(node: Any): Int {
   left = int(left)
   right = int(right)
 
-  return when (op) {
-    PLUS -> { left::Int + right::Int }
-    MINUS -> { left::Int - right::Int }
-    MULTIPLY -> { left::Int * right::Int }
-    DIVIDE -> { left::Int / right::Int }
+  println("op: " + op)
+  println("left: " + left)
+  println("right: " + right)
+  let resu = when (op) {
+    PLUS -> { := left::Int + right::Int }
+    MINUS -> { := left::Int - right::Int }
+    MULTIPLY -> { := left::Int * right::Int }
+    DIVIDE -> { := left::Int / right::Int }
     else -> {
       println("Unknown operator code: " + op)
       exit(1)
     }
   }
+  println("resu: " + resu)
+  return resu
 }
 
 fn evaluate(expr: String) {
@@ -112,7 +118,8 @@ fn evaluate(expr: String) {
   size = len(tokens)
 
   let parsed = parse()
-  println(execute(parsed))
+  println("parsed: " + parsed)
+  println("result: " + execute(parsed))
 }
 
 until (true) {
