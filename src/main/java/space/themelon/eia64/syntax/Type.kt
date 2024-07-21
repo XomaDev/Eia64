@@ -32,7 +32,7 @@ enum class Type {
     ALPHA,
     E_TRUE, E_FALSE,
 
-    BOOL_CAST, INT_CAST, STRING_CAST,
+    BOOL_CAST, INT_CAST, CHAR_CAST, STRING_CAST,
     TYPE,
 
     LET, VAR, SHADO, WHEN,
@@ -121,6 +121,7 @@ enum class Type {
 
                 it["bool"] = StaticToken(BOOL_CAST, arrayOf(Flag.NATIVE_CALL))
                 it["int"] = StaticToken(INT_CAST, arrayOf(Flag.NATIVE_CALL))
+                it["char"] = StaticToken(CHAR_CAST, arrayOf(Flag.NATIVE_CALL))
                 it["str"] = StaticToken(STRING_CAST, arrayOf(Flag.NATIVE_CALL))
 
                 it["type"] = StaticToken(TYPE, arrayOf(Flag.NATIVE_CALL))

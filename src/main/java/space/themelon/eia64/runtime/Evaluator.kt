@@ -150,6 +150,8 @@ class Evaluator(
         LOGICAL_OR -> booleanExpr(expr.left).or(booleanExpr(expr.right))
         RIGHT_DIAMOND -> EBool(intExpr(expr.left) > intExpr(expr.right))
         LEFT_DIAMOND -> {
+            println(expr.left)
+            println(expr.right)
             val left = intExpr(expr.left)
             val right = intExpr(expr.right)
             EBool(left < right)
@@ -353,8 +355,23 @@ class Evaluator(
             INT_CAST -> {
                 if (argsSize != 1) reportWrongArguments("int", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
-                if (getType(obj) == E_INT) return obj
-                return EInt(Integer.parseInt(obj.toString()))
+
+                return when (val objType = getType(obj)) {
+                    E_INT -> obj
+                    E_CHAR -> EInt((obj as EChar).get().code)
+                    E_STRING -> EInt(Integer.parseInt(obj.toString()))
+                    else -> throw RuntimeException("Unknown type for int() cast $objType")
+                }
+            }
+
+            CHAR_CAST -> {
+                if (argsSize != 1) reportWrongArguments("char", 1, argsSize)
+                val obj = unboxEval(call.arguments[0])
+                return when (val objType = getType(obj)) {
+                    E_CHAR -> objType
+                    E_INT -> EChar((obj as EInt).get().toChar())
+                    else -> throw RuntimeException("Unknown type for char() cast $objType")
+                }
             }
 
             STRING_CAST -> {

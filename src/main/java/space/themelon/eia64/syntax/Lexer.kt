@@ -110,12 +110,13 @@ class Lexer(private val source: String) {
                     'n' -> c = '\n'
                     't' -> c = '\t'
                     's' -> c = ' '
-                    '\'', '\"', '\\' -> break
+                    '\'', '\"', '\\' -> { c = e }
                     else -> reportError("Invalid escape character '$e'")
                 }
             }
             content.append(c)
         }
+        //println(content)
         return Token(line, E_STRING, arrayOf(Flag.VALUE, Flag.CONSTANT_VALUE), content.toString())
     }
 
