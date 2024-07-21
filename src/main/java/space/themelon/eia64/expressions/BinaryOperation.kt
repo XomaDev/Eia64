@@ -3,6 +3,7 @@ package space.themelon.eia64.expressions
 import space.themelon.eia64.Expression
 import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.signatures.Consumable
+import space.themelon.eia64.signatures.Matching.intOrChar
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
@@ -53,21 +54,21 @@ data class BinaryOperation(
                 where.error<String>("Cannot apply logical operator (|| Logical Or) on non Bool expressions")
             } else resultSign = Sign.BOOL
 
-            Type.RIGHT_DIAMOND -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT) {
-                where.error<String>("Cannot apply logical operator (> Greater Than) on non Int expressions")
+            Type.RIGHT_DIAMOND -> if (!intOrChar(left, right)) {
+                where.error<String>("Cannot apply logical operator (> Greater Than) on non [Int/Char] expressions")
             } else resultSign = Sign.BOOL
 
-            Type.LEFT_DIAMOND -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT) {
-                where.error<String>("Cannot apply logical operator (< Lesser Than) on non Int expressions")
+            Type.LEFT_DIAMOND -> if (!intOrChar(left, right)) {
+                where.error<String>("Cannot apply logical operator (< Lesser Than) on non [Int/Char] expressions")
             } else resultSign = Sign.BOOL
 
-            Type.GREATER_THAN_EQUALS -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT) {
-                where.error<String>("Cannot apply logical operator (>= Greater Than Equals) on non Int expressions")
+            Type.GREATER_THAN_EQUALS -> if (!intOrChar(left, right)) {
+                where.error<String>("Cannot apply logical operator (>= Greater Than Equals) on non [Int/Char] expressions")
                 resultSign = Sign.BOOL
             } else resultSign = Sign.BOOL
 
-            Type.LESSER_THAN_EQUALS -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT) {
-                where.error<String>("Cannot apply logical operator (<= Lesser Than Equals) on non Int expressions")
+            Type.LESSER_THAN_EQUALS -> if (!intOrChar(left, right)) {
+                where.error<String>("Cannot apply logical operator (<= Lesser Than Equals) on [Int/Char] Int expressions")
             } else resultSign = Sign.BOOL
 
             Type.ASSIGNMENT -> {

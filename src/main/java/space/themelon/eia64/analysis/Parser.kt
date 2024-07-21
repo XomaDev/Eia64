@@ -360,7 +360,7 @@ class Parser(private val executor: Executor) {
         }
         expectType(Type.CLOSE_CURVE)
 
-        val returnSignature = if (isNext(Type.COLON)) {
+        var returnSignature = if (isNext(Type.COLON)) {
             skip()
             readSignature(next())
         } else Sign.NONE
@@ -374,9 +374,26 @@ class Parser(private val executor: Executor) {
         requiredArgs.forEach { manager.defineVariable(it.first, it.second) }
 
         // Fully Manual Scoped
-        //  expectReturn() ensures the return type matches the one
-        //  promised at function signature
-        val body = manager.expectReturn(returnSignature) { unitBody() }
+        val body: Expression
+        if (isNext(Type.ASSIGNMENT)) {
+            skip()
+            body = parseNext()
+
+            // TODO: this may cause problems if the body
+            //  self references the function
+            //  or if it self references, we need to enforce strictness
+            if (returnSignature == Sign.NONE) {
+                // e.g. fn meow() = "hello world"
+                // here return signature is auto decided based on return content
+                returnSignature = body.sig()
+            }
+        } else {
+            //  expectReturn() ensures the return type matches the one
+            //  promised at function signature
+            body = manager.expectReturn(returnSignature) {
+                expressions()
+            }
+        }
         manager.leaveScope()
 
         val fnExpr = FunctionExpr(where, name, requiredArgs, returnSignature, body)
@@ -400,15 +417,13 @@ class Parser(private val executor: Executor) {
             skip()
         }
         expectType(Type.CLOSE_CURVE)
-        val body = unitBody() // Fully Manual Scopped
+        val body = if (isNext(Type.ASSIGNMENT)) {
+            skip()
+            parseNext()
+        } else expressions() // Fully Manual Scopped
         manager.leaveScope()
         return Shadow(names, body)
     }
-
-    private fun unitBody() = if (isNext(Type.ASSIGNMENT)) {
-        skip()
-        parseNext()
-    } else expressions()
 
     private fun ifDeclaration(where: Token): IfStatement {
         val logicalExpr = parseNextInBrace()

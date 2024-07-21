@@ -38,7 +38,11 @@ class Evaluator(
     private fun unboxEval(expr: Expression) = unbox(eval(expr))
 
     private fun booleanExpr(expr: Expression) = unboxEval(expr) as EBool
-    private fun intExpr(expr: Expression) = unboxEval(expr) as EInt
+
+    private fun intExpr(expr: Expression) = when (val result = unboxEval(expr)) {
+        is EChar -> EInt(result.get().code)
+        else -> result as EInt
+    }
 
     private val memory = Memory()
 
@@ -150,8 +154,6 @@ class Evaluator(
         LOGICAL_OR -> booleanExpr(expr.left).or(booleanExpr(expr.right))
         RIGHT_DIAMOND -> EBool(intExpr(expr.left) > intExpr(expr.right))
         LEFT_DIAMOND -> {
-            println(expr.left)
-            println(expr.right)
             val left = intExpr(expr.left)
             val right = intExpr(expr.right)
             EBool(left < right)

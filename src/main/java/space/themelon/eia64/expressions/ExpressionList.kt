@@ -19,7 +19,10 @@ data class ExpressionList(
         while (expressionItr.hasNext()) {
             val expr = expressionItr.next()
             if (expr is Interruption && expr.operator == Type.RETURN) {
+                // this ensures there are no more statements after
+                // return statement is encountered
                 if (expressionItr.hasNext()) {
+                    println(expressionItr.next())
                     expr.where.error<String>("Cannot have more statements after return")
                 }
                 return expr.sig()

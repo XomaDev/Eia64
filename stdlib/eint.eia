@@ -1,4 +1,4 @@
-fn pow(self: Int, power: Int) {
+fn pow(self: Int, power: Int): Int {
   power = copy(power) - 1
   self = copy(self)
 
@@ -9,7 +9,7 @@ fn pow(self: Int, power: Int) {
   return result
 }
 
-fn root(number: Int) {
+fn root(number: Int): Int {
   if (number < 0) {
     throw "Cannot find the square root of a negative number."
   }
@@ -40,7 +40,7 @@ fn root(number: Int) {
   return result
 }
 
-fn magnitude(self: Int) {
+fn mag(self: Int): Int {
   self = copy(self)
   if (0 > self) return -self
   return self

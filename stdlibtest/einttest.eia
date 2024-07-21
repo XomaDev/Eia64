@@ -1,0 +1,22 @@
+include(
+  static:std:eint,
+  static:std:string
+)
+
+println(25.root() == 5)
+println(5.pow(2) == 25)
+println(-523.mag() == 523)
+
+println("1234".toInt() == 1234)
+println("00012340".toInt() == 12340)
+println("-123".toInt() == -123)
+println("-0".toInt() == 0)
+println("12223333".toInt() == 12223333)
+
+println("10".toIntRadix(2) == 2)
+println("101010".toIntRadix(2) == 42)
+println("101".toIntRadix(2) == 5)
+
+println("173".toIntRadix(8) == 123)
+println("354574".toIntRadix(8) == 121212)
+println("23417".toIntRadix(8) == 9999)

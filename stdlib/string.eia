@@ -210,7 +210,7 @@ fn toIntRadix(self: String, radix: Int): Int {
     numberFormatError(self)
   }
   let firstChar = self[0]
-  if (int(firstChar) < int('0')) {
+  if (firstChar < '0') {
     if (firstChar == '-') {
        negative = true
     } else if (firstChar != '+') {
@@ -233,6 +233,5 @@ fn toIntRadix(self: String, radix: Int): Int {
   return if (negative) result else -result
 }
 
-; we need to make such functions auto deciding
-; just the same way kotlin does it
+; opps, the problem still exists!
 fn toInt(self: String): Int = toIntRadix(self, 10)
