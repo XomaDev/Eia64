@@ -30,5 +30,12 @@ println("12212".toIntRadix(6) == 1808)
 println("12212".toIntRadix(6) == 1808)
 println("54342".toIntRadix(6) == 7478)
 
-
 println("232".toIntRadix(5) == 67)
+println("11212".toIntRadix(5) == 807)
+println("442121".toIntRadix(5) == 15286)
+
+println("12121".toIntRadix(7) == 3151)
+println("1122222".toIntRadix(7) == 140058)
+println("12121".toIntRadix(7) == 3151)
+println("325642".toIntRadix(7) == 57262)
+println("2313123".toIntRadix(7) == 289215)

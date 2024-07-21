@@ -139,7 +139,7 @@ fn replace(self: String, match: String, replacement: String): String {
 }
 
 fn isAlpha(self: String): Bool {
-  each (ch in self) {
+  for (ch in self) {
     if (!(UPPER_CASE.contains(ch) || LOWER_CASE.contains(ch))) {
      return false
     }
@@ -151,7 +151,7 @@ fn isNumeric(self: String): Bool {
   if (startsWith(self, "-")) {
     self = substring(self, 1)
   }
-  each (ch in self) {
+  for (ch in self) {
     if (!contains("1234567890.", str(ch))) return false
   }
  return true

@@ -242,75 +242,88 @@ class Parser(private val executor: Executor) {
                 return Until(where, expr, body)
             }
 
-            Type.FOR -> {
-                // we cannot expose initializers outside the for loop
-                manager.enterScope()
-                expectType(Type.OPEN_CURVE)
-                val initializer = if (isNext(Type.COMMA)) null else useNext()
-                expectType(Type.COMMA)
-                val conditional = if (isNext(Type.COMMA)) null else useNext()
-                expectType(Type.COMMA)
-                val operational = if (isNext(Type.CLOSE_CURVE)) null else useNext()
-                expectType(Type.CLOSE_CURVE)
-                // double layer scope wrapping
-                // Scope: Automatic
-                val body = manager.iterativeScope { autoBodyExpr() }
-                manager.leaveScope()
-                return ForLoop(
-                    where,
-                    initializer,
-                    conditional,
-                    operational,
-                    body)
-            }
+            Type.FOR -> return forLoop(where)
 
             Type.EACH -> {
                 expectType(Type.OPEN_CURVE)
                 val iName = readAlpha()
-                if (isNext(Type.COLON)) {
+                expectType(Type.COLON)
+
+                skip()
+                val from = useNext()
+                expectType(Type.TO)
+                val to = useNext()
+
+                var by: Expression? = null
+                if (isNext(Type.BY)) {
                     skip()
-                    val from = useNext()
-                    expectType(Type.TO)
-                    val to = useNext()
-
-                    var by: Expression? = null
-                    if (isNext(Type.BY)) {
-                        skip()
-                        by = useNext()
-                    }
-                    expectType(Type.CLOSE_CURVE)
-                    manager.enterScope()
-                    manager.defineVariable(iName, Sign.INT)
-                    // Manual Scopped!
-                    val body = manager.iterativeScope { unscoppedBodyExpr() }
-                    manager.leaveScope()
-                    return Itr(where, iName, from, to, by, body)
-                } else {
-                    expectType(Type.IN)
-                    val entity = useNext()
-                    expectType(Type.CLOSE_CURVE)
-
-                    val elementSignature = when (val iterableSignature = entity.sig()) {
-                        is ArrayExtension -> iterableSignature.elementSignature
-                        Sign.STRING -> Sign.CHAR
-
-                        else -> {
-                            where.error<String>("Unknown non iterable element for '$iName'")
-                            throw RuntimeException()
-                        }
-                    }
-
-                    manager.enterScope()
-                    manager.defineVariable(iName, elementSignature)
-                    // Manual Scopped!
-                    val body = manager.iterativeScope { unscoppedBodyExpr() }
-                    manager.leaveScope()
-                    return ForEach(where, iName, entity, body)
+                    by = useNext()
                 }
+                expectType(Type.CLOSE_CURVE)
+                manager.enterScope()
+                manager.defineVariable(iName, Sign.INT)
+                // Manual Scopped!
+                val body = manager.iterativeScope { unscoppedBodyExpr() }
+                manager.leaveScope()
+                return Itr(where, iName, from, to, by, body)
             }
 
             else -> return where.error("Unknown loop type symbol")
         }
+    }
+
+    private fun forLoop(where: Token): Expression {
+        // we cannot expose initializers outside the for loop
+        expectType(Type.OPEN_CURVE)
+        val expression = if (isNext(Type.ALPHA)) forEach(where) else forVariableLoop(where)
+        return expression
+    }
+
+    private fun forEach(where: Token): ForEach {
+        val iName = readAlpha()
+        expectType(Type.IN)
+        val entity = useNext()
+        expectType(Type.CLOSE_CURVE)
+
+        val elementSignature = when (val iterableSignature = entity.sig()) {
+            is ArrayExtension -> iterableSignature.elementSignature
+            Sign.STRING -> Sign.CHAR
+
+            else -> {
+                where.error<String>("Unknown non iterable element for '$iName'")
+                throw RuntimeException()
+            }
+        }
+
+        manager.enterScope()
+        manager.defineVariable(iName, elementSignature)
+        // Manual Scopped!
+        val body = manager.iterativeScope { unscoppedBodyExpr() }
+        manager.leaveScope()
+        return ForEach(where, iName, entity, body)
+    }
+
+    private fun forVariableLoop(
+        where: Token,
+    ): ForLoop {
+        manager.enterScope()
+        val initializer = if (isNext(Type.COMMA)) null else useNext()
+        expectType(Type.COMMA)
+        val conditional = if (isNext(Type.COMMA)) null else useNext()
+        expectType(Type.COMMA)
+        val operational = if (isNext(Type.CLOSE_CURVE)) null else useNext()
+        expectType(Type.CLOSE_CURVE)
+        // double layer scope wrapping
+        // Scope: Automatic
+        val body = manager.iterativeScope { autoBodyExpr() }
+        manager.leaveScope()
+        return ForLoop(
+            where,
+            initializer,
+            conditional,
+            operational,
+            body
+        )
     }
 
     private fun interruption(token: Token): Interruption {

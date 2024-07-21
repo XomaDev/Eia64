@@ -164,7 +164,13 @@ class Evaluator(
             val toUpdate = expr.left
             val value = unboxEval(expr.right)
             when (toUpdate) {
-                is Alpha -> update(toUpdate.index, toUpdate.value, value)
+                is Alpha -> {
+                    if (toUpdate.value == "tokens") {
+                        println(toUpdate)
+                        println(toUpdate.where.error<String>("meow"))
+                    }
+                    update(toUpdate.index, toUpdate.value, value)
+                }
                 is ArrayAccess -> {
                     val array = unboxEval(toUpdate.expr)
                     val index = intExpr(toUpdate.index).get()
