@@ -3,8 +3,12 @@ include(
   static:std:string
 )
 
-println(25.root() == 5)
-println(5.pow(2) == 25)
+println(25.pow(2))
+for (var i = 0, i < 10, i++) {
+  println(i + " squared: " + i.pow(2) + ", rooted " + i.root())
+}
+println(25.root())
+
 println(-523.mag() == 523)
 
 println("1234".toInt() == 1234)
@@ -25,3 +29,6 @@ println("122".toIntRadix(6) == 50)
 println("12212".toIntRadix(6) == 1808)
 println("12212".toIntRadix(6) == 1808)
 println("54342".toIntRadix(6) == 7478)
+
+
+println("232".toIntRadix(5) == 67)

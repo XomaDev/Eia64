@@ -3,29 +3,31 @@ package space.themelon.eia64.analysis
 import space.themelon.eia64.signatures.Signature
 
 class NameScope(val before: NameScope? = null) {
-    val names = ArrayList<String>()
-    val functions = HashMap<String, UniqueFunction>()
+    val uniqueFunctionNames = LinkedHashSet<String>()
 
-    val variableSigns = ArrayList<Signature>()
+    val functions = HashMap<UniqueFunction, FunctionReference>()
+    val variables = HashMap<String, UniqueVariable>()
 
-    fun resolveFn(name: String, args: List<Signature>): FunctionReference? {
-        val uniqueFunction = functions[name]
-        if (uniqueFunction != null && uniqueFunction.matchesArgs(args)) {
-            return uniqueFunction.reference
-        }
-        if (before != null) return before.resolveFn(name, args)
+    fun resolveFn(function: UniqueFunction): FunctionReference? {
+        val reference = functions[function]
+        if (reference != null) return reference
+        if (before != null) return before.resolveFn(function)
         return null
     }
 
-    // just checks if a function with that name exists in scope
     fun resolveFnName(name: String): Boolean {
-        if (functions.containsKey(name)) return true
+        if (uniqueFunctionNames.contains(name)) return true
         if (before != null) return before.resolveFnName(name)
         return false
     }
 
-    fun resolveVr(name: String): VariableReference? {
-        names.indexOf(name).let { if (it != -1) return VariableReference(it, variableSigns[it]) }
+    fun defineVr(name: String, signature: Signature) {
+        variables[name] = UniqueVariable(variables.size, signature)
+    }
+
+    fun resolveVr(name: String): UniqueVariable? {
+        val uniqueVariable = variables[name]
+        if (uniqueVariable != null) return uniqueVariable
         if (before != null) return before.resolveVr(name)
         return null
     }

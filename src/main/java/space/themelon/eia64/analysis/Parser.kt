@@ -189,7 +189,7 @@ class Parser(private val executor: Executor) {
         return NewObj(token,
             module,
             callArguments(),
-            executor.getModule(module).getFn("init", emptyList()))
+            executor.getModule(module).getFn("init", 0))
     }
 
     private fun parseNextInBrace(): Expression {
@@ -370,7 +370,7 @@ class Parser(private val executor: Executor) {
         // create a wrapper object, that can be set to actual value later
         val reference = FunctionReference(null, requiredArgs, requiredArgs.size, returnSignature)
 
-        manager.defineFn(name, promisedArgSignatures, reference)
+        manager.defineFn(name, reference)
         manager.enterScope()
 
         requiredArgs.forEach { manager.defineVariable(it.first, it.second) }
@@ -699,7 +699,10 @@ class Parser(private val executor: Executor) {
             "array"
         }
         val arguments = callArguments()
-        val fnReference = executor.getModule(module).getFn(methodName, arguments.signatures())
+        // here comes the issues of different modules
+        var argsSize = arguments.size
+        if (linked) argsSize += 1
+        val fnReference = executor.getModule(module).getFn(methodName, argsSize)
             ?: throw RuntimeException("Could not find function '$methodName' in module _")
 
         return ClassMethodCall(
@@ -730,7 +733,7 @@ class Parser(private val executor: Executor) {
         else -> where.error("Unknown object signature $signature")
     }
 
-    private fun getFn(name: String, argSignatures: List<Signature>) = manager.resolveFn(name, argSignatures)
+    private fun getFn(name: String, numArgs: Int) = manager.resolveFn(name, numArgs)
 
     private fun operatorPrecedence(type: Flag) = when (type) {
         Flag.ASSIGNMENT_TYPE -> 1
@@ -826,12 +829,16 @@ class Parser(private val executor: Executor) {
                 val vrReference = manager.resolveVr(name)
                 if (vrReference == null) {
                     // could be a function call or static invocation
-                    if (manager.resolveFnName(name))
+                    if (manager.hasFunctionNamed(name))
+                        // there could be multiple functions with same name
+                        // but different args, this just marks it as a function
                         Alpha(token, -3, name, Sign.NONE)
                     else if (manager.staticClasses.contains(name))
+                        // probably referencing a method from a outer class
                         Alpha(token, -2, name, Sign.NONE)
                     else token.error<Expression>("Could not resolve name $name")
                 } else {
+                    // classic variable access
                     Alpha(token, vrReference.index, name, vrReference.signature)
                 }
             }
@@ -853,7 +860,7 @@ class Parser(private val executor: Executor) {
 
         if (unitExpr is Alpha) {
             val name = unitExpr.value
-            val fnExpr = manager.resolveFn(name, arguments.signatures())
+            val fnExpr = manager.resolveFn(name, arguments.size)
             if (fnExpr != null) {
                 if (fnExpr.argsSize == -1)
                     throw RuntimeException("[Internal] Function args size is not yet set")

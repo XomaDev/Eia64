@@ -48,7 +48,7 @@ class ScopeManager {
         // let x = 5
         // if (x) { println("Hello, "World") }
         // here you don't require creating a new scope to evaluate it
-        val imaginaryScope = currentScope.names.isEmpty() && currentScope.functions.isEmpty()
+        val imaginaryScope = currentScope.variables.isEmpty() && currentScope.functions.isEmpty()
         currentScope.before.let {
             if (it == null)
                 throw RuntimeException("Reached super scope")
@@ -57,21 +57,24 @@ class ScopeManager {
         return imaginaryScope
     }
 
-    fun defineFn(name: String, args: List<Signature>, reference: FunctionReference) {
-        if (name in currentScope.functions)
+    fun defineFn(name: String, reference: FunctionReference) {
+        val unique = UniqueFunction(name, reference.argsSize)
+        val existing = currentScope.resolveFn(unique)
+        if (existing != null) {
             throw RuntimeException("Function $name is already defined in the current scope")
-        currentScope.functions[name] = UniqueFunction(args, reference)
+        }
+        currentScope.functions[unique] = reference
+        currentScope.uniqueFunctionNames += name
     }
 
     fun defineVariable(name: String, signature: Signature) {
-        if (name in currentScope.names)
+        if (name in currentScope.variables)
             throw RuntimeException("Variable $name is already defined in the current scope")
-        currentScope.names += name
-        currentScope.variableSigns += signature
+        currentScope.defineVr(name, signature)
     }
 
-    fun resolveFnName(name: String) = currentScope.resolveFnName(name)
-    fun resolveFn(name: String, suppliedArgs: List<Signature>) = currentScope.resolveFn(name, suppliedArgs)
+    fun hasFunctionNamed(name: String) = currentScope.resolveFnName(name)
+    fun resolveFn(name: String, numArgs: Int) = currentScope.resolveFn(UniqueFunction(name, numArgs))
 
     fun resolveVr(name: String) = currentScope.resolveVr(name)
 }
