@@ -40,10 +40,18 @@ data class FunctionExpr(
     }
 
     private fun checkSignature() {
-        val receivedSignature = if (body is ExpressionList) body.returnSig() else body.sig()
-        if (!matches(returnSignature, receivedSignature)) {
-            where.error<String>("Promised return signature $returnSignature but got $returnSignature")
+        if (body !is ExpressionList) {
+            val receivedSignature = body.sig()
+            if (!matches(returnSignature, receivedSignature)) {
+                where.error<String>("Promised return signature $returnSignature but got $receivedSignature")
+            }
+        } else {
+            val receivedSignature = body.returnSig()
+            if (receivedSignature == returnSignature.returnMetadata) {
+                println("yeahh: " + receivedSignature)
+            }
         }
+
     }
 
     override fun <R> accept(v: Visitor<R>) = v.function(this)

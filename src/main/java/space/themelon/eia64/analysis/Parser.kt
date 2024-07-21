@@ -189,7 +189,7 @@ class Parser(private val executor: Executor) {
         return NewObj(token,
             module,
             callArguments(),
-            executor.getModule(module).getFn("init"))
+            executor.getModule(module).getFn("init", emptyList()))
     }
 
     private fun parseNextInBrace(): Expression {
@@ -348,13 +348,15 @@ class Parser(private val executor: Executor) {
         val name = readAlpha(where)
 
         expectType(Type.OPEN_CURVE)
+        val promisedArgSignatures = mutableListOf<Signature>()
         val requiredArgs = mutableListOf<Pair<String, Signature>>()
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val parameterName = readAlpha()
             expectType(Type.COLON)
             val signature = readSignature(next())
 
-            requiredArgs.add(Pair(parameterName, signature))
+            promisedArgSignatures += signature
+            requiredArgs += parameterName to signature
             if (!isNext(Type.COMMA)) break
             skip()
         }
@@ -368,7 +370,7 @@ class Parser(private val executor: Executor) {
         // create a wrapper object, that can be set to actual value later
         val reference = FunctionReference(null, requiredArgs, requiredArgs.size, returnSignature)
 
-        manager.defineFn(name, reference)
+        manager.defineFn(name, promisedArgSignatures, reference)
         manager.enterScope()
 
         requiredArgs.forEach { manager.defineVariable(it.first, it.second) }
@@ -386,6 +388,7 @@ class Parser(private val executor: Executor) {
                 // e.g. fn meow() = "hello world"
                 // here return signature is auto decided based on return content
                 returnSignature = body.sig()
+                reference.returnSignature = returnSignature
             }
         } else {
             //  expectReturn() ensures the return type matches the one
@@ -500,7 +503,8 @@ class Parser(private val executor: Executor) {
         while (!isEOF() && peek().type != Type.CLOSE_CURLY)
             expressions.add(parseNext())
         expectType(Type.CLOSE_CURLY)
-        if (expressions.size == 1) return expressions[0]
+        // such optimisations may alter expressions behaviour
+        // if (expressions.size == 1) return expressions[0]
         return ExpressionList(expressions)
     }
 
@@ -694,9 +698,9 @@ class Parser(private val executor: Executor) {
             linked = true
             "array"
         }
-        val fnReference = executor.getModule(module).getFn(methodName)
-            ?: throw RuntimeException("Could not find function '$methodName' in module _")
         val arguments = callArguments()
+        val fnReference = executor.getModule(module).getFn(methodName, arguments.signatures())
+            ?: throw RuntimeException("Could not find function '$methodName' in module _")
 
         return ClassMethodCall(
             objExpr.marking!!,
@@ -726,7 +730,7 @@ class Parser(private val executor: Executor) {
         else -> where.error("Unknown object signature $signature")
     }
 
-    private fun getFn(name: String) = manager.resolveFn(name)
+    private fun getFn(name: String, argSignatures: List<Signature>) = manager.resolveFn(name, argSignatures)
 
     private fun operatorPrecedence(type: Flag) = when (type) {
         Flag.ASSIGNMENT_TYPE -> 1
@@ -822,7 +826,7 @@ class Parser(private val executor: Executor) {
                 val vrReference = manager.resolveVr(name)
                 if (vrReference == null) {
                     // could be a function call or static invocation
-                    if (manager.resolveFn(name) != null)
+                    if (manager.resolveFnName(name))
                         Alpha(token, -3, name, Sign.NONE)
                     else if (manager.staticClasses.contains(name))
                         Alpha(token, -2, name, Sign.NONE)
@@ -849,7 +853,7 @@ class Parser(private val executor: Executor) {
 
         if (unitExpr is Alpha) {
             val name = unitExpr.value
-            val fnExpr = manager.resolveFn(name)
+            val fnExpr = manager.resolveFn(name, arguments.signatures())
             if (fnExpr != null) {
                 if (fnExpr.argsSize == -1)
                     throw RuntimeException("[Internal] Function args size is not yet set")
@@ -916,4 +920,12 @@ class Parser(private val executor: Executor) {
     }
 
     private fun isEOF() = index == size
+}
+
+private fun List<Expression>.signatures(): List<Signature> {
+    val signatures = mutableListOf<Signature>()
+    for (expression in this) {
+        signatures += expression.sig()
+    }
+    return signatures
 }

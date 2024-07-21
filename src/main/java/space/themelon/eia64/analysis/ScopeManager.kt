@@ -57,11 +57,10 @@ class ScopeManager {
         return imaginaryScope
     }
 
-    fun defineFn(name: String, fnExpression: FunctionReference) {
+    fun defineFn(name: String, args: List<Signature>, reference: FunctionReference) {
         if (name in currentScope.functions)
             throw RuntimeException("Function $name is already defined in the current scope")
-        currentScope.functions += name
-        currentScope.funcObjs += fnExpression
+        currentScope.functions[name] = UniqueFunction(args, reference)
     }
 
     fun defineVariable(name: String, signature: Signature) {
@@ -71,7 +70,8 @@ class ScopeManager {
         currentScope.variableSigns += signature
     }
 
-    fun resolveFn(name: String) = currentScope.resolveFn(name, 0)
+    fun resolveFnName(name: String) = currentScope.resolveFnName(name)
+    fun resolveFn(name: String, suppliedArgs: List<Signature>) = currentScope.resolveFn(name, suppliedArgs)
 
     fun resolveVr(name: String) = currentScope.resolveVr(name)
 }

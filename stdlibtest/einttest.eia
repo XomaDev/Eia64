@@ -20,3 +20,8 @@ println("101".toIntRadix(2) == 5)
 println("173".toIntRadix(8) == 123)
 println("354574".toIntRadix(8) == 121212)
 println("23417".toIntRadix(8) == 9999)
+
+println("122".toIntRadix(6) == 50)
+println("12212".toIntRadix(6) == 1808)
+println("12212".toIntRadix(6) == 1808)
+println("54342".toIntRadix(6) == 7478)

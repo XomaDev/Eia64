@@ -4,17 +4,24 @@ import space.themelon.eia64.signatures.Signature
 
 class NameScope(val before: NameScope? = null) {
     val names = ArrayList<String>()
-    val functions = ArrayList<String>()
+    val functions = HashMap<String, UniqueFunction>()
 
     val variableSigns = ArrayList<Signature>()
-    val funcObjs = ArrayList<FunctionReference>()
 
-    fun resolveFn(name: String, travelDepth: Int): FunctionReference? {
-        functions.indexOf(name).let {
-            if (it != -1) return funcObjs[it]
-            if (before != null) return before.resolveFn(name, travelDepth + 1)
-            return null
+    fun resolveFn(name: String, args: List<Signature>): FunctionReference? {
+        val uniqueFunction = functions[name]
+        if (uniqueFunction != null && uniqueFunction.matchesArgs(args)) {
+            return uniqueFunction.reference
         }
+        if (before != null) return before.resolveFn(name, args)
+        return null
+    }
+
+    // just checks if a function with that name exists in scope
+    fun resolveFnName(name: String): Boolean {
+        if (functions.containsKey(name)) return true
+        if (before != null) return before.resolveFnName(name)
+        return false
     }
 
     fun resolveVr(name: String): VariableReference? {
