@@ -11,7 +11,7 @@ fn isEmpty(self: Array): Bool = len(self) == 0
 
 fn fillRecursive(flattened: Array, unflattened: Array, fillIndex: Int) {
   for (element in unflattened) {
-    if (type(element) == "e_array") fillRecursive(flattened, element::Array, fillIndex)
+    if (element is Array) fillRecursive(flattened, element::Array, fillIndex)
     else flattened[fillIndex++] = element
   }
 }
@@ -19,7 +19,7 @@ fn fillRecursive(flattened: Array, unflattened: Array, fillIndex: Int) {
 fn recursiveLen(self: Array): Int {
   var size = 0
   for (element in self) {
-    if (type(element) == "e_array") size += recursiveLen(element::Array)
+    if (element is Array) size += recursiveLen(element::Array)
     else size++
   }
   return size

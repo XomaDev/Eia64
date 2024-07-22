@@ -83,8 +83,8 @@ fn execute(node: Any): Int {
   let op = node::Array[1]::String
   var right: Any = node::Array[2]
 
-  if (type(left) == "e_array") left = execute(left::Array)
-  if (type(right) == "e_array") right = execute(right::Array)
+  if (left is Array) left = execute(left::Array)
+  if (right is Array) right = execute(right::Array)
 
   left = int(left)
   right = int(right)

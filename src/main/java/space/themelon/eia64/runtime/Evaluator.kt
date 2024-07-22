@@ -12,7 +12,6 @@ import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type.*
 import java.util.Scanner
 import kotlin.collections.ArrayList
-import kotlin.math.exp
 import kotlin.math.pow
 import kotlin.random.Random
 import kotlin.system.exitProcess
@@ -425,7 +424,13 @@ class Evaluator(
             TYPE -> {
                 if (argsSize != 1) reportWrongArguments("type", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
-                return EString(getType(obj).toString())
+                var typeName = getType(obj).toString()
+                if (obj is Evaluator) {
+                    typeName += "<"
+                    typeName += obj.className
+                    typeName += ">"
+                }
+                return EString(typeName)
             }
 
             INCLUDE -> {
