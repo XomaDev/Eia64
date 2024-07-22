@@ -59,6 +59,10 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
+    override fun isStatement(isStatement: IsStatement): Any {
+        throw ShutdownException()
+    }
+
     override fun shado(shadow: Shadow): Any {
         throw ShutdownException()
     }

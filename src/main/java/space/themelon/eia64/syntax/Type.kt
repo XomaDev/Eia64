@@ -26,6 +26,8 @@ enum class Type {
     OPEN_CURLY, CLOSE_CURLY,
     COMMA,
 
+    IS,
+
     E_INT, E_BOOL, E_STRING, E_CHAR,
     E_ARRAY, E_ANY, E_UNIT, E_OBJECT,
 
@@ -124,8 +126,9 @@ enum class Type {
                 it["char"] = StaticToken(CHAR_CAST, arrayOf(Flag.NATIVE_CALL))
                 it["str"] = StaticToken(STRING_CAST, arrayOf(Flag.NATIVE_CALL))
 
-                it["type"] = StaticToken(TYPE, arrayOf(Flag.NATIVE_CALL))
+                it["is"] = StaticToken(IS, arrayOf(Flag.IS, Flag.OPERATOR))
 
+                it["type"] = StaticToken(TYPE, arrayOf(Flag.NATIVE_CALL))
                 it["copy"] = StaticToken(COPY, arrayOf(Flag.NATIVE_CALL))
 
                 // Deprecated, now entire work is being done by arrayOf()

@@ -1,0 +1,2 @@
+println("meow" is String)
+println(7 + 3 + "meow" is String)

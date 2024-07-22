@@ -12,6 +12,7 @@ import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type.*
 import java.util.Scanner
 import kotlin.collections.ArrayList
+import kotlin.math.exp
 import kotlin.math.pow
 import kotlin.random.Random
 import kotlin.system.exitProcess
@@ -230,6 +231,26 @@ class Evaluator(
         BITWISE_AND -> intExpr(expr.left).and(intExpr(expr.right))
         BITWISE_OR -> intExpr(expr.left).or(intExpr(expr.right))
         else -> throw RuntimeException("Unknown binary operator $type")
+    }
+
+    override fun isStatement(isStatement: IsStatement): Any {
+        val result = unboxEval(isStatement.expression)
+        val signature = isStatement.signature
+
+        if (signature is ObjectExtension) {
+            if (result !is Evaluator) {
+                return EBool(false)
+            }
+            val expectedClass = signature.extensionClass
+            val gotClass = result.className
+
+            if (expectedClass != gotClass) {
+                return EBool(false)
+            }
+        }
+        val expectType = signature.intoType()
+        val gotType = getType(result)
+        return EBool(expectType == gotType)
     }
 
     override fun expressions(list: ExpressionList): Any {

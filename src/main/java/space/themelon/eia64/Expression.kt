@@ -24,6 +24,7 @@ abstract class Expression(
         fun throwExpr(throwExpr: ThrowExpr): R
         fun variable(variable: ExplicitVariable): R
         fun autoVariable(autoVariable: AutoVariable): R
+        fun isStatement(isStatement: IsStatement): R
         fun shado(shadow: Shadow): R
         fun unaryOperation(expr: UnaryOperation): R
         fun binaryOperation(expr: BinaryOperation): R

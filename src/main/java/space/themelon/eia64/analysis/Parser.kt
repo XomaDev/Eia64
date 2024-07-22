@@ -629,15 +629,20 @@ class Parser(private val executor: Executor) {
 
             if (precedence >= minPrecedence) {
                 skip() // operator token
-                val right =
-                    if (opToken.hasFlag(Flag.PRESERVE_ORDER)) parseElement()
-                    else parseExpr(precedence)
-                left = BinaryOperation(
-                    opToken,
-                    left,
-                    right,
-                    opToken.type
-                )
+                if (opToken.type == Type.IS) {
+                    val signature = readSignature(next())
+                    left = IsStatement(left, signature)
+                } else {
+                    val right =
+                        if (opToken.hasFlag(Flag.PRESERVE_ORDER)) parseElement()
+                        else parseExpr(precedence)
+                    left = BinaryOperation(
+                        opToken,
+                        left,
+                        right,
+                        opToken.type
+                    )
+                }
             } else return left
         }
         return left
@@ -796,15 +801,16 @@ class Parser(private val executor: Executor) {
 
     private fun operatorPrecedence(type: Flag) = when (type) {
         Flag.ASSIGNMENT_TYPE -> 1
-        Flag.LOGICAL_OR -> 2
-        Flag.LOGICAL_AND -> 3
-        Flag.BITWISE_OR -> 4
-        Flag.BITWISE_AND -> 5
-        Flag.EQUALITY -> 6
-        Flag.RELATIONAL -> 7
-        Flag.BINARY -> 8
-        Flag.BINARY_L2 -> 9
-        Flag.BINARY_L3 -> 10
+        Flag.IS -> 2
+        Flag.LOGICAL_OR -> 3
+        Flag.LOGICAL_AND -> 4
+        Flag.BITWISE_OR -> 5
+        Flag.BITWISE_AND -> 6
+        Flag.EQUALITY -> 7
+        Flag.RELATIONAL -> 8
+        Flag.BINARY -> 9
+        Flag.BINARY_L2 -> 10
+        Flag.BINARY_L3 -> 11
         else -> -1
     }
 
