@@ -37,6 +37,7 @@ open class Entity(
                 if (value.type == RETURN) getType(value.value)
                 else value.type
             }
+            is ENil -> E_NIL
             is EInt -> E_INT
             is EString -> E_STRING
             is EBool -> E_BOOL

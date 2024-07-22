@@ -99,7 +99,7 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
-    override fun classPropertyAccess(propertyAccess: ClassPropertyAccess): Any {
+    override fun classPropertyAccess(propertyAccess: ForeignField): Any {
         throw ShutdownException()
     }
 

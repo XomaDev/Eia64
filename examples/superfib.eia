@@ -6,4 +6,7 @@ fn fib(n: Int): Int =
 
 let startTime = time()
 
-println("Result: " + fib(30), format(" took %d ms", time() - startTime))
+println(
+    "Result: " + fib(30),
+    format(" took %d ms", time() - startTime)
+)

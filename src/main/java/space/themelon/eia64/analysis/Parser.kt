@@ -635,7 +635,7 @@ class Parser(private val executor: Executor) {
                     left = IsStatement(left, signature)
                 } else {
                     // need to verify that variable is mutable
-                    if (opToken.type == Type.ASSIGNMENT) checkMutability(left)
+                    if (opToken.type == Type.ASSIGNMENT) checkMutability(opToken, left)
                     val right =
                         if (opToken.hasFlag(Flag.PRESERVE_ORDER)) parseElement()
                         else parseExpr(precedence)
@@ -693,22 +693,32 @@ class Parser(private val executor: Executor) {
     }
 
     private fun checkMutability(where: Token, variableExpression: Expression) {
-        // TODO:
-        //  in future we need to check assignments of fields of other classes
-        //   let dog = new Dog()
-        //   god.name = "meow"
-
         // it's fine if it's array access, array elements are always mutable
         if (variableExpression is ArrayAccess) return
-        if (variableExpression !is Alpha) {
-            where.error<String>("Expected a variable to assign")
-            throw RuntimeException()
+
+        val variableName: String
+        val index: Int
+
+        when (variableExpression) {
+            is Alpha -> {
+                variableName = variableExpression.value
+                index = variableExpression.index
+            }
+
+            is ForeignField -> {
+                variableName = variableExpression.property
+                index = variableExpression.uniqueVariable.index
+            }
+
+            else -> {
+                where.error<String>("Expected a variable to assign")
+                throw RuntimeException()
+            }
         }
-        val variableName = variableExpression.value
         // Variable Index
         // Below 0: represents a name type, a function? a class? etc.
         // Above 0: memory index to know where the variable is stored
-        if (variableExpression.index < 0) {
+        if (index < 0) {
             where.error<String>("Expected a variable to assign")
             throw RuntimeException()
         }
@@ -735,14 +745,14 @@ class Parser(private val executor: Executor) {
         objectExpression: Expression,
         moduleInfo: ModuleInfo,
         property: String
-    ): ClassPropertyAccess {
+    ): ForeignField {
         // Plan:
         //  Global variables of other class are located in scope 0
         //  So we need to just maintain position of that variable in
         //  super scope, then access it at runtime
         val uniqueVariable = executor.getModule(moduleInfo.name).resolveGlobalVr(property)
             ?: moduleInfo.where.error("Could not find global variable '$property' in module ${moduleInfo.name}")
-        return ClassPropertyAccess(
+        return ForeignField(
             where = moduleInfo.where,
             static = isStatic(objectExpression),
             objectExpression = objectExpression,

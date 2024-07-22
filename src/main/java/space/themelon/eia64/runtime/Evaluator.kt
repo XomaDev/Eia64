@@ -75,8 +75,17 @@ class Evaluator(
         return EArray(Array(size.get()) { unboxEval(arrayAllocation.defaultValue) })
     }
 
-    private fun update(scope: Int, name: String, value: Any) {
-        (memory.getVar(scope, name) as Entity).update(value)
+    private fun update(index: Int,
+                       name: String,
+                       value: Any) {
+        (memory.getVar(index, name) as Entity).update(value)
+    }
+
+    private fun update(aMemory: Memory,
+                       index: Int,
+                       name: String,
+                       value: Any) {
+        (aMemory.getVar(index, name) as Entity).update(value)
     }
 
     override fun variable(variable: ExplicitVariable): Any {
@@ -165,27 +174,9 @@ class Evaluator(
             val toUpdate = expr.left
             val value = unboxEval(expr.right)
             when (toUpdate) {
-                is Alpha -> {
-                    if (toUpdate.value == "tokens") {
-                        println(toUpdate)
-                        println(toUpdate.where.error<String>("meow"))
-                    }
-                    update(toUpdate.index, toUpdate.value, value)
-                }
-                is ArrayAccess -> {
-                    val array = unboxEval(toUpdate.expr)
-                    val index = intExpr(toUpdate.index).get()
-
-                    @Suppress("UNCHECKED_CAST")
-                    when (getType(array)) {
-                        E_ARRAY -> (array as ArrayOperable<Any>).setAt(index, value)
-                        E_STRING -> {
-                            if (value !is EChar) throw RuntimeException("string[index] requires a Char")
-                            (array as EString).setAt(index, value)
-                        }
-                        else -> throw RuntimeException("Unknown element access of {$array}")
-                    }
-                }
+                is Alpha -> update(toUpdate.index, toUpdate.value, value)
+                is ArrayAccess -> updateArrayElement(toUpdate, value)
+                is ForeignField -> updateForeignField(toUpdate, value)
                 else -> throw RuntimeException("Unknown left operand for [= Assignment]: $toUpdate")
             }
             value
@@ -231,6 +222,33 @@ class Evaluator(
         BITWISE_AND -> intExpr(expr.left).and(intExpr(expr.right))
         BITWISE_OR -> intExpr(expr.left).or(intExpr(expr.right))
         else -> throw RuntimeException("Unknown binary operator $type")
+    }
+
+    private fun updateArrayElement(access: ArrayAccess, value: Any) {
+        val array = unboxEval(access.expr)
+        val index = intExpr(access.index).get()
+
+        @Suppress("UNCHECKED_CAST")
+        when (getType(array)) {
+            E_ARRAY -> (array as ArrayOperable<Any>).setAt(index, value)
+            E_STRING -> {
+                if (value !is EChar) throw RuntimeException("string[index] requires a Char")
+                (array as EString).setAt(index, value)
+            }
+
+            else -> throw RuntimeException("Unknown element access of {$array}")
+        }
+    }
+
+    private fun updateForeignField(field: ForeignField, value: Any) {
+        val evaluator = getEvaluatorForField(field)
+        val uniqueVariable = field.uniqueVariable
+        update(
+            aMemory = evaluator.memory,
+            index = uniqueVariable.index,
+            name = field.property,
+            value = value
+        )
     }
 
     override fun isStatement(isStatement: IsStatement): Any {
@@ -361,6 +379,7 @@ class Evaluator(
                     is EString -> data.length
                     is EArray -> data.size
                     is ExpressionList -> data.size
+                    is ENil -> 0
                     else -> throw RuntimeException("Unknown measurable data type $data")
                 })
             }
@@ -505,7 +524,18 @@ class Evaluator(
         return result
     }
 
-    override fun classPropertyAccess(propertyAccess: ClassPropertyAccess): Any {
+    override fun classPropertyAccess(propertyAccess: ForeignField): Any {
+        val evaluator = getEvaluatorForField(propertyAccess)
+        val uniqueVariable = propertyAccess.uniqueVariable
+        return evaluator.memory.getVar(
+            uniqueVariable.index,
+            propertyAccess.property
+        )
+    }
+
+    // finds associated evaluator for a foreign field (gVariable)
+    // that is being accessed
+    private fun getEvaluatorForField(propertyAccess: ForeignField): Evaluator {
         val property = propertyAccess.property
         val moduleName = propertyAccess.moduleInfo.name
 
@@ -519,14 +549,7 @@ class Evaluator(
                 else -> throw RuntimeException("Could not find property $property of object $evaluatedObject")
             }
         }
-        if (evaluator == null) {
-            throw RuntimeException("Could not find module $moduleName")
-        }
-        val uniqueVariable = propertyAccess.uniqueVariable
-        return evaluator.memory.getVar(
-            uniqueVariable.index,
-            property
-        )
+        return evaluator ?: throw RuntimeException("Could not find module $moduleName")
     }
 
     override fun methodCall(call: MethodCall)

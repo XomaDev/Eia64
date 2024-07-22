@@ -5,7 +5,7 @@ import space.themelon.eia64.analysis.ModuleInfo
 import space.themelon.eia64.analysis.UniqueVariable
 import space.themelon.eia64.syntax.Token
 
-data class ClassPropertyAccess(
+data class ForeignField(
     val where: Token,
     val static: Boolean,
     val objectExpression: Expression,

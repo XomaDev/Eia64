@@ -99,7 +99,7 @@ fn substring(self: String, from: Int): String = part(copy(self), from, len(self)
 
 fn trim(self: String): String {
   ; println(type(self))
-  let copySelf = copy(self)
+  var copySelf = copy(self)
   until (startsWith(copySelf, " ")
         || startsWith(copySelf, "\t")
         || startsWith(copySelf, "\n")) {
