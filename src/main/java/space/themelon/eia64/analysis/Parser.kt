@@ -261,7 +261,7 @@ class Parser(private val executor: Executor) {
                 }
                 expectType(Type.CLOSE_CURVE)
                 manager.enterScope()
-                manager.defineVariable(iName, Sign.INT)
+                manager.defineVariable(iName, false, Sign.INT)
                 // Manual Scopped!
                 val body = manager.iterativeScope { unscoppedBodyExpr() }
                 manager.leaveScope()
@@ -296,7 +296,7 @@ class Parser(private val executor: Executor) {
         }
 
         manager.enterScope()
-        manager.defineVariable(iName, elementSignature)
+        manager.defineVariable(iName, false, elementSignature)
         // Manual Scopped!
         val body = manager.iterativeScope { unscoppedBodyExpr() }
         manager.leaveScope()
@@ -392,7 +392,7 @@ class Parser(private val executor: Executor) {
         manager.defineFn(name, reference)
         manager.enterScope()
 
-        requiredArgs.forEach { manager.defineVariable(it.first, it.second) }
+        requiredArgs.forEach { manager.defineVariable(it.first, true, it.second) }
 
         // Fully Manual Scoped
         val body: Expression
@@ -433,7 +433,7 @@ class Parser(private val executor: Executor) {
             expectType(Type.COLON)
 
             val argSignature = readSignature(next())
-            manager.defineVariable(name, argSignature)
+            manager.defineVariable(name, true, argSignature)
             names.add(name)
             if (!isNext(Type.COMMA)) break
             skip()
@@ -530,17 +530,18 @@ class Parser(private val executor: Executor) {
     private fun variableDeclaration(where: Token): Expression {
         val name = readAlpha()
 
-        //if (name == "index") {
-            //where.error<String>("not here!")
-        //}
         val expr: Expression
         val signature: Signature
 
+        val mutable = where.type == Type.VAR
         if (!isNext(Type.COLON)) {
-            // Auto expression type, signature is decided by expression assigned to it
+            // signature decided by variable content
             val assignmentExpr = readVariableExpr()
 
             signature = assignmentExpr.sig()
+            // TODO:
+            //  we need to investigate here, are auto variables mutable or not
+            //  since they do not openly handle it
             expr = AutoVariable(where, name, assignmentExpr)
         } else {
             skip()
@@ -554,7 +555,7 @@ class Parser(private val executor: Executor) {
                 signature
             )
         }
-        manager.defineVariable(name, signature)
+        manager.defineVariable(name, mutable, signature)
         return expr
     }
 
@@ -633,6 +634,8 @@ class Parser(private val executor: Executor) {
                     val signature = readSignature(next())
                     left = IsStatement(left, signature)
                 } else {
+                    // need to verify that variable is mutable
+                    if (opToken.type == Type.ASSIGNMENT) checkMutability(left)
                     val right =
                         if (opToken.hasFlag(Flag.PRESERVE_ORDER)) parseElement()
                         else parseExpr(precedence)
@@ -687,6 +690,33 @@ class Parser(private val executor: Executor) {
         is CharLiteral -> true
         is ArrayLiteral -> true
         else -> false
+    }
+
+    private fun checkMutability(where: Token, variableExpression: Expression) {
+        // TODO:
+        //  in future we need to check assignments of fields of other classes
+        //   let dog = new Dog()
+        //   god.name = "meow"
+
+        // it's fine if it's array access, array elements are always mutable
+        if (variableExpression is ArrayAccess) return
+        if (variableExpression !is Alpha) {
+            where.error<String>("Expected a variable to assign")
+            throw RuntimeException()
+        }
+        val variableName = variableExpression.value
+        // Variable Index
+        // Below 0: represents a name type, a function? a class? etc.
+        // Above 0: memory index to know where the variable is stored
+        if (variableExpression.index < 0) {
+            where.error<String>("Expected a variable to assign")
+            throw RuntimeException()
+        }
+        val mutable = manager.resolveVr(variableName)!!.mutable
+        if (!mutable) {
+            where.error<String>("Variable $variableName is marked immutable")
+            throw RuntimeException()
+        }
     }
 
     private fun classElementCall(objExpr: Expression): Expression {
@@ -885,6 +915,7 @@ class Parser(private val executor: Executor) {
 
     private fun parseValue(token: Token): Expression {
         return when (token.type) {
+            Type.NIL -> NilLiteral(token)
             Type.E_TRUE, Type.E_FALSE -> BoolLiteral(token, token.type == Type.E_TRUE)
             Type.E_INT -> IntLiteral(token, token.data.toString().toInt())
             Type.E_STRING -> StringLiteral(token, token.data as String)

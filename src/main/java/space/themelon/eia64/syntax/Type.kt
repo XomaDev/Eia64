@@ -28,11 +28,13 @@ enum class Type {
 
     IS,
 
+    E_NIL,
     E_INT, E_BOOL, E_STRING, E_CHAR,
     E_ARRAY, E_ANY, E_UNIT, E_OBJECT,
 
     ALPHA,
     E_TRUE, E_FALSE,
+    NIL,
 
     BOOL_CAST, INT_CAST, CHAR_CAST, STRING_CAST,
     TYPE,
@@ -109,6 +111,7 @@ enum class Type {
             }
 
             KEYWORDS.let {
+                it["Nil"] = StaticToken(E_NIL, arrayOf(Flag.CLASS))
                 it["Int"] = StaticToken(E_INT, arrayOf(Flag.CLASS))
                 it["Bool"] = StaticToken(E_BOOL, arrayOf(Flag.CLASS))
                 it["String"] = StaticToken(E_STRING, arrayOf(Flag.CLASS))
@@ -118,6 +121,7 @@ enum class Type {
                 it["Unit"] = StaticToken(E_UNIT, arrayOf(Flag.CLASS))
                 it["Object"] = StaticToken(E_OBJECT, arrayOf(Flag.CLASS))
 
+                it["nil"] = StaticToken(NIL, arrayOf(Flag.VALUE))
                 it["true"] = StaticToken(E_TRUE, arrayOf(Flag.VALUE, Flag.E_BOOL))
                 it["false"] = StaticToken(E_FALSE, arrayOf(Flag.VALUE, Flag.E_BOOL))
 

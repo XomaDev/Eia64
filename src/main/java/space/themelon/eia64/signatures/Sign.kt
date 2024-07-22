@@ -5,6 +5,7 @@ import space.themelon.eia64.syntax.Type
 object Sign {
 
     const val NONE_SIGN = "sig_none" // used for internal return types of expressions
+    const val NIL_SIGN = "sig_nil" // for language
     const val ANY_SIGN = "sig_any"
     const val INT_SIGN = "sig_eint"
     const val STRING_SIGN = "sig_string"
@@ -18,6 +19,8 @@ object Sign {
     // Metadata could be altered of the original one's
     val NONE
         get() = SimpleSignature(NONE_SIGN)
+    val NIL
+        get() = SimpleSignature(NIL_SIGN)
     val ANY
         get() = SimpleSignature(ANY_SIGN)
     val INT

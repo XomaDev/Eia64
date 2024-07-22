@@ -68,10 +68,10 @@ class ScopeManager {
         currentScope.uniqueFunctionNames += name
     }
 
-    fun defineVariable(name: String, signature: Signature) {
+    fun defineVariable(name: String, mutable: Boolean, signature: Signature) {
         if (name in currentScope.variables)
             throw RuntimeException("Variable $name is already defined in the current scope")
-        currentScope.defineVr(name, signature)
+        currentScope.defineVr(name, mutable, signature)
     }
 
     fun hasFunctionNamed(name: String) = currentScope.resolveFnName(name)

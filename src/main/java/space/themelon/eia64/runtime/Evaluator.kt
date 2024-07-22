@@ -50,6 +50,7 @@ class Evaluator(
         memory.clearMemory()
     }
 
+    override fun nilLiteral(nil: NilLiteral) = ENil()
     override fun intLiteral(literal: IntLiteral) = EInt(literal.value)
     override fun boolLiteral(literal: BoolLiteral) = EBool(literal.value)
     override fun stringLiteral(literal: StringLiteral) = EString(literal.value)

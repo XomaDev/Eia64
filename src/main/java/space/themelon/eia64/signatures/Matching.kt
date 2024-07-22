@@ -9,6 +9,8 @@ object Matching {
     fun intOrChar(expression: Expression) = expression.sig().let { it == Sign.INT || it == Sign.CHAR }
 
     fun matches(expect: Signature, got: Signature): Boolean {
+        // for now nil can be assigned to any type
+        if (got == Sign.NIL) return true
         // Void != Any
         if (expect == Sign.ANY) return got != Sign.NONE
         if (expect is SimpleSignature) return expect == got

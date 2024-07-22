@@ -7,6 +7,10 @@ class VoidEvaluator() : Expression.Visitor<Any> {
     val className
         get() = "VoidEvaluator"
 
+    override fun nilLiteral(nil: NilLiteral): Any {
+        throw ShutdownException()
+    }
+
     override fun intLiteral(literal: IntLiteral): Any {
         throw ShutdownException()
     }
