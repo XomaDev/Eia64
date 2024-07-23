@@ -53,7 +53,7 @@ open class Entity(
             is EChar -> Sign.CHAR
             // TODO
             is EArray -> {
-                println("getType() array element signature ${value.elementSignature}")
+                //println("getType() array element signature ${value.elementSignature}")
                 ArrayExtension(value.elementSignature)
             }
             is Expression -> Sign.UNIT

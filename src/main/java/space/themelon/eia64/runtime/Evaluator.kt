@@ -7,6 +7,7 @@ import space.themelon.eia64.primitives.*
 import space.themelon.eia64.runtime.Entity.Companion.getType
 import space.themelon.eia64.runtime.Entity.Companion.unbox
 import space.themelon.eia64.signatures.ArrayExtension
+import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.signatures.ObjectExtension
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
@@ -264,8 +265,24 @@ class Evaluator(
         val signature = isStatement.signature
         val resultSignature = getType(result)
 
-        //println("sig signature $signature")
-        //println("sig result $resultSignature")
+        println("direct matching: " + matches(signature, resultSignature))
+        println("sig signature $signature")
+        println("sig result $resultSignature")
+
+        // TODO: later we need to look upton CAST
+
+        println(getType((result)))
+        println(getType((result)).terminative)
+        if (signature == Sign.ARRAY && resultSignature is ArrayExtension) {
+            // It is like Array<*> == Array<String>, which is a yes
+            // happens when you just want to know if it's an array or not,
+            // disregarding element signature, like Array<*> in kotlin
+            return EBool(true)
+        } else if (signature == Sign.OBJECT && resultSignature is ObjectExtension) {
+            // Happens when you just want to know if the value is an Object type
+            //  you dont care what type of Object or class it is, just if it's an Obj or not
+            return EBool(true)
+        }
 
         when (signature) {
             is ObjectExtension -> {
@@ -273,7 +290,7 @@ class Evaluator(
                 val expectedClass = signature.extensionClass
                 val gotClass = result.className
 
-                if (expectedClass != gotClass) return EBool(false)
+                if (expectedClass != Sign.OBJECT_SIGN && expectedClass != gotClass) return EBool(false)
             }
 
             is ArrayExtension -> {

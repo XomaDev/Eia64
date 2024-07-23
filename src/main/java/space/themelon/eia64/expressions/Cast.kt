@@ -18,6 +18,8 @@ data class Cast(
         val exprSign = expr.sig()
         // Allow casting from Any to <T>
         if (exprSign == Sign.ANY) return expectSignature
+
+        println("acceptable: " + matches(expectSignature, exprSign))
         if (expectSignature is ObjectExtension) {
             // Cast attempt from Object<Object> to Object<X>
             //  any other attempts fail
@@ -32,7 +34,8 @@ data class Cast(
             }
             return expectSignature
         } else if (expectSignature is ArrayExtension) {
-            // Cast attempt from Array<Any> to Array<Y>
+            // Cast attempt from Array (raw) to Array<N>
+            if (exprSign == Sign.ARRAY) return expectSignature
             if (exprSign !is ArrayExtension) {
                 where.error<String>("Cannot cast $expr into array type $exprSign")
                 throw RuntimeException()

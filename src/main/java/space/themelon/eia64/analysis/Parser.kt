@@ -570,15 +570,13 @@ class Parser(private val executor: Executor) {
                 Type.E_ANY -> Sign.ANY
                 Type.E_UNIT -> Sign.UNIT
                 Type.E_ARRAY -> {
-                    val elementSignature: Signature
                     if (isNext(Type.LEFT_DIAMOND)) {
                         skip()
-                        elementSignature = readSignature(next())
+                        val elementSignature = readSignature(next())
                         expectType(Type.RIGHT_DIAMOND)
-                    } else {
-                        elementSignature = Sign.ANY
+                        return ArrayExtension(elementSignature)
                     }
-                    return ArrayExtension(elementSignature)
+                    return Sign.ARRAY
                 }
                 Type.E_OBJECT -> ObjectExtension(Sign.OBJECT.type) // Generic form
                 else -> token.error("Unknown class $classType")
