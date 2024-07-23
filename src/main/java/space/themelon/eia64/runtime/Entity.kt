@@ -1,7 +1,6 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.expressions.Interruption
 import space.themelon.eia64.primitives.*
 import space.themelon.eia64.signatures.ArrayExtension
 import space.themelon.eia64.signatures.Matching.matches
@@ -25,7 +24,7 @@ open class Entity(
         if (!mutable) throw RuntimeException("Entity $name is immutable")
         if (signature == Sign.ANY) value = another
         else {
-            val otherSignature = getType(another)
+            val otherSignature = getSignature(another)
             if (!matches(signature, otherSignature)) throw RuntimeException("Entity $name cannot change type $signature to $otherSignature")
             value = unbox(another)
         }
@@ -40,10 +39,10 @@ open class Entity(
             } else value
         }
 
-        fun getType(value: Any): Signature = when (value) {
+        fun getSignature(value: Any): Signature = when (value) {
             is Entity -> {
                 // break that return unboxing
-                if (value.interruption != InterruptionType.NONE) getType(value.value)
+                if (value.interruption != InterruptionType.NONE) getSignature(value.value)
                 else value.signature
             }
             is ENil -> Sign.NIL

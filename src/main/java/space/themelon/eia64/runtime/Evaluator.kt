@@ -4,7 +4,7 @@ import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.FunctionExpr
 import space.themelon.eia64.primitives.*
-import space.themelon.eia64.runtime.Entity.Companion.getType
+import space.themelon.eia64.runtime.Entity.Companion.getSignature
 import space.themelon.eia64.runtime.Entity.Companion.unbox
 import space.themelon.eia64.signatures.ArrayExtension
 import space.themelon.eia64.signatures.Matching.matches
@@ -79,7 +79,7 @@ class Evaluator(
     override fun arrayAllocation(arrayAllocation: ArrayAllocation): Any {
         val size = intExpr(arrayAllocation.size)
         val defaultValue = unboxEval(arrayAllocation.defaultValue)
-        return EArray(getType(defaultValue), Array(size.get()) { defaultValue })
+        return EArray(getSignature(defaultValue), Array(size.get()) { defaultValue })
     }
 
     private fun update(index: Int,
@@ -113,7 +113,7 @@ class Evaluator(
                 autoVariable.name,
                 true,
                 unbox(value),
-                getType(value)
+                getSignature(value)
             )
         )
         return value
@@ -136,7 +136,7 @@ class Evaluator(
     }
 
     private fun valueEquals(left: Any, right: Any): Boolean {
-        if (getType(left) != getType(right)) return false
+        if (getSignature(left) != getSignature(right)) return false
         when (left) {
             is EInt,
             is EString,
@@ -152,7 +152,7 @@ class Evaluator(
             val left = unboxEval(expr.left)
             val right = unboxEval(expr.right)
 
-            if (getType(left) == Sign.INT && getType(right) == Sign.INT)
+            if (getSignature(left) == Sign.INT && getSignature(right) == Sign.INT)
                 left as EInt + right as EInt
             else EString(left.toString() + right.toString())
         }
@@ -236,7 +236,7 @@ class Evaluator(
         val index = intExpr(access.index).get()
 
         @Suppress("UNCHECKED_CAST")
-        when (getType(array)) {
+        when (getSignature(array)) {
             // TODO:
             //  we need to look here later, it could also be an array extension
             Sign.ARRAY -> (array as ArrayOperable<Any>).setAt(index, value)
@@ -249,6 +249,9 @@ class Evaluator(
         }
     }
 
+    override fun isStatement(isStatement: IsStatement) =
+        EBool(matches(isStatement.signature, getSignature(unboxEval(isStatement.expression))))
+
     private fun updateForeignField(field: ForeignField, value: Any) {
         val evaluator = getEvaluatorForField(field)
         val uniqueVariable = field.uniqueVariable
@@ -258,52 +261,6 @@ class Evaluator(
             name = field.property,
             value = value
         )
-    }
-
-    override fun isStatement(isStatement: IsStatement): Any {
-        val result = unboxEval(isStatement.expression)
-        val signature = isStatement.signature
-        val resultSignature = getType(result)
-
-        println("direct matching: " + matches(signature, resultSignature))
-        println("sig signature $signature")
-        println("sig result $resultSignature")
-
-        // TODO: later we need to look upton CAST
-
-        println(getType((result)))
-        println(getType((result)).terminative)
-        if (signature == Sign.ARRAY && resultSignature is ArrayExtension) {
-            // It is like Array<*> == Array<String>, which is a yes
-            // happens when you just want to know if it's an array or not,
-            // disregarding element signature, like Array<*> in kotlin
-            return EBool(true)
-        } else if (signature == Sign.OBJECT && resultSignature is ObjectExtension) {
-            // Happens when you just want to know if the value is an Object type
-            //  you dont care what type of Object or class it is, just if it's an Obj or not
-            return EBool(true)
-        }
-
-        when (signature) {
-            is ObjectExtension -> {
-                if (result !is Evaluator) return EBool(false)
-                val expectedClass = signature.extensionClass
-                val gotClass = result.className
-
-                if (expectedClass != Sign.OBJECT_SIGN && expectedClass != gotClass) return EBool(false)
-            }
-
-            is ArrayExtension -> {
-                if (resultSignature !is ArrayExtension) return EBool(false)
-                val expectedClass = signature.elementSignature
-                val gotClass = resultSignature.elementSignature
-
-                //println(expectedClass)
-                //println(gotClass)
-                if (expectedClass != gotClass) return EBool(false)
-            }
-        }
-        return EBool(signature == resultSignature)
     }
 
     override fun expressions(list: ExpressionList): Any {
@@ -365,28 +322,36 @@ class Evaluator(
 
     override fun cast(cast: Cast): Any {
         val result = unboxEval(cast.expr)
-        val castInto = cast.expectSignature
+        val promisedSignature = cast.expectSignature
+        val gotSignature = getSignature(result)
 
-        if (castInto is ObjectExtension) {
+        if (promisedSignature is ObjectExtension) {
+            val promisedClass = promisedSignature.extensionClass
             if (result !is Evaluator) {
-                cast.where.error<String>("${getType(result)} cannot be cast into class ${castInto.extensionClass}")
+                cast.where.error<String>("${getSignature(result)} cannot be cast into class $promisedClass")
                 throw RuntimeException()
             }
-            val castClass = castInto.extensionClass
             val gotClass = result.className
-
-            if (castClass != gotClass) {
-                cast.where.error<String>("Class $gotClass cannot be cast into $castClass")
+            if (promisedClass != gotClass) {
+                cast.where.error<String>("Class $gotClass cannot be cast into $promisedClass")
                 throw RuntimeException()
             }
-        }
-        // TODO
-        //  We need to test casting from Array<Any> or Array to Array<N>
-
-        val gotType = getType(result)
-        if (castInto != gotType) {
-            cast.where.error<String>("Type $gotType cannot be cast into $castInto")
-            throw RuntimeException()
+        } else if (promisedSignature is ArrayExtension) {
+            // Cast into explicit type declaration
+            if (gotSignature == Sign.ARRAY) return promisedSignature
+            if (gotSignature !is ArrayExtension) {
+                cast.where.error<String>("Cannot cast $result into array type $promisedSignature")
+                throw RuntimeException()
+            }
+            val castArrayType = promisedSignature.elementSignature
+            val currentArrayType = gotSignature.elementSignature
+            if (castArrayType != currentArrayType) {
+                cast.where.error<String>("Cannot cast array element type $currentArrayType into $castArrayType")
+            }
+        } else if (promisedSignature == Sign.ARRAY) {
+            if (!(gotSignature is ArrayExtension || gotSignature == Sign.ARRAY)) {
+                cast.where.error<String>("Cannot cast $result to $promisedSignature")
+            }
         }
         return result
     }
@@ -433,7 +398,7 @@ class Evaluator(
             FORMAT -> {
                 val exprs = call.arguments
                 val string = unboxEval(exprs[0])
-                if (getType(string) != Sign.STRING)
+                if (getSignature(string) != Sign.STRING)
                     throw RuntimeException("format() requires a string argument")
                 string as EString
                 if (exprs.size > 1) {
@@ -451,7 +416,7 @@ class Evaluator(
                 if (argsSize != 1) reportWrongArguments("int", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
 
-                return when (val objType = getType(obj)) {
+                return when (val objType = getSignature(obj)) {
                     Sign.INT -> obj
                     Sign.CHAR -> EInt((obj as EChar).get().code)
                     Sign.STRING -> EInt(Integer.parseInt(obj.toString()))
@@ -462,7 +427,7 @@ class Evaluator(
             CHAR_CAST -> {
                 if (argsSize != 1) reportWrongArguments("char", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
-                return when (val objType = getType(obj)) {
+                return when (val objType = getSignature(obj)) {
                     Sign.CHAR -> objType
                     Sign.INT -> EChar((obj as EInt).get().toChar())
                     else -> throw RuntimeException("Unknown type for char() cast $objType")
@@ -472,14 +437,14 @@ class Evaluator(
             STRING_CAST -> {
                 if (argsSize != 1) reportWrongArguments("str", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
-                if (getType(obj) == Sign.STRING) return obj
+                if (getSignature(obj) == Sign.STRING) return obj
                 return EString(obj.toString())
             }
 
             BOOL_CAST -> {
                 if (argsSize != 1) reportWrongArguments("bool", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
-                if (getType(obj) == Sign.BOOL) return obj
+                if (getSignature(obj) == Sign.BOOL) return obj
                 return EBool(when (obj) {
                     "true" -> true
                     "false" -> false
@@ -490,7 +455,7 @@ class Evaluator(
             TYPE -> {
                 if (argsSize != 1) reportWrongArguments("type", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
-                var typeName = getType(obj).toString()
+                var typeName = getSignature(obj).toString()
                 if (obj is Evaluator) {
                     typeName += "<"
                     typeName += obj.className
@@ -519,7 +484,7 @@ class Evaluator(
                 if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
                 if (obj !is Primitive<*> || !obj.isCopyable())
-                    throw RuntimeException("Cannot apply copy() on object type ${getType(obj)} = $obj")
+                    throw RuntimeException("Cannot apply copy() on object type ${getSignature(obj)} = $obj")
                 return obj.copy()!!
             }
 
@@ -795,7 +760,7 @@ class Evaluator(
             // Manual Scopped
             memory.enterScope()
             val element = getNext()
-            memory.declareVar(named, Entity(named, false, element, getType(element)))
+            memory.declareVar(named, Entity(named, false, element, getSignature(element)))
             val result = eval(body)
             memory.leaveScope()
             if (result is Entity) {

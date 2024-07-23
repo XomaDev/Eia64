@@ -1010,7 +1010,7 @@ class Parser(private val executor: Executor) {
         return next
     }
 
-    private fun isNext(type: Type) = peek().type == type
+    private fun isNext(type: Type) = !isEOF() && peek().type == type
 
     private fun back() {
         index--

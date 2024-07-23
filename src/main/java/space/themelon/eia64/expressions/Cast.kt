@@ -4,10 +4,11 @@ import space.themelon.eia64.Expression
 import space.themelon.eia64.signatures.*
 import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.syntax.Token
+import kotlin.math.exp
 
 data class Cast(
     val where: Token,
-    @Consumable("Cannot cast from void expression") val expr: Expression,
+    val expr: Expression,
     val expectSignature: Signature
 ) : Expression(where) {
 
@@ -19,10 +20,8 @@ data class Cast(
         // Allow casting from Any to <T>
         if (exprSign == Sign.ANY) return expectSignature
 
-        println("acceptable: " + matches(expectSignature, exprSign))
+        // Object to Object<N>
         if (expectSignature is ObjectExtension) {
-            // Cast attempt from Object<Object> to Object<X>
-            //  any other attempts fail
             if (exprSign !is ObjectExtension) {
                 where.error<String>("Cannot cast object type $expr to $expectSignature")
                 throw RuntimeException()
@@ -46,6 +45,11 @@ data class Cast(
                 where.error<String>("Cannot cast array element type $currentArrayType into $castArrayType")
             }
             return expectSignature
+        } else if (expectSignature == Sign.ARRAY) {
+            // Cast from Array<N> to Array
+            if (exprSign is ArrayExtension || exprSign == Sign.ARRAY) return expectSignature
+        } else if (expectSignature == Sign.OBJECT) {
+            if (exprSign is ObjectExtension || exprSign == Sign.OBJECT) return expectSignature
         }
         if (exprSign == expectSignature) {
             // they already are of the same type
