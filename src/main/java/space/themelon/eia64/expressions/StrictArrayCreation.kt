@@ -9,7 +9,7 @@ import space.themelon.eia64.syntax.Token
 
 class StrictArrayCreation(
     val where: Token,
-    private val elementSignature: Signature,
+    val elementSignature: Signature,
     @Consumable("Array elements cannot contain void expressions") val elements: List<Expression>,
 ) : Expression() {
 

@@ -1,6 +1,11 @@
 package space.themelon.eia64.primitives
 
-class EArray(initialValue: Array<Any>): Primitive<EArray>, ArrayOperable<Any> {
+import space.themelon.eia64.signatures.Signature
+
+class EArray(
+    val elementSignature: Signature,
+    initialValue: Array<Any>
+): Primitive<EArray>, ArrayOperable<Any> {
 
     private var arrayValue = initialValue
 

@@ -40,4 +40,20 @@ data class ArrayLiteral(
         // We need to also store elements signature for array access
         return ArrayExtension(signature)
     }
+
+    fun elementSignature(): Signature {
+        // dynamic deciding of array element signature based on content
+        if (elements.isEmpty()) return Sign.ANY
+
+        var signature = elements[0].sig()
+        for (element in elements) {
+            val elementSignature = element.sig()
+            if (elementSignature != signature) {
+                signature = Sign.ANY
+                // if all the elements don't hold the same signature, use ANY
+                break
+            }
+        }
+        return signature
+    }
 }

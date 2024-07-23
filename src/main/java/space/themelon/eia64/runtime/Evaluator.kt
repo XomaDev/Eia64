@@ -6,8 +6,9 @@ import space.themelon.eia64.expressions.FunctionExpr
 import space.themelon.eia64.primitives.*
 import space.themelon.eia64.runtime.Entity.Companion.getType
 import space.themelon.eia64.runtime.Entity.Companion.unbox
+import space.themelon.eia64.signatures.ArrayExtension
 import space.themelon.eia64.signatures.ObjectExtension
-import space.themelon.eia64.signatures.Sign.intoType
+import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type.*
 import java.util.Scanner
@@ -17,7 +18,7 @@ import kotlin.random.Random
 import kotlin.system.exitProcess
 
 class Evaluator(
-    private val className: String,
+    val className: String,
     private val executor: Executor
 ) : Expression.Visitor<Any> {
 
@@ -58,21 +59,26 @@ class Evaluator(
 
     override fun alpha(alpha: Alpha) = memory.getVar(alpha.index, alpha.value)
 
-    private fun prepareArrayOf(arguments: List<Expression>): EArray {
+    private fun prepareArrayOf(
+        arguments: List<Expression>,
+        elementSignature: Signature
+    ): EArray {
         val evaluated = arrayOfNulls<Any>(arguments.size)
         for ((index, aExpr) in arguments.withIndex())
             evaluated[index] = unboxEval(aExpr)
         evaluated as Array<Any>
-        return EArray(evaluated)
+        return EArray(elementSignature, evaluated)
     }
 
-    override fun array(literal: ArrayLiteral) = prepareArrayOf(literal.elements)
+    override fun array(literal: ArrayLiteral) = prepareArrayOf(literal.elements, literal.elementSignature())
 
-    override fun arrayCreation(arrayCreation: StrictArrayCreation) = prepareArrayOf(arrayCreation.elements)
+    override fun arrayCreation(arrayCreation: StrictArrayCreation) = 
+        prepareArrayOf(arrayCreation.elements, arrayCreation.elementSignature)
 
     override fun arrayAllocation(arrayAllocation: ArrayAllocation): Any {
         val size = intExpr(arrayAllocation.size)
-        return EArray(Array(size.get()) { unboxEval(arrayAllocation.defaultValue) })
+        val defaultValue = unboxEval(arrayAllocation.defaultValue)
+        return EArray(getType(defaultValue), Array(size.get()) { defaultValue })
     }
 
     private fun update(index: Int,
@@ -90,7 +96,7 @@ class Evaluator(
 
     override fun variable(variable: ExplicitVariable): Any {
         val name = variable.name
-        val signature = variable.explicitSignature.intoType()
+        val signature = variable.explicitSignature
         val value = unboxEval(variable.expr)
         val mutable = variable.mutable
 
@@ -145,7 +151,7 @@ class Evaluator(
             val left = unboxEval(expr.left)
             val right = unboxEval(expr.right)
 
-            if (getType(left) == E_INT && getType(right) == E_INT)
+            if (getType(left) == Sign.INT && getType(right) == Sign.INT)
                 left as EInt + right as EInt
             else EString(left.toString() + right.toString())
         }
@@ -230,8 +236,10 @@ class Evaluator(
 
         @Suppress("UNCHECKED_CAST")
         when (getType(array)) {
-            E_ARRAY -> (array as ArrayOperable<Any>).setAt(index, value)
-            E_STRING -> {
+            // TODO:
+            //  we need to look here later, it could also be an array extension
+            Sign.ARRAY -> (array as ArrayOperable<Any>).setAt(index, value)
+            Sign.STRING -> {
                 if (value !is EChar) throw RuntimeException("string[index] requires a Char")
                 (array as EString).setAt(index, value)
             }
@@ -254,21 +262,31 @@ class Evaluator(
     override fun isStatement(isStatement: IsStatement): Any {
         val result = unboxEval(isStatement.expression)
         val signature = isStatement.signature
+        val resultSignature = getType(result)
 
-        if (signature is ObjectExtension) {
-            if (result !is Evaluator) {
-                return EBool(false)
+        //println("sig signature $signature")
+        //println("sig result $resultSignature")
+
+        when (signature) {
+            is ObjectExtension -> {
+                if (result !is Evaluator) return EBool(false)
+                val expectedClass = signature.extensionClass
+                val gotClass = result.className
+
+                if (expectedClass != gotClass) return EBool(false)
             }
-            val expectedClass = signature.extensionClass
-            val gotClass = result.className
 
-            if (expectedClass != gotClass) {
-                return EBool(false)
+            is ArrayExtension -> {
+                if (resultSignature !is ArrayExtension) return EBool(false)
+                val expectedClass = signature.elementSignature
+                val gotClass = resultSignature.elementSignature
+
+                //println(expectedClass)
+                //println(gotClass)
+                if (expectedClass != gotClass) return EBool(false)
             }
         }
-        val expectType = signature.intoType()
-        val gotType = getType(result)
-        return EBool(expectType == gotType)
+        return EBool(signature == resultSignature)
     }
 
     override fun expressions(list: ExpressionList): Any {
@@ -281,8 +299,18 @@ class Evaluator(
             result = eval(expression)
             if (result is Entity) {
                 // flow interruption is just forwarded
-                when (result.type) {
-                    RETURN, BREAK, CONTINUE, USE -> return result
+
+                // TODO:
+                //  We need to verify that these things work
+                //when (result.type) {
+                    //RETURN, BREAK, CONTINUE, USE -> return result
+                    //else -> { }
+                //}
+                when (result.interruption) {
+                    InterruptionType.RETURN,
+                    InterruptionType.BREAK,
+                    InterruptionType.CONTINUE,
+                    InterruptionType.USE -> return result
                     else -> { }
                 }
             }
@@ -335,11 +363,12 @@ class Evaluator(
                 throw RuntimeException()
             }
         }
+        // TODO
+        //  We need to test casting from Array<Any> or Array to Array<N>
 
-        val castType = castInto.intoType()
         val gotType = getType(result)
-        if (castType != gotType) {
-            cast.where.error<String>("Type $gotType cannot be cast into $castType")
+        if (castInto != gotType) {
+            cast.where.error<String>("Type $gotType cannot be cast into $castInto")
             throw RuntimeException()
         }
         return result
@@ -387,7 +416,7 @@ class Evaluator(
             FORMAT -> {
                 val exprs = call.arguments
                 val string = unboxEval(exprs[0])
-                if (getType(string) != E_STRING)
+                if (getType(string) != Sign.STRING)
                     throw RuntimeException("format() requires a string argument")
                 string as EString
                 if (exprs.size > 1) {
@@ -406,9 +435,9 @@ class Evaluator(
                 val obj = unboxEval(call.arguments[0])
 
                 return when (val objType = getType(obj)) {
-                    E_INT -> obj
-                    E_CHAR -> EInt((obj as EChar).get().code)
-                    E_STRING -> EInt(Integer.parseInt(obj.toString()))
+                    Sign.INT -> obj
+                    Sign.CHAR -> EInt((obj as EChar).get().code)
+                    Sign.STRING -> EInt(Integer.parseInt(obj.toString()))
                     else -> throw RuntimeException("Unknown type for int() cast $objType")
                 }
             }
@@ -417,8 +446,8 @@ class Evaluator(
                 if (argsSize != 1) reportWrongArguments("char", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
                 return when (val objType = getType(obj)) {
-                    E_CHAR -> objType
-                    E_INT -> EChar((obj as EInt).get().toChar())
+                    Sign.CHAR -> objType
+                    Sign.INT -> EChar((obj as EInt).get().toChar())
                     else -> throw RuntimeException("Unknown type for char() cast $objType")
                 }
             }
@@ -426,14 +455,14 @@ class Evaluator(
             STRING_CAST -> {
                 if (argsSize != 1) reportWrongArguments("str", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
-                if (getType(obj) == E_STRING) return obj
+                if (getType(obj) == Sign.STRING) return obj
                 return EString(obj.toString())
             }
 
             BOOL_CAST -> {
                 if (argsSize != 1) reportWrongArguments("bool", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
-                if (getType(obj) == E_BOOL) return obj
+                if (getType(obj) == Sign.BOOL) return obj
                 return EBool(when (obj) {
                     "true" -> true
                     "false" -> false
@@ -638,7 +667,7 @@ class Evaluator(
             val definedParameter = it.first
             val value = it.second
             memory.declareVar(definedParameter.first,
-                Entity(definedParameter.first, true, value, definedParameter.second.intoType()))
+                Entity(definedParameter.first, true, value, definedParameter.second))
         }
         val result = unboxEval(fn.body)
         memory.leaveScope()
@@ -675,8 +704,13 @@ class Evaluator(
         memory.leaveScope()
 
         if (result is Entity) {
-            when (result.type) {
-                RETURN, USE -> return result
+            //when (result.type) {
+                //RETURN, USE -> return result
+                //else -> { }
+            //}
+            when (result.interruption) {
+                InterruptionType.RETURN,
+                InterruptionType.USE -> return result
                 else -> { }
             }
         }
@@ -694,11 +728,19 @@ class Evaluator(
             numIterations++
             val result = eval(until.body)
             if (result is Entity) {
-                when (result.type) {
-                    BREAK -> break
-                    CONTINUE -> continue
-                    RETURN -> return result
-                    USE -> result.value
+                //when (result.type) {
+                    //BREAK -> break
+                    //CONTINUE -> continue
+                    //RETURN -> return result
+                    //USE -> result.value
+                    //else -> { }
+                //}
+
+                when (result.interruption) {
+                    InterruptionType.BREAK,
+                    InterruptionType.CONTINUE,
+                    InterruptionType.RETURN,
+                    InterruptionType.USE -> result.value
                     else -> { }
                 }
             }
@@ -740,11 +782,19 @@ class Evaluator(
             val result = eval(body)
             memory.leaveScope()
             if (result is Entity) {
-                when (result.type) {
-                    BREAK -> break
-                    CONTINUE -> continue
-                    RETURN -> return result
-                    USE -> return result.value
+                //when (result.type) {
+                    //BREAK -> break
+                    //CONTINUE -> continue
+                    //RETURN -> return result
+                    //USE -> return result.value
+                    //else -> { }
+                //}
+
+                when (result.interruption) {
+                    InterruptionType.BREAK,
+                    InterruptionType.CONTINUE,
+                    InterruptionType.RETURN,
+                    InterruptionType.USE -> result.value
                     else -> { }
                 }
             }
@@ -766,18 +816,28 @@ class Evaluator(
             numIterations++
             // Manual Scopped
             memory.enterScope()
-            memory.declareVar(named, Entity(named, true, from, E_INT))
+            memory.declareVar(named, Entity(named, true, from, Sign.INT))
             val result = eval(itr.body)
             memory.leaveScope()
             if (result is Entity) {
-                when (result.type) {
-                    BREAK -> break
-                    CONTINUE -> {
+                //when (result.type) {
+                    //BREAK -> break
+                    //CONTINUE -> {
+                        //from = from + by
+                        //continue
+                    //}
+                    //RETURN -> return result
+                    //USE -> return result.value
+                    //else -> { }
+
+                when (result.interruption) {
+                    InterruptionType.BREAK -> break
+                    InterruptionType.CONTINUE -> {
                         from = from + by
                         continue
                     }
-                    RETURN -> return result
-                    USE -> return result.value
+                    InterruptionType.RETURN -> return result
+                    InterruptionType.USE -> return result.value
                     else -> { }
                 }
             }
@@ -800,17 +860,34 @@ class Evaluator(
             // Auto Scopped
             val result = eval(forLoop.body)
             if (result is Entity) {
-                when (result.type) {
-                    BREAK -> break
-                    CONTINUE -> {
+                //when (result.type) {
+                    //BREAK -> break
+                    //CONTINUE -> {
+                        //evalOperational()
+                        //continue
+                    //}
+                    //RETURN -> {
+                        //memory.leaveScope()
+                        //return result
+                    //}
+                    //USE -> {
+                        //memory.leaveScope()
+                        //return result.value
+                    //}
+                    //else -> { }
+                //}
+
+                when (result.interruption) {
+                    InterruptionType.BREAK -> break
+                    InterruptionType.CONTINUE -> {
                         evalOperational()
                         continue
                     }
-                    RETURN -> {
+                    InterruptionType.RETURN -> {
                         memory.leaveScope()
                         return result
                     }
-                    USE -> {
+                    InterruptionType.USE -> {
                         memory.leaveScope()
                         return result.value
                     }
@@ -827,13 +904,28 @@ class Evaluator(
         // wrap it as a normal entity, this will be naturally unboxed when called unbox()
         RETURN -> {
             // could be of a void type, so it could be null
-            val expr = if (interruption.expr == null) 0
-                else unboxEval(interruption.expr)
-            Entity("FlowReturn", false, expr, RETURN)
+            val expr = if (interruption.expr == null) 0 else unboxEval(interruption.expr)
+            Entity("FlowReturn",
+                false,
+                expr,
+                Sign.NONE,
+                InterruptionType.RETURN)
         }
-        USE -> Entity("FlowUse", false, unboxEval(interruption.expr!!), USE)
-        BREAK -> Entity("FlowBreak", false, 0, BREAK)
-        CONTINUE -> Entity("FlowContinue", false, 0, CONTINUE)
+        USE -> Entity("FlowUse",
+            false,
+            unboxEval(interruption.expr!!),
+            Sign.NONE,
+            InterruptionType.USE)
+        BREAK -> Entity("FlowBreak",
+            false,
+            0,
+            Sign.NONE,
+            InterruptionType.BREAK)
+        CONTINUE -> Entity("FlowContinue",
+            false,
+            0,
+            Sign.NONE,
+            InterruptionType.CONTINUE)
         else -> throw RuntimeException("Unknown interruption type $type")
     }
 

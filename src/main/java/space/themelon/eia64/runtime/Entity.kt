@@ -1,23 +1,32 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
+import space.themelon.eia64.expressions.Interruption
 import space.themelon.eia64.primitives.*
-import space.themelon.eia64.syntax.Type
-import space.themelon.eia64.syntax.Type.*
+import space.themelon.eia64.signatures.ArrayExtension
+import space.themelon.eia64.signatures.Matching.matches
+import space.themelon.eia64.signatures.ObjectExtension
+import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.Signature
 
 open class Entity(
     private val name: String,
     private val mutable: Boolean,
     var value: Any,
-    val type: Type
+    val signature: Signature,
+    val interruption: InterruptionType = InterruptionType.NONE,
 ) {
+
+    // TODO:
+    //  Signatures at Sign.* are not constant
+    //  new object created for each call, we would have to fix that here
 
     open fun update(another: Any) {
         if (!mutable) throw RuntimeException("Entity $name is immutable")
-        if (type == E_ANY) value = another
+        if (signature == Sign.ANY) value = another
         else {
-            val otherType = getType(another)
-            if (otherType != type) throw RuntimeException("Entity $name cannot change type $type to $otherType")
+            val otherSignature = getType(another)
+            if (!matches(signature, otherSignature)) throw RuntimeException("Entity $name cannot change type $signature to $otherSignature")
             value = unbox(another)
         }
     }
@@ -26,25 +35,30 @@ open class Entity(
         fun unbox(value: Any): Any {
             return if (value is Entity) {
                 // break that return boxing
-                if (value.type == RETURN) unbox(value.value)
+                if (value.interruption != InterruptionType.NONE) unbox(value.value)
                 else value.value
             } else value
         }
 
-        fun getType(value: Any): Type = when (value) {
+        fun getType(value: Any): Signature = when (value) {
             is Entity -> {
                 // break that return unboxing
-                if (value.type == RETURN) getType(value.value)
-                else value.type
+                if (value.interruption != InterruptionType.NONE) getType(value.value)
+                else value.signature
             }
-            is ENil -> E_NIL
-            is EInt -> E_INT
-            is EString -> E_STRING
-            is EBool -> E_BOOL
-            is EChar -> E_CHAR
-            is EArray -> E_ARRAY
-            is Expression -> E_UNIT
-            is Evaluator -> E_OBJECT
+            is ENil -> Sign.NIL
+            is EInt -> Sign.INT
+            is EString -> Sign.STRING
+            is EBool -> Sign.BOOL
+            is EChar -> Sign.CHAR
+            // TODO
+            is EArray -> {
+                println("getType() array element signature ${value.elementSignature}")
+                ArrayExtension(value.elementSignature)
+            }
+            is Expression -> Sign.UNIT
+            // TODO
+            is Evaluator -> ObjectExtension(value.className)
             else -> throw RuntimeException("Unknown type of value $value")
         }
     }
