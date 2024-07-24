@@ -143,7 +143,7 @@ class Lexer(private val source: String) {
         val type: Type
         val value: Any
 
-        if (peek() == '.' && isNumeric(peekNext())) {
+        if (!isEOF() && peek() == '.' && isNumeric(peekNext())) {
             type = E_FLOAT
             content.append('.')
             next()

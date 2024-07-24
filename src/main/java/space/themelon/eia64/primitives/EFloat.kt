@@ -23,9 +23,8 @@ class EFloat(initialValue: Float): Primitive<EFloat>, Comparable<EFloat>, Numeri
     override fun toString() = floatValue.toString()
 
     override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is EFloat) return false
-        return floatValue == other.floatValue
+        if (other !is Numeric) return false
+        return floatValue == other.get().toFloat()
     }
 
     override fun hashCode() = floatValue.hashCode()

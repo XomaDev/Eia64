@@ -7,7 +7,8 @@ data class FunctionReference(
     var fnExpression: FunctionExpr? = null,
     val signs: List<Pair<String, Signature>>, // List < < ParameterName, Signature >
     val argsSize: Int,
-    var returnSignature: Signature
+    var returnSignature: Signature,
+    val public: Boolean
 ) {
     // it is important to override toString() or else it may cause recursive StackOverFlow error
     override fun toString() = "<${fnExpression?.name ?: "UnsetFunctionReference"}()>"

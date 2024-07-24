@@ -51,9 +51,8 @@ class EInt(initialValue: Int): Primitive<EInt>, Comparable<EInt>, Numeric {
     override fun toString() = intValue.toString()
 
     override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is EInt) return false
-        return intValue == other.intValue
+        if (other !is Numeric) return false
+        return intValue == other.get().toInt()
     }
 
     override fun hashCode() = intValue

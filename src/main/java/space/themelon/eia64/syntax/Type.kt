@@ -29,12 +29,14 @@ enum class Type {
     IS,
 
     E_NIL,
-    E_INT, E_FLOAT, E_BOOL, E_STRING, E_CHAR,
+    E_NUMBER, E_INT, E_FLOAT, E_BOOL, E_STRING, E_CHAR,
     E_ARRAY, E_ANY, E_UNIT, E_OBJECT,
 
     ALPHA,
     E_TRUE, E_FALSE,
     NIL,
+
+    VISIBLE, INVISIBLE,
 
     BOOL_CAST, INT_CAST, FLOAT_CAST, CHAR_CAST, STRING_CAST,
     TYPE,
@@ -112,6 +114,7 @@ enum class Type {
 
             KEYWORDS.let {
                 it["Nil"] = StaticToken(E_NIL, arrayOf(Flag.CLASS))
+                it["Number"] = StaticToken(E_NUMBER, arrayOf(Flag.CLASS))
                 it["Int"] = StaticToken(E_INT, arrayOf(Flag.CLASS))
                 it["Float"] = StaticToken(E_FLOAT, arrayOf(Flag.CLASS))
                 it["Bool"] = StaticToken(E_BOOL, arrayOf(Flag.CLASS))
@@ -125,6 +128,9 @@ enum class Type {
                 it["nil"] = StaticToken(NIL, arrayOf(Flag.VALUE))
                 it["true"] = StaticToken(E_TRUE, arrayOf(Flag.VALUE, Flag.E_BOOL))
                 it["false"] = StaticToken(E_FALSE, arrayOf(Flag.VALUE, Flag.E_BOOL))
+
+                it["visible"] = StaticToken(VISIBLE, arrayOf(Flag.MODIFIER))
+                it["private"] = StaticToken(INVISIBLE, arrayOf(Flag.MODIFIER))
 
                 it["bool"] = StaticToken(BOOL_CAST, arrayOf(Flag.NATIVE_CALL))
                 it["int"] = StaticToken(INT_CAST, arrayOf(Flag.NATIVE_CALL))

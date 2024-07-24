@@ -132,7 +132,7 @@ class Evaluator(
         NEGATE -> {
             // first, we need to check the type to ensure we negate Float
             // and Int separately and properly
-            val value = numericExpr(expr).get()
+            val value = numericExpr(expr.expr).get()
             if (expr.sig().isFloat()) EFloat(value.toFloat() * -1)
             else EInt(value.toInt() * -1)
         }
@@ -152,9 +152,8 @@ class Evaluator(
     }
 
     private fun valueEquals(left: Any, right: Any): Boolean {
-        if (getSignature(left) != getSignature(right)) return false
         when (left) {
-            is EInt,
+            is Numeric,
             is EString,
             is EChar,
             is EBool,

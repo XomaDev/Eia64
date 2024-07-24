@@ -13,6 +13,7 @@ enum class Flag {
     CLASS,
     E_BOOL,
 
+    MODIFIER,
     VALUE,
     CONSTANT_VALUE,
 

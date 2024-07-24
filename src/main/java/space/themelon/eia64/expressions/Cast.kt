@@ -50,15 +50,13 @@ data class Cast(
             if (exprSign is ArrayExtension || exprSign == Sign.ARRAY) return expectSignature
         } else if (expectSignature == Sign.OBJECT) {
             if (exprSign is ObjectExtension || exprSign == Sign.OBJECT) return expectSignature
+        } else if (expectSignature == Sign.NUM) {
+            if (exprSign == Sign.ANY || exprSign.isNumeric()) return expectSignature
         }
         if (exprSign == expectSignature) {
             // they already are of the same type
             return expectSignature
         }
-        // TODO:
-        //  actually some casts are not just limited to parse-time
-        //  they actually sometimes mean runtime
-        //  e.g from int (letter 65 => 'A')
         where.error<String>("Cannot cast $expr to $expectSignature")
         throw RuntimeException()
     }

@@ -28,22 +28,24 @@ data class BinaryOperation(
 
         var resultSign = leftExprSign
         when (operator) {
-            Type.PLUS -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT) resultSign = Sign.STRING
+            // TODO:
+            //  look into here, look for different combinations that can mess up
+            Type.PLUS -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric()) resultSign = Sign.STRING
 
-            Type.NEGATE -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT)
-                where.error<String>("Cannot apply operator (- Minus) on non Int expressions")
+            Type.NEGATE -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric())
+                where.error<String>("Cannot apply operator (- Minus) on non Numeric expressions")
 
-            Type.TIMES -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT)
-                where.error<String>("Cannot apply operator (* Times) on non Int expressions")
+            Type.TIMES -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric())
+                where.error<String>("Cannot apply operator (* Times) on non Numeric expressions")
 
-            Type.SLASH -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT)
-                where.error<String>("Cannot apply operator (/ Divide) on non Int expressions")
+            Type.SLASH -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric())
+                where.error<String>("Cannot apply operator (/ Divide) on non Numeric expressions")
 
-            Type.BITWISE_AND -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT)
-                where.error<String>("Cannot apply operator (& Bitwise And) on non Int expressions")
+            Type.BITWISE_AND -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric())
+                where.error<String>("Cannot apply operator (& Bitwise And) on non Numeric expressions")
 
-            Type.BITWISE_OR -> if (leftExprSign != Sign.INT && rightExprSign != Sign.INT)
-                where.error<String>("Cannot apply operator (| Bitwise Or) on non Int expressions")
+            Type.BITWISE_OR -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric())
+                where.error<String>("Cannot apply operator (| Bitwise Or) on non Numeric expressions")
 
             Type.EQUALS, Type.NOT_EQUALS -> resultSign = Sign.BOOL
 
@@ -89,7 +91,7 @@ data class BinaryOperation(
                 else -> where.error("Unknown expression signature for operator (+= Additive Assignment): $rightExprSign")
             }
 
-            Type.POWER -> if (leftExprSign != Sign.INT || rightExprSign != Sign.INT)
+            Type.POWER -> if (!leftExprSign.isInt() || !rightExprSign.isInt())
                 where.error<String>("Value for operation (** Power) requires Int expression")
 
             Type.DEDUCTIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric())

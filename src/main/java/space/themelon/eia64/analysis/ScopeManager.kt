@@ -58,6 +58,7 @@ class ScopeManager {
         return imaginaryScope
     }
 
+    // reference contains boolean if fn should be visible outside the class
     fun defineFn(name: String, reference: FunctionReference) {
         val unique = UniqueFunction(name, reference.argsSize)
         val existing = currentScope.resolveFn(unique)
@@ -68,10 +69,14 @@ class ScopeManager {
         currentScope.uniqueFunctionNames += name
     }
 
-    fun defineVariable(name: String, mutable: Boolean, signature: Signature) {
+    // If it is marked Visible, then it can be indexed by external Parsers/Resolvers
+    fun defineVariable(name: String,
+                       mutable: Boolean,
+                       signature: Signature,
+                       public: Boolean) {
         if (name in currentScope.variables)
             throw RuntimeException("Variable $name is already defined in the current scope")
-        currentScope.defineVr(name, mutable, signature)
+        currentScope.defineVr(name, mutable, signature, public)
     }
 
     fun hasFunctionNamed(name: String) = currentScope.resolveFnName(name)

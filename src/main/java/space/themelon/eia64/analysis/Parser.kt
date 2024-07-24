@@ -40,14 +40,15 @@ class Parser(private val executor: Executor) {
         if (token.flags.isNotEmpty()) {
             when (token.flags[0]) {
                 Flag.LOOP -> return loop(token)
-                Flag.V_KEYWORD -> return variableDeclaration(token)
+                Flag.V_KEYWORD -> return variableDeclaration(true, token)
                 Flag.INTERRUPTION -> return interruption(token)
+                Flag.MODIFIER -> return handleModifier(token)
                 else -> {}
             }
         }
         return when (token.type) {
             Type.IF -> ifDeclaration(token)
-            Type.FUN -> fnDeclaration()
+            Type.FUN -> fnDeclaration(true)
             Type.SHADO -> shadoDeclaration()
             Type.INCLUDE -> includeStatement()
             Type.NEW -> newStatement(token)
@@ -67,7 +68,8 @@ class Parser(private val executor: Executor) {
             token.flags[0].let {
                 if (it == Flag.LOOP
                     || it == Flag.V_KEYWORD
-                    || it == Flag.INTERRUPTION)
+                    || it == Flag.INTERRUPTION
+                    || it == Flag.MODIFIER)
                     return true
             }
         return when (token.type) {
@@ -84,6 +86,16 @@ class Parser(private val executor: Executor) {
         }
     }
 
+
+    private fun handleModifier(modifier: Token): Expression {
+        val visible = modifier.type == Type.VISIBLE
+        val next = next()
+        return when (next.type) {
+            Type.FUN -> fnDeclaration(visible)
+            Type.VAR, Type.LEN -> variableDeclaration(visible, next)
+            else -> next.error("Unexpected token")
+        }
+    }
 
     private fun usable(where: Token, expression: Expression): Expression {
         if (expression.sig() == Sign.NONE) {
@@ -190,7 +202,7 @@ class Parser(private val executor: Executor) {
         return NewObj(token,
             module,
             arguments,
-            executor.getModule(module).resolveFn("init", arguments.size))
+            executor.getModule(module).resolveGlobalFn(token, "init", arguments.size))
     }
 
     private fun parseNextInBrace(): Expression {
@@ -261,7 +273,7 @@ class Parser(private val executor: Executor) {
                 }
                 expectType(Type.CLOSE_CURVE)
                 manager.enterScope()
-                manager.defineVariable(iName, false, Sign.INT)
+                manager.defineVariable(iName, false, Sign.INT, false)
                 // Manual Scopped!
                 val body = manager.iterativeScope { unscoppedBodyExpr() }
                 manager.leaveScope()
@@ -296,7 +308,7 @@ class Parser(private val executor: Executor) {
         }
 
         manager.enterScope()
-        manager.defineVariable(iName, false, elementSignature)
+        manager.defineVariable(iName, false, elementSignature, false)
         // Manual Scopped!
         val body = manager.iterativeScope { unscoppedBodyExpr() }
         manager.leaveScope()
@@ -357,7 +369,7 @@ class Parser(private val executor: Executor) {
         )
     }
 
-    private fun fnDeclaration(): FunctionExpr {
+    private fun fnDeclaration(public: Boolean): FunctionExpr {
         val where = next()
         val name = readAlpha(where)
 
@@ -386,13 +398,18 @@ class Parser(private val executor: Executor) {
             Sign.UNIT
         }
 
-        // create a wrapper object, that can be set to actual value later
-        val reference = FunctionReference(null, requiredArgs, requiredArgs.size, returnSignature)
+        // Sometimes, the function self-references itself, but since it is not
+        // defined fully by then, resolver will find to find itself, so we keep a future
+        // reference of the function which is fulfilled later
+        val reference = FunctionReference(null,
+            requiredArgs,
+            requiredArgs.size,
+            returnSignature, public)
 
         manager.defineFn(name, reference)
         manager.enterScope()
 
-        requiredArgs.forEach { manager.defineVariable(it.first, true, it.second) }
+        requiredArgs.forEach { manager.defineVariable(it.first, true, it.second, false) }
 
         // Fully Manual Scoped
         val body: Expression
@@ -433,7 +450,7 @@ class Parser(private val executor: Executor) {
             expectType(Type.COLON)
 
             val argSignature = readSignature(next())
-            manager.defineVariable(name, true, argSignature)
+            manager.defineVariable(name, true, argSignature, false)
             names.add(name)
             if (!isNext(Type.COMMA)) break
             skip()
@@ -527,7 +544,7 @@ class Parser(private val executor: Executor) {
         return ExpressionList(expressions)
     }
 
-    private fun variableDeclaration(where: Token): Expression {
+    private fun variableDeclaration(public: Boolean, where: Token): Expression {
         val name = readAlpha()
 
         val expr: Expression
@@ -555,16 +572,15 @@ class Parser(private val executor: Executor) {
                 signature
             )
         }
-        manager.defineVariable(name, mutable, signature)
+        manager.defineVariable(name, mutable, signature, public)
         return expr
     }
 
     private fun readSignature(token: Token): Signature {
-        val a = 3
-        val b: Float = a.toFloat()
         if (token.hasFlag(Flag.CLASS)) {
             // then wrap it around Simple Signature
             return when (val classType = token.type) {
+                Type.E_NUMBER -> Sign.NUM
                 Type.E_INT -> Sign.INT
                 Type.E_FLOAT -> Sign.FLOAT
                 Type.E_STRING -> Sign.STRING
@@ -590,8 +606,6 @@ class Parser(private val executor: Executor) {
             token.error<String>("Expected a class type")
             // end of execution
         }
-        // TODO:
-        //  in future we need to add an array type extension
         if (manager.classes.contains(token.data as String)) {
             // class that was included from external files
             // this will be an extension of Object class type
@@ -751,7 +765,7 @@ class Parser(private val executor: Executor) {
         //  Global variables of other class are located in scope 0
         //  So we need to just maintain position of that variable in
         //  super scope, then access it at runtime
-        val uniqueVariable = executor.getModule(moduleInfo.name).resolveGlobalVr(property)
+        val uniqueVariable = executor.getModule(moduleInfo.name).resolveGlobalVr(moduleInfo.where, property)
             ?: moduleInfo.where.error("Could not find global variable '$property' in module ${moduleInfo.name}")
         return ForeignField(
             where = moduleInfo.where,
@@ -774,7 +788,7 @@ class Parser(private val executor: Executor) {
         val argsSize = if (moduleInfo.linked) arguments.size + 1 else arguments.size
 
         val fnReference = executor.getModule(moduleInfo.name)
-            .resolveFn(elementName, argsSize)
+            .resolveGlobalFn(moduleInfo.where, elementName, argsSize)
             ?: moduleInfo.where.error("Could not find function '$elementName' in module ${moduleInfo.name}")
 
         return ClassMethodCall(
@@ -837,8 +851,17 @@ class Parser(private val executor: Executor) {
         else -> where.error("Unknown object signature $signature")
     }
 
-    private fun resolveGlobalVr(name: String) = manager.resolveGlobalVr(name)
-    private fun resolveFn(name: String, numArgs: Int) = manager.resolveFn(name, numArgs)
+    private fun resolveGlobalVr(where: Token, name: String): UniqueVariable? {
+        val variable = manager.resolveGlobalVr(name) ?: return null
+        if (!variable.public) where.error<String>("Variable $name is marked private")
+        return variable
+    }
+
+    private fun resolveGlobalFn(where: Token, name: String, numArgs: Int): FunctionReference? {
+        val reference = manager.resolveFn(name, numArgs) ?: return null
+        if (!reference.public) where.error<String>("Function %name is marked private")
+        return reference
+    }
 
     private fun operatorPrecedence(type: Flag) = when (type) {
         Flag.ASSIGNMENT_TYPE -> 1

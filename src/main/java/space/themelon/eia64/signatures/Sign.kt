@@ -7,6 +7,7 @@ object Sign {
     private const val NONE_SIGN = "sig_none" // used for internal return types of expressions
     private const val NIL_SIGN = "sig_nil" // for language
     private const val ANY_SIGN = "sig_any"
+    private const val NUM_SIGN = "sig_num"
     private const val INT_SIGN = "sig_eint"
     private const val FLOAT_SIGN = "sig_float"
     private const val STRING_SIGN = "sig_string"
@@ -21,6 +22,7 @@ object Sign {
     val NONE = SimpleSignature(NONE_SIGN)
     val NIL = SimpleSignature(NIL_SIGN)
     val ANY = SimpleSignature(ANY_SIGN)
+    val NUM = SimpleSignature(NUM_SIGN)
     val INT = SimpleSignature(INT_SIGN)
     val FLOAT = SimpleSignature(FLOAT_SIGN)
     val STRING = SimpleSignature(STRING_SIGN)
@@ -34,6 +36,7 @@ object Sign {
         return when (this) {
             NONE -> throw RuntimeException("No equivalent type to NONE Sign")
             ANY -> Type.E_ANY
+            NUM -> Type.E_NUMBER
             INT -> Type.E_INT
             FLOAT -> Type.E_FLOAT
             STRING -> Type.E_STRING
