@@ -15,6 +15,10 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
+    override fun floatLiteral(literal: FloatLiteral): Any {
+        throw ShutdownException()
+    }
+
     override fun boolLiteral(literal: BoolLiteral): Any {
         throw ShutdownException()
     }

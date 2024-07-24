@@ -13,6 +13,7 @@ abstract class Expression(
     interface Visitor<R> {
         fun nilLiteral(nil: NilLiteral): R
         fun intLiteral(literal: IntLiteral): R
+        fun floatLiteral(literal: FloatLiteral): R
         fun boolLiteral(literal: BoolLiteral): R
         fun stringLiteral(literal: StringLiteral): R
         fun charLiteral(literal: CharLiteral): R

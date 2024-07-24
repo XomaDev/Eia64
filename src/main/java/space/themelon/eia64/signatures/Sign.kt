@@ -8,6 +8,7 @@ object Sign {
     private const val NIL_SIGN = "sig_nil" // for language
     private const val ANY_SIGN = "sig_any"
     private const val INT_SIGN = "sig_eint"
+    private const val FLOAT_SIGN = "sig_float"
     private const val STRING_SIGN = "sig_string"
     private const val CHAR_SIGN = "sig_char"
     private const val BOOL_SIGN = "sig_bool"
@@ -21,6 +22,7 @@ object Sign {
     val NIL = SimpleSignature(NIL_SIGN)
     val ANY = SimpleSignature(ANY_SIGN)
     val INT = SimpleSignature(INT_SIGN)
+    val FLOAT = SimpleSignature(FLOAT_SIGN)
     val STRING = SimpleSignature(STRING_SIGN)
     val CHAR = SimpleSignature(CHAR_SIGN)
     val BOOL = SimpleSignature(BOOL_SIGN)
@@ -33,6 +35,7 @@ object Sign {
             NONE -> throw RuntimeException("No equivalent type to NONE Sign")
             ANY -> Type.E_ANY
             INT -> Type.E_INT
+            FLOAT -> Type.E_FLOAT
             STRING -> Type.E_STRING
             CHAR -> Type.E_CHAR
             BOOL -> Type.E_BOOL

@@ -46,6 +46,12 @@ class Evaluator(
         else -> result as EInt
     }
 
+    private fun numericExpr(expr: Expression): Numeric = when (val result = unboxEval(expr)) {
+        is EChar -> EInt(result.get().code)
+        is EInt -> result
+        else -> result as EFloat
+    }
+
     private val memory = Memory()
 
     fun clearMemory() {
@@ -54,6 +60,8 @@ class Evaluator(
 
     override fun nilLiteral(nil: NilLiteral) = ENil()
     override fun intLiteral(literal: IntLiteral) = EInt(literal.value)
+    override fun floatLiteral(literal: FloatLiteral) = EFloat(literal.value)
+
     override fun boolLiteral(literal: BoolLiteral) = EBool(literal.value)
     override fun stringLiteral(literal: StringLiteral) = EString(literal.value)
     override fun charLiteral(literal: CharLiteral) = EChar(literal.value)
@@ -152,13 +160,12 @@ class Evaluator(
             val left = unboxEval(expr.left)
             val right = unboxEval(expr.right)
 
-            if (getSignature(left) == Sign.INT && getSignature(right) == Sign.INT)
-                left as EInt + right as EInt
+            if (left is Numeric && right is Numeric) left + right
             else EString(left.toString() + right.toString())
         }
-        NEGATE -> intExpr(expr.left) - intExpr(expr.right)
-        TIMES -> intExpr(expr.left) * intExpr(expr.right)
-        SLASH -> intExpr(expr.left) / intExpr(expr.right)
+        NEGATE -> numericExpr(expr.left) - numericExpr(expr.right)
+        TIMES -> numericExpr(expr.left) * numericExpr(expr.right)
+        SLASH -> numericExpr(expr.left) / numericExpr(expr.right)
         EQUALS, NOT_EQUALS -> {
             val left = unboxEval(expr.left)
             val right = unboxEval(expr.right)
@@ -169,12 +176,8 @@ class Evaluator(
         }
         LOGICAL_AND -> booleanExpr(expr.left).and(booleanExpr(expr.right))
         LOGICAL_OR -> booleanExpr(expr.left).or(booleanExpr(expr.right))
-        RIGHT_DIAMOND -> EBool(intExpr(expr.left) > intExpr(expr.right))
-        LEFT_DIAMOND -> {
-            val left = intExpr(expr.left)
-            val right = intExpr(expr.right)
-            EBool(left < right)
-        }
+        RIGHT_DIAMOND -> EBool(numericExpr(expr.left) > numericExpr(expr.right))
+        LEFT_DIAMOND -> EBool(numericExpr(expr.left) < numericExpr(expr.right))
         GREATER_THAN_EQUALS -> EBool(intExpr(expr.left) >= intExpr(expr.right))
         LESSER_THAN_EQUALS -> EBool(intExpr(expr.left) <= intExpr(expr.right))
         ASSIGNMENT -> {
@@ -189,45 +192,45 @@ class Evaluator(
             value
         }
         ADDITIVE_ASSIGNMENT -> {
-            val element = unboxEval(expr.left)
+            var element = unboxEval(expr.left)
             when (element) {
                 is EString -> element.append(unboxEval(expr.right))
-                is EInt -> element += intExpr(expr.right)
+                is Numeric -> element += numericExpr(expr.right)
                 else -> throw RuntimeException("Cannot apply += operator on element $element")
             }
             element
         }
         DEDUCTIVE_ASSIGNMENT -> {
-            val element = unboxEval(expr.left)
+            var element = unboxEval(expr.left)
             when (element) {
-                is EInt -> element -= intExpr(expr.right)
+                is Numeric -> element -= numericExpr(expr.right)
                 else -> throw RuntimeException("Cannot apply -= operator on element $element")
             }
             element
         }
         MULTIPLICATIVE_ASSIGNMENT -> {
-            val element = unboxEval(expr.left)
+            var element = unboxEval(expr.left)
             when (element) {
-                is EInt -> element *= intExpr(expr.right)
+                is Numeric -> element *= numericExpr(expr.right)
                 else -> throw RuntimeException("Cannot apply *= operator on element $element")
             }
             element
         }
         POWER -> {
-            val left = intExpr(expr.left)
-            val right = intExpr(expr.right)
+            val left = numericExpr(expr.left)
+            val right = numericExpr(expr.right)
             EString(left.get().toDouble().pow(right.get().toDouble()).toString())
         }
         DIVIDIVE_ASSIGNMENT -> {
-            val element = unboxEval(expr.left)
+            var element = unboxEval(expr.left)
             when (element) {
-                is EInt -> element /= intExpr(expr.right)
+                is Numeric -> element /= intExpr(expr.right)
                 else -> throw RuntimeException("Cannot apply /= operator on element $element")
             }
             element
         }
-        BITWISE_AND -> intExpr(expr.left).and(intExpr(expr.right))
-        BITWISE_OR -> intExpr(expr.left).or(intExpr(expr.right))
+        BITWISE_AND -> numericExpr(expr.left).and(numericExpr(expr.right))
+        BITWISE_OR -> numericExpr(expr.left).or(numericExpr(expr.right))
         else -> throw RuntimeException("Unknown binary operator $type")
     }
 
@@ -419,7 +422,19 @@ class Evaluator(
                 return when (val objType = getSignature(obj)) {
                     Sign.INT -> obj
                     Sign.CHAR -> EInt((obj as EChar).get().code)
-                    Sign.STRING -> EInt(Integer.parseInt(obj.toString()))
+                    Sign.STRING -> EInt(obj.toString().toInt())
+                    else -> throw RuntimeException("Unknown type for int() cast $objType")
+                }
+            }
+
+            FLOAT_CAST -> {
+                if (argsSize != 1) reportWrongArguments("float", 1, argsSize)
+                val obj = unboxEval(call.arguments[0])
+
+                return when (val objType = getSignature(obj)) {
+                    Sign.INT -> (obj as EInt).get().toFloat()
+                    Sign.CHAR -> EFloat((obj as EChar).get().code.toFloat())
+                    Sign.STRING -> EFloat(obj.toString().toFloat())
                     else -> throw RuntimeException("Unknown type for int() cast $objType")
                 }
             }
@@ -944,3 +959,7 @@ class Evaluator(
         return entity.getAt(index)!!
     }
 }
+
+private fun Signature.isNumeric() = this == Sign.INT || this == Sign.FLOAT
+private fun Signature.isInt() = this == Sign.INT
+private fun Signature.isFloat() = this == Sign.FLOAT

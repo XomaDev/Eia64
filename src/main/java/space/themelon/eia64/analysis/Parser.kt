@@ -925,7 +925,8 @@ class Parser(private val executor: Executor) {
         return when (token.type) {
             Type.NIL -> NilLiteral(token)
             Type.E_TRUE, Type.E_FALSE -> BoolLiteral(token, token.type == Type.E_TRUE)
-            Type.E_INT -> IntLiteral(token, token.data.toString().toInt())
+            Type.E_INT -> IntLiteral(token, token.data as Int)
+            Type.E_FLOAT -> FloatLiteral(token, token.data as Float)
             Type.E_STRING -> StringLiteral(token, token.data as String)
             Type.E_CHAR -> CharLiteral(token, token.data as Char)
             Type.ALPHA -> {

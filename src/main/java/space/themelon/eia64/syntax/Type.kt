@@ -29,14 +29,14 @@ enum class Type {
     IS,
 
     E_NIL,
-    E_INT, E_BOOL, E_STRING, E_CHAR,
+    E_INT, E_FLOAT, E_BOOL, E_STRING, E_CHAR,
     E_ARRAY, E_ANY, E_UNIT, E_OBJECT,
 
     ALPHA,
     E_TRUE, E_FALSE,
     NIL,
 
-    BOOL_CAST, INT_CAST, CHAR_CAST, STRING_CAST,
+    BOOL_CAST, INT_CAST, FLOAT_CAST, CHAR_CAST, STRING_CAST,
     TYPE,
 
     LET, VAR, SHADO, WHEN,
@@ -113,6 +113,7 @@ enum class Type {
             KEYWORDS.let {
                 it["Nil"] = StaticToken(E_NIL, arrayOf(Flag.CLASS))
                 it["Int"] = StaticToken(E_INT, arrayOf(Flag.CLASS))
+                it["Float"] = StaticToken(E_FLOAT, arrayOf(Flag.CLASS))
                 it["Bool"] = StaticToken(E_BOOL, arrayOf(Flag.CLASS))
                 it["String"] = StaticToken(E_STRING, arrayOf(Flag.CLASS))
                 it["Char"] = StaticToken(E_CHAR, arrayOf(Flag.CLASS))
@@ -127,6 +128,7 @@ enum class Type {
 
                 it["bool"] = StaticToken(BOOL_CAST, arrayOf(Flag.NATIVE_CALL))
                 it["int"] = StaticToken(INT_CAST, arrayOf(Flag.NATIVE_CALL))
+                it["float"] = StaticToken(FLOAT_CAST, arrayOf(Flag.NATIVE_CALL))
                 it["char"] = StaticToken(CHAR_CAST, arrayOf(Flag.NATIVE_CALL))
                 it["str"] = StaticToken(STRING_CAST, arrayOf(Flag.NATIVE_CALL))
 

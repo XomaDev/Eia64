@@ -137,13 +137,26 @@ class Lexer(private val source: String) {
     private fun parseNumeric(c: Char): Token {
         val content = StringBuilder()
         content.append(c)
-        while (!isEOF()) {
-            val p = peek()
-            if (isNumeric(p)) {
-                content.append(next())
-            } else break
+
+        while (!isEOF() && isNumeric(peek())) content.append(next())
+
+        val type: Type
+        val value: Any
+
+        if (peek() == '.' && isNumeric(peekNext())) {
+            type = E_FLOAT
+            content.append('.')
+            next()
+            while (!isEOF() && isNumeric(peek())) content.append(next())
+            value = content.toString().toFloat()
+        } else {
+            type = E_INT
+            value = content.toString().toInt()
         }
-        return Token(line, E_INT, arrayOf(Flag.VALUE, Flag.CONSTANT_VALUE), content.toString().toInt())
+        return Token(line,
+            type,
+            arrayOf(Flag.VALUE, Flag.CONSTANT_VALUE),
+            value)
     }
 
     private fun isNumeric(c: Char) = c in '0'..'9'
@@ -170,5 +183,10 @@ class Lexer(private val source: String) {
     private fun peek(): Char {
         if (isEOF()) throw RuntimeException("Early EOF at line $line")
         return source[index]
+    }
+
+    private fun peekNext(): Char {
+        if (index + 1 > source.length) return '\u0000'
+        return source[index + 1]
     }
 }

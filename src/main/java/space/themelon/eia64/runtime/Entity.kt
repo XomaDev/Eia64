@@ -47,6 +47,7 @@ open class Entity(
             }
             is ENil -> Sign.NIL
             is EInt -> Sign.INT
+            is EFloat -> Sign.FLOAT
             is EString -> Sign.STRING
             is EBool -> Sign.BOOL
             is EChar -> Sign.CHAR

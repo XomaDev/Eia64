@@ -31,6 +31,7 @@ data class NativeCall(
         Type.RAND,
         Type.EXIT -> Sign.INT
 
+        Type.FLOAT_CAST -> Sign.FLOAT
         Type.CHAR_CAST -> Sign.CHAR
 
         Type.READ,

@@ -1,6 +1,6 @@
 package space.themelon.eia64.primitives
 
-class EInt(initialValue: Int): Primitive<EInt>, Comparable<EInt> {
+class EInt(initialValue: Int): Primitive<EInt>, Comparable<EInt>, Numeric {
 
     private var intValue = initialValue
 
