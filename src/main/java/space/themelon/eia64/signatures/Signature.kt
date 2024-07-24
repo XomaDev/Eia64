@@ -18,4 +18,10 @@ abstract class Signature {
         terminative = another.terminative
         return this
     }
+
+    fun isInt() = this == Sign.INT
+    fun isFloat() = this == Sign.FLOAT
+
+    fun isNumeric() = isInt() || isFloat()
+    fun isNumericOrChar() = isNumeric() || this == Sign.CHAR
 }

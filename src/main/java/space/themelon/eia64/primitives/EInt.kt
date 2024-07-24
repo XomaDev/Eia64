@@ -16,36 +16,37 @@ class EInt(initialValue: Int): Primitive<EInt>, Comparable<EInt>, Numeric {
     override fun isCopyable() = true
     override fun copy() = EInt(intValue)
 
-    fun getAndIncrement() = intValue++
-    fun incrementAndGet() = ++intValue
+    override fun getAndIncrement() = intValue++
+    override fun incrementAndGet() = ++intValue
 
-    fun getAndDecrement() = intValue--
-    fun decrementAndGet() = --intValue
+    override fun getAndDecrement() = intValue--
+    override fun decrementAndGet() = --intValue
 
-    operator fun plus(other: EInt) = EInt(intValue + other.intValue)
-    operator fun plusAssign(other: EInt) {
-        intValue += other.intValue
+    override operator fun plus(number: Numeric) = EInt(intValue + number.get().toInt())
+    override operator fun plusAssign(number: Numeric) {
+        intValue += number.get().toInt()
     }
 
-    operator fun minus(other: EInt) = EInt(intValue - other.intValue)
-    operator fun minusAssign(other: EInt) {
-        intValue -= other.intValue
+    override operator fun minus(number: Numeric) = EInt(intValue - number.get().toInt())
+    override operator fun minusAssign(number: Numeric) {
+        intValue -= number.get().toInt()
     }
 
-    operator fun times(other: EInt) = EInt(intValue * other.intValue)
-    operator fun timesAssign(other: EInt) {
-        intValue *= other.intValue
+    override operator fun times(number: Numeric) = EInt(intValue * number.get().toInt())
+    override operator fun timesAssign(number: Numeric) {
+        intValue *= number.get().toInt()
     }
 
-    operator fun div(other: EInt) = EInt(intValue / other.intValue)
-    operator fun divAssign(other: EInt) {
-        intValue /= other.intValue
+    override operator fun div(number: Numeric) = EInt(intValue / number.get().toInt())
+    override operator fun divAssign(number: Numeric) {
+        intValue /= number.get().toInt()
     }
 
-    fun and(other: EInt) = EInt(intValue and other.intValue)
-    fun or(other: EInt) = EInt(intValue or other.intValue)
+    override fun and(number: Numeric) = EInt(intValue and number.get().toInt())
+    override fun or(number: Numeric) = EInt(intValue or number.get().toInt())
 
     override fun compareTo(other: EInt) = intValue - other.intValue
+    override fun compareTo(number: Numeric) = intValue - number.get().toInt()
 
     override fun toString() = intValue.toString()
 

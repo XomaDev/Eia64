@@ -560,10 +560,13 @@ class Parser(private val executor: Executor) {
     }
 
     private fun readSignature(token: Token): Signature {
+        val a = 3
+        val b: Float = a.toFloat()
         if (token.hasFlag(Flag.CLASS)) {
             // then wrap it around Simple Signature
             return when (val classType = token.type) {
                 Type.E_INT -> Sign.INT
+                Type.E_FLOAT -> Sign.FLOAT
                 Type.E_STRING -> Sign.STRING
                 Type.E_CHAR -> Sign.CHAR
                 Type.E_BOOL -> Sign.BOOL

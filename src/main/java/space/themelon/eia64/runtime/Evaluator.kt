@@ -129,16 +129,24 @@ class Evaluator(
 
     override fun unaryOperation(expr: UnaryOperation): Any = when (val type = expr.operator) {
         NOT -> EBool(!(booleanExpr(expr.expr).get()))
-        NEGATE -> EInt(Math.negateExact(intExpr(expr.expr).get()))
+        NEGATE -> {
+            // first, we need to check the type to ensure we negate Float
+            // and Int separately and properly
+            val value = numericExpr(expr).get()
+            if (expr.sig().isFloat()) EFloat(value.toFloat() * -1)
+            else EInt(value.toInt() * -1)
+        }
         INCREMENT, DECREMENT -> {
-            val eInt = intExpr(expr.expr)
-            EInt(if (expr.towardsLeft) {
-                if (type == INCREMENT) eInt.incrementAndGet()
-                else eInt.decrementAndGet()
+            val numeric = numericExpr(expr.expr)
+            val value = if (expr.towardsLeft) {
+                if (type == INCREMENT) numeric.incrementAndGet()
+                else numeric.decrementAndGet()
             } else {
-                if (type == INCREMENT) eInt.getAndIncrement()
-                else eInt.getAndDecrement()
-            })
+                if (type == INCREMENT) numeric.getAndIncrement()
+                else numeric.getAndDecrement()
+            }
+            if (value is Int) EInt(value)
+            else EFloat(value as Float)
         }
         else -> throw RuntimeException("Unknown unary operator $type")
     }
@@ -192,27 +200,35 @@ class Evaluator(
             value
         }
         ADDITIVE_ASSIGNMENT -> {
-            var element = unboxEval(expr.left)
+            val element = unboxEval(expr.left)
             when (element) {
                 is EString -> element.append(unboxEval(expr.right))
-                is Numeric -> element += numericExpr(expr.right)
+                is Numeric -> element.plusAssign(numericExpr(expr.right))
                 else -> throw RuntimeException("Cannot apply += operator on element $element")
             }
             element
         }
         DEDUCTIVE_ASSIGNMENT -> {
-            var element = unboxEval(expr.left)
+            val element = unboxEval(expr.left)
             when (element) {
-                is Numeric -> element -= numericExpr(expr.right)
+                is Numeric -> element.minusAssign(numericExpr(expr.right))
                 else -> throw RuntimeException("Cannot apply -= operator on element $element")
             }
             element
         }
         MULTIPLICATIVE_ASSIGNMENT -> {
-            var element = unboxEval(expr.left)
+            val element = unboxEval(expr.left)
             when (element) {
-                is Numeric -> element *= numericExpr(expr.right)
+                is Numeric -> element.timesAssign(numericExpr(expr.right))
                 else -> throw RuntimeException("Cannot apply *= operator on element $element")
+            }
+            element
+        }
+        DIVIDIVE_ASSIGNMENT -> {
+            val element = unboxEval(expr.left)
+            when (element) {
+                is Numeric -> element.divAssign(intExpr(expr.right))
+                else -> throw RuntimeException("Cannot apply /= operator on element $element")
             }
             element
         }
@@ -220,14 +236,6 @@ class Evaluator(
             val left = numericExpr(expr.left)
             val right = numericExpr(expr.right)
             EString(left.get().toDouble().pow(right.get().toDouble()).toString())
-        }
-        DIVIDIVE_ASSIGNMENT -> {
-            var element = unboxEval(expr.left)
-            when (element) {
-                is Numeric -> element /= intExpr(expr.right)
-                else -> throw RuntimeException("Cannot apply /= operator on element $element")
-            }
-            element
         }
         BITWISE_AND -> numericExpr(expr.left).and(numericExpr(expr.right))
         BITWISE_OR -> numericExpr(expr.left).or(numericExpr(expr.right))
@@ -314,12 +322,8 @@ class Evaluator(
             emptyArray(),
             true,
             "Class<$className>")
-        if (result is String) {
-            return result
-        }
-        if (result is EString) {
-            return result.get()
-        }
+        if (result is String) return result
+        if (result is EString) return result.get()
         throw RuntimeException("string() returned a non string $result")
     }
 
@@ -433,6 +437,7 @@ class Evaluator(
 
                 return when (val objType = getSignature(obj)) {
                     Sign.INT -> (obj as EInt).get().toFloat()
+                    Sign.FLOAT -> obj
                     Sign.CHAR -> EFloat((obj as EChar).get().code.toFloat())
                     Sign.STRING -> EFloat(obj.toString().toFloat())
                     else -> throw RuntimeException("Unknown type for int() cast $objType")
@@ -959,7 +964,3 @@ class Evaluator(
         return entity.getAt(index)!!
     }
 }
-
-private fun Signature.isNumeric() = this == Sign.INT || this == Sign.FLOAT
-private fun Signature.isInt() = this == Sign.INT
-private fun Signature.isFloat() = this == Sign.FLOAT

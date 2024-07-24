@@ -3,7 +3,7 @@ package space.themelon.eia64.expressions
 import space.themelon.eia64.Expression
 import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.signatures.Consumable
-import space.themelon.eia64.signatures.Matching.intOrChar
+import space.themelon.eia64.signatures.Matching.numericOrChar
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
@@ -54,21 +54,21 @@ data class BinaryOperation(
                 where.error<String>("Cannot apply logical operator (|| Logical Or) on non Bool expressions")
             } else resultSign = Sign.BOOL
 
-            Type.RIGHT_DIAMOND -> if (!intOrChar(left, right)) {
-                where.error<String>("Cannot apply logical operator (> Greater Than) on non [Int/Char] expressions")
+            Type.RIGHT_DIAMOND -> if (!numericOrChar(left, right)) {
+                where.error<String>("Cannot apply logical operator (> Greater Than) on non [Numeric/Char] expressions")
             } else resultSign = Sign.BOOL
 
-            Type.LEFT_DIAMOND -> if (!intOrChar(left, right)) {
-                where.error<String>("Cannot apply logical operator (< Lesser Than) on non [Int/Char] expressions")
+            Type.LEFT_DIAMOND -> if (!numericOrChar(left, right)) {
+                where.error<String>("Cannot apply logical operator (< Lesser Than) on non [Numeric/Char] expressions")
             } else resultSign = Sign.BOOL
 
-            Type.GREATER_THAN_EQUALS -> if (!intOrChar(left, right)) {
-                where.error<String>("Cannot apply logical operator (>= Greater Than Equals) on non [Int/Char] expressions")
+            Type.GREATER_THAN_EQUALS -> if (!numericOrChar(left, right)) {
+                where.error<String>("Cannot apply logical operator (>= Greater Than Equals) on non [Numeric/Char] expressions")
                 resultSign = Sign.BOOL
             } else resultSign = Sign.BOOL
 
-            Type.LESSER_THAN_EQUALS -> if (!intOrChar(left, right)) {
-                where.error<String>("Cannot apply logical operator (<= Lesser Than Equals) on [Int/Char] Int expressions")
+            Type.LESSER_THAN_EQUALS -> if (!numericOrChar(left, right)) {
+                where.error<String>("Cannot apply logical operator (<= Lesser Than Equals) on [Numeric/Char] expressions")
             } else resultSign = Sign.BOOL
 
             Type.ASSIGNMENT -> {
@@ -85,20 +85,21 @@ data class BinaryOperation(
             Type.ADDITIVE_ASSIGNMENT -> when (rightExprSign) {
                 Sign.STRING, Sign.CHAR -> resultSign = Sign.STRING
                 Sign.INT -> resultSign = Sign.INT
+                Sign.FLOAT -> resultSign = Sign.FLOAT
                 else -> where.error("Unknown expression signature for operator (+= Additive Assignment): $rightExprSign")
             }
 
             Type.POWER -> if (leftExprSign != Sign.INT || rightExprSign != Sign.INT)
                 where.error<String>("Value for operation (** Power) requires Int expression")
 
-            Type.DEDUCTIVE_ASSIGNMENT -> if (rightExprSign != Sign.INT)
-                where.error<String>("Value for operation (-= Deductive Assignment) requires Int expression")
+            Type.DEDUCTIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric())
+                where.error<String>("Value for operation (-= Deductive Assignment) requires Numeric expression")
 
-            Type.MULTIPLICATIVE_ASSIGNMENT -> if (rightExprSign != Sign.INT)
-                where.error<String>("Value for operation (*= Times Assignment) requires Int expression")
+            Type.MULTIPLICATIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric())
+                where.error<String>("Value for operation (*= Times Assignment) requires Numeric expression")
 
-            Type.DIVIDIVE_ASSIGNMENT -> if (rightExprSign != Sign.INT)
-                where.error<String>("Value for operation (/= Dividive Assignment) requires Int expression")
+            Type.DIVIDIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric())
+                where.error<String>("Value for operation (/= Dividive Assignment) requires Numeric expression")
 
             else -> where.error("Unknown Binary Operator $operator")
         }

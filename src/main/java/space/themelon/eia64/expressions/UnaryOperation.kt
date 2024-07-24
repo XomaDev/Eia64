@@ -11,7 +11,7 @@ import space.themelon.eia64.syntax.Type
 data class UnaryOperation(
     val where: Token,
     val operator: Type,
-    @Consumable("Cannot apply unary on void expression") val expr: Expression,
+    val expr: Expression,
     val towardsLeft: Boolean
 ) : Expression(where) {
 
@@ -26,13 +26,13 @@ data class UnaryOperation(
         if (towardsLeft) {
             when (operator) {
                 Type.NEGATE ->
-                    if (exprSign != Sign.INT) where.error<String>("Expected expression type Int for (- Negate)")
+                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (- Negate)")
 
                 Type.INCREMENT ->
-                    if (exprSign != Sign.INT) where.error<String>("Expected expression type Int for (++ Increment)")
+                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (++ Increment)")
 
                 Type.DECREMENT ->
-                    if (exprSign != Sign.INT) where.error<String>("Expected expression type Int for (-- Decrement)")
+                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (-- Decrement)")
 
                 Type.NOT ->
                     if (exprSign != Sign.BOOL) where.error<String>("Expected expression type Bool for (! Not)")
@@ -42,10 +42,10 @@ data class UnaryOperation(
         } else {
             when (operator) {
                 Type.INCREMENT ->
-                    if (exprSign != Sign.INT) where.error<String>("Expected expression type Int for (++ Increment)")
+                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (++ Increment)")
 
                 Type.DECREMENT ->
-                    if (exprSign != Sign.INT) where.error<String>("Expected expression type Int for (-- Decrement)")
+                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (-- Decrement)")
 
                 else -> where.error<String>("Unknown unary operator towards left")
             }

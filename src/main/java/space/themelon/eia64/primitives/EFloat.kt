@@ -18,6 +18,8 @@ class EFloat(initialValue: Float): Primitive<EFloat>, Comparable<EFloat>, Numeri
     override fun copy() = EFloat(floatValue)
 
     override fun compareTo(other: EFloat) = floatValue.compareTo(other.floatValue)
+    override fun compareTo(number: Numeric) = floatValue.compareTo(number.get().toFloat())
+
     override fun toString() = floatValue.toString()
 
     override fun equals(other: Any?): Boolean {
@@ -28,32 +30,35 @@ class EFloat(initialValue: Float): Primitive<EFloat>, Comparable<EFloat>, Numeri
 
     override fun hashCode() = floatValue.hashCode()
 
-    fun getAndIncrement() = floatValue++
-    fun incrementAndGet() = ++floatValue
+    override fun getAndIncrement() = floatValue++
+    override fun incrementAndGet() = ++floatValue
 
-    fun getAndDecrement() = floatValue--
-    fun decrementAndGet() = --floatValue
+    override fun getAndDecrement() = floatValue--
+    override fun decrementAndGet() = --floatValue
 
-    operator fun plus(other: EFloat) = EFloat(floatValue + other.floatValue)
-    operator fun plusAssign(other: EFloat) {
-        floatValue += other.floatValue
+    override operator fun plus(number: Numeric) = EFloat(floatValue + number.get().toFloat())
+    override operator fun plusAssign(number: Numeric) {
+        floatValue += number.get().toFloat()
     }
 
-    operator fun minus(other: EFloat) = EFloat(floatValue - other.floatValue)
-    operator fun minusAssign(other: EFloat) {
-        floatValue -= other.floatValue
+    override operator fun minus(number: Numeric) = EFloat(floatValue - number.get().toFloat())
+    override operator fun minusAssign(number: Numeric) {
+        floatValue -= number.get().toFloat()
     }
 
-    operator fun times(other: EFloat) = EFloat(floatValue * other.floatValue)
-    operator fun timesAssign(other: EFloat) {
-        floatValue *= other.floatValue
+    override operator fun times(number: Numeric) = EFloat(floatValue * number.get().toFloat())
+    override operator fun timesAssign(number: Numeric) {
+        floatValue *= number.get().toFloat()
     }
 
-    operator fun div(other: EFloat) = EFloat(floatValue / other.floatValue)
-    operator fun divAssign(other: EFloat) {
-        floatValue /= other.floatValue
+    override operator fun div(number: Numeric) = EFloat(floatValue / number.get().toFloat())
+    override operator fun divAssign(number: Numeric) {
+        floatValue /= number.get().toFloat()
     }
 
-    fun and(other: EFloat) = EFloat(Float.fromBits(floatValue.toRawBits() and other.floatValue.toRawBits()))
-    fun or(other: EFloat) = EFloat(Float.fromBits(floatValue.toRawBits() or other.floatValue.toRawBits()))
+    override fun and(number: Numeric) =
+        EFloat(Float.fromBits(floatValue.toRawBits() and number.get().toFloat().toRawBits()))
+
+    override fun or(number: Numeric) =
+        EFloat(Float.fromBits(floatValue.toRawBits() or number.get().toFloat().toRawBits()))
 }
