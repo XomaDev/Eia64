@@ -1,5 +1,6 @@
 package space.themelon.eia64.runtime
 
+import space.themelon.eia64.EiaTrace
 import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.FunctionExpr
@@ -12,6 +13,8 @@ import space.themelon.eia64.signatures.ObjectExtension
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type.*
+import java.io.FileOutputStream
+import java.io.PrintStream
 import java.util.Scanner
 import kotlin.collections.ArrayList
 import kotlin.math.pow
@@ -27,15 +30,17 @@ class Evaluator(
 
     private var evaluator: Expression.Visitor<Any> = this
 
+    // in the future, we need to give options to enable/ disable:
+    //  how about enabling it through eia code?
+    private val tracer = EiaTrace(PrintStream(FileOutputStream(Executor.LOGS_PIPE_PATH)))
+
     fun shutdown() {
         // Reroute all the traffic to Void, which would raise ShutdownException.
         // We use this strategy to cause an efficient shutdown than checking fields each time
         evaluator = VoidEvaluator()
     }
 
-    fun eval(expr: Expression): Any {
-        return expr.accept(evaluator)
-    }
+    fun eval(expr: Expression) = expr.accept(evaluator)
 
     private fun unboxEval(expr: Expression) = unbox(eval(expr))
 
@@ -52,7 +57,9 @@ class Evaluator(
         else -> result as EFloat
     }
 
-    private val memory = Memory()
+    // Supply tracer to memory, so that it calls enterScope() and leaveScope()
+    // on tracer on behalf of us
+    private val memory = Memory(tracer)
 
     fun clearMemory() {
         memory.clearMemory()
@@ -94,6 +101,7 @@ class Evaluator(
                        name: String,
                        value: Any) {
         (memory.getVar(index, name) as Entity).update(value)
+        tracer.updateVariableRuntime(name, getSignature(value), value)
     }
 
     private fun update(aMemory: Memory,
@@ -101,6 +109,7 @@ class Evaluator(
                        name: String,
                        value: Any) {
         (aMemory.getVar(index, name) as Entity).update(value)
+        tracer.updateVariableRuntime(name, getSignature(value), value)
     }
 
     override fun variable(variable: ExplicitVariable): Any {
@@ -110,20 +119,32 @@ class Evaluator(
         val mutable = variable.mutable
 
         memory.declareVar(name, Entity(name, mutable, value, signature))
+        tracer.declareVariableRuntime(
+            mutable,
+            name,
+            signature,
+            value)
         return value
     }
 
     override fun autoVariable(autoVariable: AutoVariable): Any {
+        val name = autoVariable.name
         val value = unboxEval(autoVariable.expr)
+        val signature = getSignature(value)
         memory.declareVar(
-            autoVariable.name,
+            name,
             Entity(
-                autoVariable.name,
+                name,
                 true,
                 unbox(value),
-                getSignature(value)
+                signature
             )
         )
+        tracer.declareVariableRuntime(
+            true,
+            autoVariable.name,
+            signature,
+            value)
         return value
     }
 
@@ -705,10 +726,6 @@ class Evaluator(
         memory.leaveScope()
 
         if (result is Entity) {
-            //when (result.type) {
-                //RETURN, USE -> return result
-                //else -> { }
-            //}
             when (result.interruption) {
                 InterruptionType.RETURN,
                 InterruptionType.USE -> return result
@@ -729,14 +746,6 @@ class Evaluator(
             numIterations++
             val result = eval(until.body)
             if (result is Entity) {
-                //when (result.type) {
-                    //BREAK -> break
-                    //CONTINUE -> continue
-                    //RETURN -> return result
-                    //USE -> result.value
-                    //else -> { }
-                //}
-
                 when (result.interruption) {
                     InterruptionType.BREAK -> break
                     InterruptionType.CONTINUE -> continue
@@ -783,14 +792,6 @@ class Evaluator(
             val result = eval(body)
             memory.leaveScope()
             if (result is Entity) {
-                //when (result.type) {
-                    //BREAK -> break
-                    //CONTINUE -> continue
-                    //RETURN -> return result
-                    //USE -> return result.value
-                    //else -> { }
-                //}
-
                 when (result.interruption) {
                     InterruptionType.BREAK -> break
                     InterruptionType.CONTINUE -> continue
@@ -821,16 +822,6 @@ class Evaluator(
             val result = eval(itr.body)
             memory.leaveScope()
             if (result is Entity) {
-                //when (result.type) {
-                    //BREAK -> break
-                    //CONTINUE -> {
-                        //from = from + by
-                        //continue
-                    //}
-                    //RETURN -> return result
-                    //USE -> return result.value
-                    //else -> { }
-
                 when (result.interruption) {
                     InterruptionType.BREAK -> break
                     InterruptionType.CONTINUE -> {
@@ -861,23 +852,6 @@ class Evaluator(
             // Auto Scopped
             val result = eval(forLoop.body)
             if (result is Entity) {
-                //when (result.type) {
-                    //BREAK -> break
-                    //CONTINUE -> {
-                        //evalOperational()
-                        //continue
-                    //}
-                    //RETURN -> {
-                        //memory.leaveScope()
-                        //return result
-                    //}
-                    //USE -> {
-                        //memory.leaveScope()
-                        //return result.value
-                    //}
-                    //else -> { }
-                //}
-
                 when (result.interruption) {
                     InterruptionType.BREAK -> break
                     InterruptionType.CONTINUE -> {
@@ -949,6 +923,7 @@ class Evaluator(
 
     override fun function(function: FunctionExpr): Any {
         memory.declareFn(function.name, function)
+        tracer.declareFn(function.name, function.arguments)
         return EBool(true)
     }
 

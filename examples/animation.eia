@@ -9,7 +9,7 @@ include(
 private let TRASH = "🗑"
 private let HAPPY_RIGHT = "(> ^_^)>"
 private let HAPPY_LEFT = "<(^_^ <)"
-private let INTERVAL = 200
+private let INTERVAL = 500
 
 private fn trash(text: String) {
     let size = len(text)
@@ -38,7 +38,6 @@ private fn trash(text: String) {
             } else if (!going_right && right_space >= 10 + i) {
                 println(TRASH, HAPPY_LEFT, " ".repeat(10 + i + 1), text)
                 sleep(INTERVAL)
-                println("breaking! next itr should be " + (i + 1))
                 break
             }
             if (going_right) {

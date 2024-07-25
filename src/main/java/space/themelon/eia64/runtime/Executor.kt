@@ -8,6 +8,8 @@ class Executor {
 
     companion object {
         const val DEBUG = false
+        const val LOGS_PIPE_PATH = "/tmp/pipe1" // where logs are displayed
+
         var STD_LIB = "" // will be set
         var EXECUTION_DIRECTORY: String = File(System.getProperty("user.dir")).absolutePath
     }

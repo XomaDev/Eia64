@@ -1,10 +1,13 @@
 package space.themelon.eia64.runtime
 
+import space.themelon.eia64.EiaTrace
 import space.themelon.eia64.expressions.FunctionExpr
+import space.themelon.eia64.runtime.Entity.Companion.getSignature
+import space.themelon.eia64.runtime.Entity.Companion.unbox
 import java.util.*
 import kotlin.collections.ArrayList
 
-class Memory {
+class Memory(private val trace: EiaTrace) {
 
     data class Frame(var fSuper: Frame? = null) {
         var values = ArrayList<Pair<String, Any>>()
@@ -30,6 +33,8 @@ class Memory {
         }
     }
 
+    //private val tracer = EiaTrace()
+
     private var recyclePool: Frame? = null
 
     private val frameStack = Stack<Frame>()
@@ -53,6 +58,8 @@ class Memory {
     fun enterScope() {
         currentFrame = createFrame()
         frameStack.push(currentFrame)
+        //tracer.enterScope()
+        trace.enterScope() // forward calls
     }
 
     fun leaveScope() {
@@ -62,18 +69,28 @@ class Memory {
 
         frameStack.pop()
         recycle(reusable)
+        //tracer.leaveScope()
+        trace.leaveScope() // forward calls
     }
 
     fun declareVar(name: String, value: Any) {
         currentFrame.values.add(Pair(name, value))
+        // set mutable to false while at runtime to avoid complexity
+        //tracer.declareVariable(false, name, getSignature(value))
     }
 
     fun declareFn(name: String, value: FunctionExpr) {
         // we need to define it so that external classes can access it
         currentFrame.functions.add(Pair(name, value))
+        //tracer.declareFn(name, value.arguments)
     }
 
-    fun getVar(index: Int, name: String) = currentFrame.searchVr(index, name)
+    fun getVar(index: Int, name: String): Any {
+        val value = currentFrame.searchVr(index, name)
+        val unboxed = unbox(value)
+        trace.getVariableRuntime(name, getSignature(unboxed), unboxed)
+        return value
+    }
 
     fun dynamicFnSearch(name: String): FunctionExpr? {
         if (frameStack.size != 1)

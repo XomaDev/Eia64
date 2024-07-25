@@ -6,7 +6,7 @@ import space.themelon.eia64.signatures.Signature
 
 class ScopeManager {
 
-    private val trace = EiaTrace()
+    private val trace = EiaTrace(System.out)
 
     val classes = ArrayList<String>()
     val staticClasses = ArrayList<String>()
