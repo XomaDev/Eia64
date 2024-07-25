@@ -7,6 +7,8 @@ class ObjectExtension(
         return other is ObjectExtension && other.extensionClass == extensionClass
     }
 
+    override fun logName() = "Object<$extensionClass>"
+
     override fun hashCode() = extensionClass.hashCode()
 
     override fun toString() = "ObjectExtension<$extensionClass>"

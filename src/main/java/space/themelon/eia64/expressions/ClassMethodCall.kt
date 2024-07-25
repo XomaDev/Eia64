@@ -24,7 +24,7 @@ data class ClassMethodCall(
     override fun <R> accept(v: Visitor<R>) = v.classMethodCall(this)
 
     override fun sig(): Signature {
-        val declarationSigns = reference.signs
+        val declarationSigns = reference.parameters
 
         val expectedArgsSize = declarationSigns.size
         var suppliedArgsSize = arguments.size

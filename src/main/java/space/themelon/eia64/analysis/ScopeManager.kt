@@ -1,9 +1,12 @@
 package space.themelon.eia64.analysis
 
+import space.themelon.eia64.EiaTrace
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 
 class ScopeManager {
+
+    private val trace = EiaTrace()
 
     val classes = ArrayList<String>()
     val staticClasses = ArrayList<String>()
@@ -41,6 +44,7 @@ class ScopeManager {
     fun enterScope() {
         val newScope = ResolutionScope(currentScope)
         currentScope = newScope
+        trace.enterScope()
     }
 
     fun leaveScope(): Boolean {
@@ -49,6 +53,7 @@ class ScopeManager {
         // let x = 5
         // if (x) { println("Hello, "World") }
         // here you don't require creating a new scope to evaluate it
+        trace.leaveScope()
         val imaginaryScope = currentScope.variables.isEmpty() && currentScope.functions.isEmpty()
         currentScope.before.let {
             if (it == null)
@@ -67,6 +72,7 @@ class ScopeManager {
         }
         currentScope.functions[unique] = reference
         currentScope.uniqueFunctionNames += name
+        trace.declareFn(name, reference.parameters)
     }
 
     // If it is marked Visible, then it can be indexed by external Parsers/Resolvers
@@ -77,6 +83,7 @@ class ScopeManager {
         if (name in currentScope.variables)
             throw RuntimeException("Variable $name is already defined in the current scope")
         currentScope.defineVr(name, mutable, signature, public)
+        trace.declareVariable(mutable, name, signature)
     }
 
     fun hasFunctionNamed(name: String) = currentScope.resolveFnName(name)

@@ -24,4 +24,6 @@ abstract class Signature {
 
     fun isNumeric() = this == Sign.NUM || this == Sign.INT || this == Sign.FLOAT
     fun isNumericOrChar() = isNumeric() || this == Sign.CHAR
+
+    abstract fun logName(): String
 }

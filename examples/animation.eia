@@ -22,7 +22,6 @@ private fn trash(text: String) {
         var right_space = 10 + i
 
         until (true) {
-            println("handling " + i)
             println(TRASH,
                 " ".repeat(left_space),
                 if (going_right) HAPPY_RIGHT else l + HAPPY_LEFT,
@@ -30,12 +29,6 @@ private fn trash(text: String) {
                 text)
             sleep(INTERVAL)
 
-            if (!going_right) {
-               println(!going_right + " | " + right_space + " >= " + (10 + i) + " | " + (right_space >= 10 + i) )
-            }
-            println(going_right)
-            println(i)
-            println(right_space >= 10 + i)
             if (going_right && left_space >= 10 + i) {
                 going_right = false
                 left_space = 10 + i

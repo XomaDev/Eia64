@@ -7,6 +7,7 @@ import java.io.File
 class Executor {
 
     companion object {
+        const val DEBUG = false
         var STD_LIB = "" // will be set
         var EXECUTION_DIRECTORY: String = File(System.getProperty("user.dir")).absolutePath
     }

@@ -1,6 +1,6 @@
 package space.themelon.eia64.syntax
 
-import space.themelon.eia64.Config
+import space.themelon.eia64.runtime.Executor
 import space.themelon.eia64.syntax.Type.*
 import space.themelon.eia64.syntax.Type.Companion.KEYWORDS
 
@@ -13,7 +13,7 @@ class Lexer(private val source: String) {
 
     init {
         while (!isEOF()) parseNext()
-        if (Config.DEBUG) {
+        if (Executor.DEBUG) {
             tokens.forEach { println(it) }
         }
     }
@@ -116,7 +116,6 @@ class Lexer(private val source: String) {
             }
             content.append(c)
         }
-        //println(content)
         return Token(line, E_STRING, arrayOf(Flag.VALUE, Flag.CONSTANT_VALUE), content.toString())
     }
 

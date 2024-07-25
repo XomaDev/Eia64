@@ -28,7 +28,7 @@ data class NewObj(
             }
             return ObjectExtension(name)
         }
-        val argSigns = reference.signs
+        val argSigns = reference.parameters
 
         val expectedArgsSize = argSigns.size
         val suppliedArgsSize = arguments.size

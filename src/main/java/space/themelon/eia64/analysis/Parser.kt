@@ -1,6 +1,6 @@
 package space.themelon.eia64.analysis
 
-import space.themelon.eia64.Config
+import space.themelon.eia64.EiaTrace
 import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.ArrayLiteral
@@ -15,6 +15,7 @@ import java.io.File
 class Parser(private val executor: Executor) {
 
     private val manager = ScopeManager()
+    //private val trace = EiaTrace()
 
     private lateinit var tokens: List<Token>
     private var index = 0
@@ -29,7 +30,7 @@ class Parser(private val executor: Executor) {
 
         val expressions = ArrayList<Expression>()
         while (!isEOF()) expressions.add(parseNext())
-        if (Config.DEBUG) expressions.forEach { println(it) }
+        if (Executor.DEBUG) expressions.forEach { println(it) }
         parsed = ExpressionList(expressions)
         return parsed
     }
@@ -533,9 +534,6 @@ class Parser(private val executor: Executor) {
             val assignmentExpr = readVariableExpr()
 
             signature = assignmentExpr.sig()
-            // TODO:
-            //  we need to investigate here, are auto variables mutable or not
-            //  since they do not openly handle it
             expr = AutoVariable(where, name, assignmentExpr)
         } else {
             skip()
@@ -549,6 +547,7 @@ class Parser(private val executor: Executor) {
                 signature
             )
         }
+        //trace.declareVariable(mutable, name, signature)
         manager.defineVariable(name, mutable, signature, public)
         return expr
     }

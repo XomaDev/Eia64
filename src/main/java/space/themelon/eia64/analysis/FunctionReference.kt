@@ -5,7 +5,7 @@ import space.themelon.eia64.signatures.Signature
 
 data class FunctionReference(
     var fnExpression: FunctionExpr? = null,
-    val signs: List<Pair<String, Signature>>, // List < < ParameterName, Signature >
+    val parameters: List<Pair<String, Signature>>, // List < < ParameterName, Signature >
     val argsSize: Int,
     var returnSignature: Signature,
     val public: Boolean
