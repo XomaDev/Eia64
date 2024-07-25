@@ -6,7 +6,7 @@ var list = arrayOf<Any>(0, 0)
 var size = 0
 var index = 0
 
-fn init(initSize: Int) {
+visible fn init(initSize: Int) {
   list = arrayOf<Any>(initSize, 0)
   size = initSize
   index = 0
@@ -34,12 +34,12 @@ fn checkBounds(at: Int) {
   }
 }
 
-fn get(at: Int): Any {
+visible fn get(at: Int): Any {
   checkBounds(at)
   := list[at]
 }
 
-fn set(element: Any, at: Int) {
+visible fn set(element: Any, at: Int) {
   checkBounds(at)
   list[at] = element
 }
@@ -47,12 +47,12 @@ fn set(element: Any, at: Int) {
 fn size(): Int = index
 fn isEmpty(): Bool = size == 0
 
-fn add(element: Any) {
+visible fn add(element: Any) {
   if (index == size) enlarge()
   list[index++] = element
 }
 
-fn addAt(element: Any, at: Int) {
+visible fn addAt(element: Any, at: Int) {
   checkBounds(at)
   let newList = arrayOf<Any>(size + 1, 0)
   var j = 0
@@ -67,16 +67,16 @@ fn addAt(element: Any, at: Int) {
   index++
 }
 
-fn indexOf(match: Any): Int {
+visible fn indexOf(match: Any): Int {
   for (var i = 0, i < index, i++) {
     if (list[i] == match) return i
   }
   return -1
 }
 
-fn contains(match: Any): Bool = indexOf(match) != -1
+visible fn contains(match: Any): Bool = indexOf(match) != -1
 
-fn remove(at: Int): Any {
+visible fn remove(at: Int): Any {
   checkBounds(at)
   let element = list[at]
   for (var i = copy(at), i < index - 1, i++) {
@@ -86,17 +86,17 @@ fn remove(at: Int): Any {
   return element
 }
 
-fn removeElement(element: Any): Any {
+visible fn removeElement(element: Any): Any {
   let index = indexOf(element)
   if (index == -1) return false
   return remove(index)
 }
 
-fn clear() {
+visible fn clear() {
   index = 0
 }
 
-fn arrayOfRange(from: Int, end: Int) {
+visible fn arrayOfRange(from: Int, end: Int) {
   checkBounds(from)
   checkBounds(end)
 
@@ -109,7 +109,7 @@ fn arrayOfRange(from: Int, end: Int) {
   return subarray
 }
 
-fn string(): String {
+visible fn string(): String {
   if (size == 0) return "[]"
   var result = "["
   each (element in list) {

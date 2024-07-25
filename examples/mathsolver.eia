@@ -16,7 +16,7 @@ let MULTIPLY = "*"
 
 let SUPPORTED_OPERATORS = arrayOf(PLUS, MINUS, DIVIDE, MULTIPLY)
 
-fn isNumeric(token: String): Bool {
+private fn isNumeric(token: String): Bool {
   if (len(token) == 0) return false
   for (ch in token) {
     if (!("1234567890".contains(str(ch))))
@@ -25,7 +25,7 @@ fn isNumeric(token: String): Bool {
   return true
 }
 
-fn tokenize(expr: String): Array<String> {
+private fn tokenize(expr: String): Array<String> {
   expr = expr.replace("\t", " ")
   until (expr.contains("  ")) {
     expr = expr.replace("  ", " ")
@@ -42,7 +42,7 @@ fn isEOF(): Bool = i == size
 fn peek(): String = tokens[i]
 fn next(): String = tokens[i++]
 
-fn eatNumeric(): Int {
+private fn eatNumeric(): Int {
   let value = next()
   if (!isNumeric(value)) {
     println("Expected numeric type token but got " + value)
@@ -51,13 +51,13 @@ fn eatNumeric(): Int {
   return int(value)
 }
 
-fn eatOperator(): String {
+private fn eatOperator(): String {
   let op = next().trim()
   if (SUPPORTED_OPERATORS.contains(op)) return op
   throw "Unknown OP Code: " + op
 }
 
-fn parse(): Any {
+private fn parse(): Any {
   var left: Any = eatNumeric()
   until (!isEOF()) {
     var op = eatOperator()
@@ -78,7 +78,7 @@ fn parse(): Any {
   return left
 }
 
-fn execute(node: Any): Int {
+private fn execute(node: Any): Int {
   var left: Any = node::Array[0]
   let op = node::Array[1]::String
   var right: Any = node::Array[2]
@@ -101,7 +101,7 @@ fn execute(node: Any): Int {
   })::Int
 }
 
-fn evaluate(expr: String) {
+private fn evaluate(expr: String) {
   let lenExpr = len(expr)
 
   if (lenExpr == 0) {

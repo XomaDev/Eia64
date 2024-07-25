@@ -2,7 +2,7 @@ include(
   static:std:array
 )
 
-fn indexOfChar(self: String, letter: Char): Int {
+visible fn indexOfChar(self: String, letter: Char): Int {
   let size = len(self)
   if (size == 0) return -1
   for (var i = 0, i < size, i++)
@@ -10,7 +10,7 @@ fn indexOfChar(self: String, letter: Char): Int {
   return -1
 }
 
-fn indexOfFrom(self: String, piece: String, from: Int): Int {
+visible fn indexOfFrom(self: String, piece: String, from: Int): Int {
   let selfSize = len(self)
   let pieceSize = len(piece)
 
@@ -35,11 +35,11 @@ fn indexOfFrom(self: String, piece: String, from: Int): Int {
   return -1
 }
 
-fn indexOf(self: String, piece: String): Int = indexOfFrom(self, piece, 0)
+visible fn indexOf(self: String, piece: String): Int = indexOfFrom(self, piece, 0)
 
-fn contains(self: String, piece: String): Bool = indexOf(self, piece) != -1
+visible fn contains(self: String, piece: String): Bool = indexOf(self, piece) != -1
 
-fn startsWith(self: String, prefix: String): Bool {
+visible fn startsWith(self: String, prefix: String): Bool {
   let selfSize = len(self)
   let prefixSize = len(prefix)
 
@@ -51,7 +51,7 @@ fn startsWith(self: String, prefix: String): Bool {
   return true
 }
 
-fn endsWith(self: String, suffix: String): Bool {
+visible fn endsWith(self: String, suffix: String): Bool {
   let selfSize = len(self)
   let suffixSize = len(suffix)
 
@@ -82,11 +82,11 @@ fn invert(self: String, target: Array, replacement: Array<Char>): String {
   return self
 }
 
-fn uppercase(self: String): String = invert(copy(self), LOWER_CASE, UPPER_CASE)
+visible fn uppercase(self: String): String = invert(copy(self), LOWER_CASE, UPPER_CASE)
 
-fn lowercase(self: String): String = invert(copy(self), UPPER_CASE, LOWER_CASE)
+visible fn lowercase(self: String): String = invert(copy(self), UPPER_CASE, LOWER_CASE)
 
-fn part(self: String, from: Int, till: Int): String {
+visible fn part(self: String, from: Int, till: Int): String {
   var result = ""
   let stringSize = len(self)
 
@@ -95,9 +95,9 @@ fn part(self: String, from: Int, till: Int): String {
   return result
 }
 
-fn substring(self: String, from: Int): String = part(copy(self), from, len(self))
+visible fn substring(self: String, from: Int): String = part(copy(self), from, len(self))
 
-fn trim(self: String): String {
+visible fn trim(self: String): String {
   ; println(type(self))
   var copySelf = copy(self)
   until (startsWith(copySelf, " ")
@@ -113,7 +113,7 @@ fn trim(self: String): String {
   return copySelf
 }
 
-fn replace(self: String, match: String, replacement: String): String {
+visible fn replace(self: String, match: String, replacement: String): String {
   let matchSize = len(match)
   let selfSize = len(self)
 
@@ -138,7 +138,7 @@ fn replace(self: String, match: String, replacement: String): String {
   return result
 }
 
-fn isAlpha(self: String): Bool {
+visible fn isAlpha(self: String): Bool {
   for (ch in self) {
     if (!(UPPER_CASE.contains(ch) || LOWER_CASE.contains(ch))) {
      return false
@@ -147,7 +147,7 @@ fn isAlpha(self: String): Bool {
   return true
 }
 
-fn isNumeric(self: String): Bool {
+visible fn isNumeric(self: String): Bool {
   if (startsWith(self, "-")) {
     self = substring(self, 1)
   }
@@ -157,7 +157,7 @@ fn isNumeric(self: String): Bool {
  return true
 }
 
-fn toCharArray(self: String): Array {
+visible fn toCharArray(self: String): Array {
   let charCount = len(self)
   ; Allocate a char array
   let chars = arrayOf<Char>(charCount, ' ')
@@ -166,7 +166,7 @@ fn toCharArray(self: String): Array {
   return chars
 }
 
-fn repeat(self: String, n: Int): String {
+visible fn repeat(self: String, n: Int): String {
   var result = ""
   let times = copy(n)
   for (var i = 0, i < times, i++)
@@ -174,7 +174,7 @@ fn repeat(self: String, n: Int): String {
   return result
 }
 
-fn splitOnce(self: String, delimiter: String): Array {
+visible fn splitOnce(self: String, delimiter: String): Array {
   let splitIndex = indexOf(self, delimiter)
   return arrayOf( part(self, 0, splitIndex),
             substring(self, splitIndex + 1) )
@@ -187,7 +187,7 @@ fn splitRecursive(self: String, delimiter: String): Any {
   return onceSplit
 }
 
-fn split(self: String, delimiter: String): Array<String> {
+visible fn split(self: String, delimiter: String): Array<String> {
   if (contains(self, delimiter)) {
     return (splitRecursive(self, delimiter)::Array.flatten())::Array<String>
   }
@@ -201,7 +201,7 @@ fn numberFormatError(string: String) {
     throw "toInt() Number Format Error for string \"" + string + "\""
 }
 
-fn toIntRadix(self: String, radix: Int): Int {
+visible fn toIntRadix(self: String, radix: Int): Int {
   var negative = false
   var i = 0
   let size = len(self)
@@ -234,4 +234,4 @@ fn toIntRadix(self: String, radix: Int): Int {
 }
 
 ; opps, the problem still exists!
-fn toInt(self: String): Int = toIntRadix(self, 10)
+visible fn toInt(self: String): Int = toIntRadix(self, 10)

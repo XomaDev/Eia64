@@ -3,7 +3,7 @@ include(
   static:std:string
 )
 
-fn iterateEveryN(n: Int, text: String, callback: Unit) {
+private fn iterateEveryN(n: Int, text: String, callback: Unit) {
   n = copy(n)
   var j = 0
 

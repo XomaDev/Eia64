@@ -2,17 +2,14 @@ package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
 import space.themelon.eia64.analysis.FunctionReference
-import space.themelon.eia64.signatures.Consumable
 import space.themelon.eia64.signatures.Matching.matches
-import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
-import kotlin.math.exp
 
 data class MethodCall(
     val name: Token,
     val reference: FunctionReference,
-    @Consumable("Arguments cannot contain void expressions") val arguments: List<Expression>,
+    val arguments: List<Expression>,
 ) : Expression(name) {
 
     init {

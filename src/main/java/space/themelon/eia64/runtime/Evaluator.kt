@@ -738,9 +738,9 @@ class Evaluator(
                 //}
 
                 when (result.interruption) {
-                    InterruptionType.BREAK,
-                    InterruptionType.CONTINUE,
-                    InterruptionType.RETURN,
+                    InterruptionType.BREAK -> break
+                    InterruptionType.CONTINUE -> continue
+                    InterruptionType.RETURN -> return result
                     InterruptionType.USE -> result.value
                     else -> { }
                 }
@@ -792,9 +792,9 @@ class Evaluator(
                 //}
 
                 when (result.interruption) {
-                    InterruptionType.BREAK,
-                    InterruptionType.CONTINUE,
-                    InterruptionType.RETURN,
+                    InterruptionType.BREAK -> break
+                    InterruptionType.CONTINUE -> continue
+                    InterruptionType.RETURN -> return result
                     InterruptionType.USE -> result.value
                     else -> { }
                 }

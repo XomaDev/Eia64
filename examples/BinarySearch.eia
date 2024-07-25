@@ -2,7 +2,7 @@ include(
   static:std:string
 )
 
-fn binarySearch(array: Array<Int>, x: Int): Int {
+private fn binarySearch(array: Array<Int>, x: Int): Int {
   var left = 0
   var right = len(array) - 1
 
@@ -22,7 +22,7 @@ fn binarySearch(array: Array<Int>, x: Int): Int {
 
 println("Hello! I'm a binary searcher")
 
-fn toNumberArray(array: Array<String>): Array<Int> {
+private fn toNumberArray(array: Array<String>): Array<Int> {
   let size = len(array)
   let numeric = arrayOf<Int>(size, 0)
   for (var i = 0, i < size, i++) {

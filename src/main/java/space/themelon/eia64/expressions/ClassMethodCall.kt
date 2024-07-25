@@ -4,7 +4,6 @@ import space.themelon.eia64.Expression
 import space.themelon.eia64.analysis.FunctionReference
 import space.themelon.eia64.analysis.ModuleInfo
 import space.themelon.eia64.signatures.Matching.matches
-import space.themelon.eia64.signatures.Consumable
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 
@@ -13,7 +12,7 @@ data class ClassMethodCall(
     val static: Boolean,
     val objectExpression: Expression,
     val method: String,
-    @Consumable("Arguments cannot contain void expressions") val arguments: List<Expression>,
+    val arguments: List<Expression>,
     val reference: FunctionReference,
     val moduleInfo: ModuleInfo,
 ) : Expression(where) {

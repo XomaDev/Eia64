@@ -19,7 +19,7 @@ fn init(cap: Int) {
   println("elements: " + elements)
 }
 
-fn shift(element: PriorityElement) {
+visible fn shift(element: PriorityElement) {
   var last = index - 1
 
   until (--last > 0) {
@@ -34,12 +34,12 @@ fn shift(element: PriorityElement) {
   }
 }
 
-fn add(element: PriorityElement) {
+visible fn add(element: PriorityElement) {
   elements[index++] = element
   shift(element)
 }
 
-fn merge() {
+visible fn merge() {
   let first = elements[0]
   let second = elements[1]
 
@@ -60,7 +60,7 @@ fn merge() {
   add(newElement)
 }
 
-fn poll(): PriorityElement {
+visible fn poll(): PriorityElement {
   until (index != 1) {
     merge()
     println("index: " + index)
@@ -68,7 +68,7 @@ fn poll(): PriorityElement {
   return elements[0]
 }
 
-fn string(): String {
+visible fn string(): String {
   ; this method will be called by the evaluator when we try
   ; to print this object
   if (capacity == 0) return "[]"

@@ -8,8 +8,8 @@ import space.themelon.eia64.syntax.Token
 class ArrayAllocation(
     val where: Token,
     private val elementSignature: Signature,
-    @Consumable("Unexpected void expression for array size") val size: Expression,
-    @Consumable("Cannot use a void expression as a default value for array") val defaultValue: Expression,
+    val size: Expression,
+    val defaultValue: Expression,
 ) : Expression(where) {
 
     init {

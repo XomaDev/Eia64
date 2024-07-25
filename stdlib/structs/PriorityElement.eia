@@ -8,9 +8,9 @@ fn init(_element: Any, _priority: Int) {
   priority = _priority
 }
 
-fn element(): Any = element
+visible fn element(): Any = element
 
-fn priority(): Int = priority
+visible fn priority(): Int = priority
 
 fn string(): String {
   return "(" + priority + ", " + element + ")"

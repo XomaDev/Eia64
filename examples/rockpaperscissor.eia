@@ -5,9 +5,9 @@ include(
   static:std:string
 )
 
-let choices = arrayOf("rock", "paper", "scissor")
+private let choices = arrayOf("rock", "paper", "scissor")
 
-fn robotChoose(user: String): Array {
+private fn robotChoose(user: String): Array {
   let robot = choices[rand(0, 2)]
   if (user == robot) return arrayOf(robot, 0)
 

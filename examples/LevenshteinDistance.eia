@@ -5,7 +5,7 @@ include(
   static:std:math
 )
 
-fn compute(first: String, second: String): Int {
+private fn compute(first: String, second: String): Int {
   let lenFirst = len(first)
   let lenSecond = len(second)
 

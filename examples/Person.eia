@@ -8,6 +8,6 @@ fn init(_name: String, _lastname: String) {
   lastname = _lastname
 }
 
-fn hello() {
+visible fn hello() {
   println(format("Hello %s!", name))
 }

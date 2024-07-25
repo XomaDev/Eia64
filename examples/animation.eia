@@ -6,12 +6,12 @@ include(
   static:std:string
 )
 
-let TRASH = "🗑"
-let HAPPY_RIGHT = "(> ^_^)>"
-let HAPPY_LEFT = "<(^_^ <)"
-let INTERVAL = 500
+private let TRASH = "🗑"
+private let HAPPY_RIGHT = "(> ^_^)>"
+private let HAPPY_LEFT = "<(^_^ <)"
+private let INTERVAL = 200
 
-fn trash(text: String) {
+private fn trash(text: String) {
     let size = len(text)
 
     for (var i = 0, i < size, i++) {
@@ -22,6 +22,7 @@ fn trash(text: String) {
         var right_space = 10 + i
 
         until (true) {
+            println("handling " + i)
             println(TRASH,
                 " ".repeat(left_space),
                 if (going_right) HAPPY_RIGHT else l + HAPPY_LEFT,
@@ -29,6 +30,12 @@ fn trash(text: String) {
                 text)
             sleep(INTERVAL)
 
+            if (!going_right) {
+               println(!going_right + " | " + right_space + " >= " + (10 + i) + " | " + (right_space >= 10 + i) )
+            }
+            println(going_right)
+            println(i)
+            println(right_space >= 10 + i)
             if (going_right && left_space >= 10 + i) {
                 going_right = false
                 left_space = 10 + i
@@ -38,6 +45,7 @@ fn trash(text: String) {
             } else if (!going_right && right_space >= 10 + i) {
                 println(TRASH, HAPPY_LEFT, " ".repeat(10 + i + 1), text)
                 sleep(INTERVAL)
+                println("breaking! next itr should be " + (i + 1))
                 break
             }
             if (going_right) {
