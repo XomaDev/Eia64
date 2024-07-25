@@ -16,7 +16,7 @@ fn fillRecursive(flattened: Array, unflattened: Array, fillIndex: Int) {
   }
 }
 
-fn recursiveLen(self: Array): Int {
+visible fn recursiveLen(self: Array): Int {
   var size = 0
   for (element in self) {
     if (element is Array) size += recursiveLen(element::Array)
@@ -25,10 +25,9 @@ fn recursiveLen(self: Array): Int {
   return size
 }
 
-visible fn flatten(self: Array): Array {
-  let flattened = arrayOf<Any>(recursiveLen(self), 0)
-  fillRecursive(flattened, self, 0)
-  return flattened
+visible fn flatten(self: Array, flatSpace: Array): Array {
+  fillRecursive(flatSpace, self, 0)
+  return flatSpace
 }
 
 visible fn size(self: Array): Int = len(self)

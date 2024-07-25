@@ -270,7 +270,7 @@ class Evaluator(
         when (getSignature(array)) {
             // TODO:
             //  we need to look here later, it could also be an array extension
-            Sign.ARRAY -> (array as ArrayOperable<Any>).setAt(index, value)
+            Sign.ARRAY, is ArrayExtension -> (array as ArrayOperable<Any>).setAt(index, value)
             Sign.STRING -> {
                 if (value !is EChar) throw RuntimeException("string[index] requires a Char")
                 (array as EString).setAt(index, value)
@@ -331,6 +331,7 @@ class Evaluator(
     override fun new(new: NewObj): Evaluator {
         val evaluator = executor.newEvaluator(new.name)
         evaluator.dynamicFnCall("init", evaluateArgs(new.arguments), true)
+        tracer.runtimeObjectCreation(new.name, evaluator)
         return evaluator
     }
 
@@ -352,6 +353,7 @@ class Evaluator(
         val promisedSignature = cast.expectSignature
         val gotSignature = getSignature(result)
 
+        println(result)
         if (promisedSignature is ObjectExtension) {
             val promisedClass = promisedSignature.extensionClass
             if (result !is Evaluator) {
@@ -676,14 +678,18 @@ class Evaluator(
         val parameters = fn.arguments.iterator()
         val callExpressions = callArgs.iterator()
 
+        val argValues = ArrayList<Pair<String, Any>>() // used for logging only
         // Pair<Pair<Parameter Name, Signature>, Call Value>
+
         val callValues = ArrayList<Pair<Pair<String, Signature>, Any>>()
         while (parameters.hasNext()) {
             val definedParameter = parameters.next()
             val callValue = callExpressions.next()
 
-            callValues.add(Pair(definedParameter, callValue))
+            callValues += Pair(definedParameter, callValue)
+            argValues += Pair(definedParameter.first, callValue)
         }
+        tracer.runtimeFnCall(fnName, argValues)
         memory.enterScope()
         callValues.forEach {
             val definedParameter = it.first
@@ -744,6 +750,7 @@ class Evaluator(
         var numIterations = 0
         while (booleanExpr(until.expression).get()) {
             numIterations++
+            tracer.runtimeUntil(numIterations)
             val result = eval(until.body)
             if (result is Entity) {
                 when (result.interruption) {
@@ -789,6 +796,7 @@ class Evaluator(
             memory.enterScope()
             val element = getNext()
             memory.declareVar(named, Entity(named, false, element, getSignature(element)))
+            tracer.runtimeForEach(numIterations, iterable, element)
             val result = eval(body)
             memory.leaveScope()
             if (result is Entity) {
@@ -850,7 +858,9 @@ class Evaluator(
         while (if (conditional == null) true else booleanExpr(conditional).get()) {
             numIterations++
             // Auto Scopped
+            tracer.runtimeFor(numIterations)
             val result = eval(forLoop.body)
+            // Scope -> Memory -> Array
             if (result is Entity) {
                 when (result.interruption) {
                     InterruptionType.BREAK -> break

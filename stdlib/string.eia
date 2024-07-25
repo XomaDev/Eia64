@@ -189,7 +189,8 @@ fn splitRecursive(self: String, delimiter: String): Any {
 
 visible fn split(self: String, delimiter: String): Array<String> {
   if (contains(self, delimiter)) {
-    return (splitRecursive(self, delimiter)::Array.flatten())::Array<String>
+    let not_flat = splitRecursive(self, delimiter)::Array
+    return not_flat.flatten(arrayOf<String>(not_flat.recursiveLen(), ""))::Array<String>
   }
   return arrayOf(self)
 }
