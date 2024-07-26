@@ -72,6 +72,7 @@ class Evaluator(
     override fun boolLiteral(literal: BoolLiteral) = EBool(literal.value)
     override fun stringLiteral(literal: StringLiteral) = EString(literal.value)
     override fun charLiteral(literal: CharLiteral) = EChar(literal.value)
+    override fun typeLiteral(literal: TypeLiteral) = EType(literal.signature)
 
     override fun alpha(alpha: Alpha) = memory.getVar(alpha.index, alpha.value)
 
@@ -172,15 +173,15 @@ class Evaluator(
         else -> throw RuntimeException("Unknown unary operator $type")
     }
 
-    private fun valueEquals(left: Any, right: Any): Boolean {
-        when (left) {
-            is Numeric,
-            is EString,
-            is EChar,
-            is EBool,
-            is EArray -> return left == right
-        }
-        return false
+    private fun valueEquals(left: Any, right: Any) = when (left) {
+        is Numeric,
+        is EString,
+        is EChar,
+        is EBool,
+        is ENil,
+        is EType,
+        is EArray -> left == right
+        else -> false
     }
 
     override fun binaryOperation(expr: BinaryOperation) = when (val type = expr.operator) {
@@ -197,9 +198,6 @@ class Evaluator(
         EQUALS, NOT_EQUALS -> {
             val left = unboxEval(expr.left)
             val right = unboxEval(expr.right)
-
-            //println("eq test left $left")
-            //println("eq test right $right")
             EBool(if (type == EQUALS) valueEquals(left, right) else !valueEquals(left, right))
         }
         LOGICAL_AND -> booleanExpr(expr.left).and(booleanExpr(expr.right))
@@ -494,16 +492,11 @@ class Evaluator(
                 })
             }
 
-            TYPE -> {
+            TYPE_OF -> {
                 if (argsSize != 1) reportWrongArguments("type", 1, argsSize)
-                val obj = unboxEval(call.arguments[0])
-                var typeName = getSignature(obj).toString()
-                if (obj is Evaluator) {
-                    typeName += "<"
-                    typeName += obj.className
-                    typeName += ">"
-                }
-                return EString(typeName)
+                // We return EType to the user instead of a plain
+                // Signature String
+                return EType(getSignature(unboxEval(call.arguments[0])))
             }
 
             INCLUDE -> {
@@ -529,15 +522,6 @@ class Evaluator(
                     throw RuntimeException("Cannot apply copy() on object type ${getSignature(obj)} = $obj")
                 return obj.copy()!!
             }
-
-            //ARRALLOC -> {
-                //if (argsSize != 1) reportWrongArguments("arralloc", 1, argsSize)
-                //val size = intExpr(call.arguments[0])
-                //return EArray(Array(size.get()) { EInt(0) })
-            //}
-
-            // Deprecated, we've switched over to array initializers [ ]
-            // ARRAYOF -> return prepareArrayOf(call.arguments)
 
             TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())
 

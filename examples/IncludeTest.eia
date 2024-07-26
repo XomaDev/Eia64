@@ -8,4 +8,4 @@ let ekita = new Person("Ekita", "Melon")
 ekita.hello()
 melon.hello()
 
-println(type(melon))
+println(typeOf(melon))

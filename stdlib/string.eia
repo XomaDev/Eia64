@@ -98,7 +98,6 @@ visible fn part(self: String, from: Int, till: Int): String {
 visible fn substring(self: String, from: Int): String = part(copy(self), from, len(self))
 
 visible fn trim(self: String): String {
-  ; println(type(self))
   var copySelf = copy(self)
   until (startsWith(copySelf, " ")
         || startsWith(copySelf, "\t")

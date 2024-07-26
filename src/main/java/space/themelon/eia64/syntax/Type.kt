@@ -17,7 +17,7 @@ enum class Type {
     DOT,
     RIGHT_ARROW,
 
-    COLON, CAST,
+    COLON, DOUBLE_COLON,
     ASSIGNMENT,
     ADDITIVE_ASSIGNMENT, DEDUCTIVE_ASSIGNMENT,
     MULTIPLICATIVE_ASSIGNMENT, DIVIDIVE_ASSIGNMENT,
@@ -30,16 +30,16 @@ enum class Type {
 
     E_NIL,
     E_NUMBER, E_INT, E_FLOAT, E_BOOL, E_STRING, E_CHAR,
-    E_ARRAY, E_ANY, E_UNIT, E_OBJECT,
+    E_ARRAY, E_ANY, E_UNIT, E_OBJECT, E_TYPE,
 
     ALPHA,
-    E_TRUE, E_FALSE,
+    E_TRUE, E_FALSE, CLASS_VALUE,
     NIL,
 
     VISIBLE, INVISIBLE,
 
     BOOL_CAST, INT_CAST, FLOAT_CAST, CHAR_CAST, STRING_CAST,
-    TYPE,
+    TYPE_OF,
 
     LET, VAR, SHADO, WHEN,
     IF, ELSE,
@@ -98,7 +98,7 @@ enum class Type {
                 it["->"] = StaticToken(RIGHT_ARROW)
 
                 it[":"] = StaticToken(COLON)
-                it["::"] = StaticToken(CAST)
+                it["::"] = StaticToken(DOUBLE_COLON)
 
                 it["["] = StaticToken(OPEN_SQUARE, arrayOf(Flag.NONE))
                 it["]"] = StaticToken(CLOSE_SQUARE, arrayOf(Flag.NONE))
@@ -124,10 +124,12 @@ enum class Type {
                 it["Array"] = StaticToken(E_ARRAY, arrayOf(Flag.CLASS))
                 it["Unit"] = StaticToken(E_UNIT, arrayOf(Flag.CLASS))
                 it["Object"] = StaticToken(E_OBJECT, arrayOf(Flag.CLASS))
+                it["Type"] = StaticToken(E_TYPE, arrayOf(Flag.CLASS))
 
                 it["nil"] = StaticToken(NIL, arrayOf(Flag.VALUE))
                 it["true"] = StaticToken(E_TRUE, arrayOf(Flag.VALUE, Flag.E_BOOL))
                 it["false"] = StaticToken(E_FALSE, arrayOf(Flag.VALUE, Flag.E_BOOL))
+                it["type"] = StaticToken(CLASS_VALUE, arrayOf(Flag.VALUE))
 
                 it["visible"] = StaticToken(VISIBLE, arrayOf(Flag.MODIFIER))
                 it["private"] = StaticToken(INVISIBLE, arrayOf(Flag.MODIFIER))
@@ -140,7 +142,7 @@ enum class Type {
 
                 it["is"] = StaticToken(IS, arrayOf(Flag.IS, Flag.OPERATOR))
 
-                it["type"] = StaticToken(TYPE, arrayOf(Flag.NATIVE_CALL))
+                it["typeOf"] = StaticToken(TYPE_OF, arrayOf(Flag.NATIVE_CALL))
                 it["copy"] = StaticToken(COPY, arrayOf(Flag.NATIVE_CALL))
 
                 // Deprecated, now entire work is being done by arrayOf()

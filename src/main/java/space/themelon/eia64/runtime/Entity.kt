@@ -16,10 +16,6 @@ open class Entity(
     val interruption: InterruptionType = InterruptionType.NONE,
 ) {
 
-    // TODO:
-    //  Signatures at Sign.* are not constant
-    //  new object created for each call, we would have to fix that here
-
     open fun update(another: Any) {
         if (!mutable) throw RuntimeException("Entity $name is immutable")
         if (signature == Sign.ANY) value = another
@@ -41,7 +37,8 @@ open class Entity(
 
         fun getSignature(value: Any): Signature = when (value) {
             is Entity -> {
-                // break that return unboxing
+                // repeatedly break that repeat unboxing
+                //  to retrieve the underlying value
                 if (value.interruption != InterruptionType.NONE) getSignature(value.value)
                 else value.signature
             }
@@ -51,13 +48,9 @@ open class Entity(
             is EString -> Sign.STRING
             is EBool -> Sign.BOOL
             is EChar -> Sign.CHAR
-            // TODO
-            is EArray -> {
-                //println("getType() array element signature ${value.elementSignature}")
-                ArrayExtension(value.elementSignature)
-            }
+            is EArray -> ArrayExtension(value.elementSignature)
+            is EType -> Sign.TYPE
             is Expression -> Sign.UNIT
-            // TODO
             is Evaluator -> ObjectExtension(value.className)
             else -> throw RuntimeException("Unknown type of value $value")
         }

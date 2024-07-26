@@ -53,8 +53,6 @@ visible fn merge() {
   elements[capacity - 1] = -1
   elements[capacity - 2] = -1
 
-  println("first: " + first)
-  println("second: " + second + " | " + type(second))
   let combinedPriority = first::PriorityElement.priority() + second::PriorityElement.priority()
   let newElement = new PriorityElement(arrayOf(first, second), combinedPriority)
   add(newElement)

@@ -1,6 +1,0 @@
-let a: String = ""
-a = "meow"
-
-; allowed segment
-let names = arrayOf("meow")
-names[0] = "mew"

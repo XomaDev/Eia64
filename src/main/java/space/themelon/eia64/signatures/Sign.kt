@@ -16,6 +16,7 @@ object Sign {
     private const val ARRAY_SIGN = "sig_array"
     private const val UNIT_SIGN = "sig_unit"
     const val OBJECT_SIGN = "sig_object"
+    private const val CLASS_SIGN = "sig_class"
 
     // Always return new instance, since we are testing
     // Metadata could be altered of the original one's
@@ -31,6 +32,7 @@ object Sign {
     val ARRAY = SimpleSignature(ARRAY_SIGN)
     val UNIT = SimpleSignature(UNIT_SIGN)
     val OBJECT = SimpleSignature(OBJECT_SIGN)
+    val TYPE = SimpleSignature(CLASS_SIGN)
 
     fun Signature.intoType(): Type {
         return when (this) {
@@ -45,6 +47,7 @@ object Sign {
             ARRAY -> Type.E_ARRAY
             UNIT -> Type.E_UNIT
             OBJECT -> Type.E_OBJECT
+            TYPE -> Type.E_TYPE
 
             is ArrayExtension -> Type.E_ARRAY
             is ObjectExtension -> Type.E_OBJECT

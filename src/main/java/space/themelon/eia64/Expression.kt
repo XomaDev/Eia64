@@ -17,6 +17,7 @@ abstract class Expression(
         fun boolLiteral(literal: BoolLiteral): R
         fun stringLiteral(literal: StringLiteral): R
         fun charLiteral(literal: CharLiteral): R
+        fun typeLiteral(literal: TypeLiteral): R
         fun alpha(alpha: Alpha): R
         fun arrayCreation(arrayCreation: StrictArrayCreation): R
         fun arrayAllocation(arrayAllocation: ArrayAllocation): R

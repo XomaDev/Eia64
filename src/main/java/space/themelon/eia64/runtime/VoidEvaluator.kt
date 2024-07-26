@@ -31,6 +31,10 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
+    override fun typeLiteral(literal: TypeLiteral): Any {
+        throw ShutdownException()
+    }
+
     override fun alpha(alpha: Alpha): Any {
         throw ShutdownException()
     }

@@ -35,7 +35,7 @@ data class NativeCall(
         Type.READLN,
         Type.FORMAT,
         Type.STRING_CAST,
-        Type.TYPE -> Sign.STRING
+        Type.TYPE_OF -> Sign.STRING
 
         Type.BOOL_CAST, Type.INCLUDE, Type.MEM_CLEAR -> Sign.BOOL
         Type.COPY -> {

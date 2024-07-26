@@ -1,6 +1,5 @@
 package space.themelon.eia64.analysis
 
-import space.themelon.eia64.EiaTrace
 import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.ArrayLiteral
@@ -557,6 +556,7 @@ class Parser(private val executor: Executor) {
             // then wrap it around Simple Signature
             return when (val classType = token.type) {
                 Type.E_NUMBER -> Sign.NUM
+                Type.E_NIL -> Sign.NIL
                 Type.E_INT -> Sign.INT
                 Type.E_FLOAT -> Sign.FLOAT
                 Type.E_STRING -> Sign.STRING
@@ -564,6 +564,7 @@ class Parser(private val executor: Executor) {
                 Type.E_BOOL -> Sign.BOOL
                 Type.E_ANY -> Sign.ANY
                 Type.E_UNIT -> Sign.UNIT
+                Type.E_TYPE -> Sign.TYPE
                 Type.E_ARRAY -> {
                     if (isNext(Type.LEFT_DIAMOND)) {
                         skip()
@@ -651,7 +652,7 @@ class Parser(private val executor: Executor) {
             if (nextOp.type != Type.DOT // (left is class) trying to call a method on an object. e.g. person.sayHello()
                 && !(nextOp.type == Type.OPEN_CURVE && !isLiteral(left)) // (left points/is a unit)
                 && nextOp.type != Type.OPEN_SQUARE // array element access
-                && nextOp.type != Type.CAST // value casting
+                && nextOp.type != Type.DOUBLE_COLON // value casting
             ) break
 
             left = when (nextOp.type) {
@@ -664,7 +665,7 @@ class Parser(private val executor: Executor) {
                     expectType(Type.CLOSE_SQUARE)
                     ArrayAccess(left.marking!!, left, expr)
                 }
-                Type.CAST -> {
+                Type.DOUBLE_COLON -> {
                     skip()
                     Cast(nextOp, left, readSignature(next()))
                 }
@@ -824,7 +825,8 @@ class Parser(private val executor: Executor) {
         Sign.STRING -> "string"
         Sign.BOOL -> "bool"
         Sign.ARRAY -> "array"
-        else -> where.error("Unknown object signature $signature")
+        Sign.TYPE -> "etype"
+        else -> where.error("Unknown object signature for module link $signature")
     }
 
     private fun resolveGlobalVr(where: Token, name: String): UniqueVariable? {
@@ -949,6 +951,7 @@ class Parser(private val executor: Executor) {
                     Alpha(token, vrReference.index, name, vrReference.signature)
                 }
             }
+            Type.CLASS_VALUE -> parseType(token)
 
             Type.OPEN_CURVE -> {
                 val expr = parseNext()
@@ -958,6 +961,11 @@ class Parser(private val executor: Executor) {
 
             else -> token.error("Unknown token type")
         }
+    }
+
+    private fun parseType(token: Token): TypeLiteral {
+        expectType(Type.DOUBLE_COLON)
+        return TypeLiteral(token, readSignature(next()))
     }
 
     private fun unitCall(unitExpr: Expression): Expression {
