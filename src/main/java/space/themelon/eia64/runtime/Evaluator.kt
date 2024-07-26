@@ -400,19 +400,16 @@ class Evaluator(
             }
 
             READ, READLN -> {
-                if (argsSize != 0) reportWrongArguments("read/readln", 0, argsSize)
                 return EString(Scanner(executor.standardInput).let { if (type == READ) it.next() else it.nextLine() })
             }
 
             SLEEP -> {
-                if (argsSize != 1) reportWrongArguments("sleep", 1, argsSize)
                 val millis = intExpr(call.arguments[0])
                 Thread.sleep(millis.get().toLong())
                 return millis
             }
 
             LEN -> {
-                if (argsSize != 1) reportWrongArguments("len", 1, argsSize)
                 return EInt(when (val data = unboxEval(call.arguments[0])) {
                     is EString -> data.length
                     is EArray -> data.size
@@ -440,7 +437,6 @@ class Evaluator(
             }
 
             INT_CAST -> {
-                if (argsSize != 1) reportWrongArguments("int", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
 
                 return when (val objType = getSignature(obj)) {
@@ -452,7 +448,6 @@ class Evaluator(
             }
 
             FLOAT_CAST -> {
-                if (argsSize != 1) reportWrongArguments("float", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
 
                 return when (val objType = getSignature(obj)) {
@@ -465,7 +460,6 @@ class Evaluator(
             }
 
             CHAR_CAST -> {
-                if (argsSize != 1) reportWrongArguments("char", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
                 return when (val objType = getSignature(obj)) {
                     Sign.CHAR -> objType
@@ -475,14 +469,12 @@ class Evaluator(
             }
 
             STRING_CAST -> {
-                if (argsSize != 1) reportWrongArguments("str", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
                 if (getSignature(obj) == Sign.STRING) return obj
                 return EString(obj.toString())
             }
 
             BOOL_CAST -> {
-                if (argsSize != 1) reportWrongArguments("bool", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
                 if (getSignature(obj) == Sign.BOOL) return obj
                 return EBool(when (obj) {
@@ -493,14 +485,12 @@ class Evaluator(
             }
 
             TYPE_OF -> {
-                if (argsSize != 1) reportWrongArguments("type", 1, argsSize)
                 // We return EType to the user instead of a plain
                 // Signature String
                 return EType(getSignature(unboxEval(call.arguments[0])))
             }
 
             INCLUDE -> {
-                if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
                 if (obj !is EString)
                     throw RuntimeException("Expected a string argument for include() but got $obj")
@@ -516,7 +506,6 @@ class Evaluator(
             }
 
             COPY -> {
-                if (argsSize != 1) reportWrongArguments("include", 1, argsSize)
                 val obj = unboxEval(call.arguments[0])
                 if (obj !is Primitive<*> || !obj.isCopyable())
                     throw RuntimeException("Cannot apply copy() on object type ${getSignature(obj)} = $obj")
@@ -526,17 +515,12 @@ class Evaluator(
             TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())
 
             RAND -> {
-                if (argsSize != 2) reportWrongArguments("rand", 2, argsSize)
                 val from = intExpr(call.arguments[0])
                 val to = intExpr(call.arguments[1])
                 return EInt(Random.nextInt(from.get(), to.get()))
             }
 
-            EXIT -> {
-                if (argsSize != 1) reportWrongArguments("exit", 1, argsSize)
-                val exitCode = intExpr(call.arguments[0])
-                exitProcess(exitCode.get())
-            }
+            EXIT -> exitProcess(intExpr(call.arguments[0]).get())
 
             MEM_CLEAR -> {
                 // for clearing memory of the current class

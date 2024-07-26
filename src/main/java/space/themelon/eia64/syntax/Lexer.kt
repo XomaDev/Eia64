@@ -55,7 +55,10 @@ class Lexer(private val source: String) {
             '>' -> if (consumeNext('=')) createOp(">=") else createOp(">")
             '<' -> if (consumeNext('=')) createOp("<=") else createOp("<")
 
-            '.' -> createOp(".")
+            '.' -> if (isNumeric(peek())) {
+                index--
+                parseNumeric()
+            } else createOp(".")
             ':' -> if (consumeNext('=')) createOp(":=")
                    else if (consumeNext(':')) createOp("::")
                    else createOp(":")
@@ -70,7 +73,10 @@ class Lexer(private val source: String) {
             '"' -> parseString()
             else -> {
                 if (isAlpha(char)) parseAlpha(char)
-                else if (isNumeric(char)) parseNumeric(char)
+                else if (isNumeric(char)) {
+                    index--
+                    parseNumeric()
+                }
                 else throw RuntimeException("Unknown operator at line $line: '$char'")
             }
         })
@@ -133,9 +139,8 @@ class Lexer(private val source: String) {
         return token?.normalToken(line) ?: Token(line, ALPHA, arrayOf(Flag.VALUE), value)
     }
 
-    private fun parseNumeric(c: Char): Token {
+    private fun parseNumeric(): Token {
         val content = StringBuilder()
-        content.append(c)
 
         while (!isEOF() && isNumeric(peek())) content.append(next())
 
