@@ -11,5 +11,8 @@ data class Shadow(
 
     override fun <R> accept(v: Visitor<R>) = v.shado(this)
 
-    override fun sig() = Sign.UNIT
+    override fun sig(): Signature {
+        body.sig()
+        return Sign.UNIT
+    }
 }

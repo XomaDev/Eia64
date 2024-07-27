@@ -31,6 +31,7 @@ class Parser(private val executor: Executor) {
         while (!isEOF()) expressions.add(parseNext())
         if (Executor.DEBUG) expressions.forEach { println(it) }
         parsed = ExpressionList(expressions)
+        parsed.sig() // nessasary
         return parsed
     }
 
@@ -945,7 +946,9 @@ class Parser(private val executor: Executor) {
                     else if (manager.staticClasses.contains(name))
                         // probably referencing a method from an outer class
                         Alpha(token, -2, name, Sign.NONE)
-                    else token.error<Expression>("Could not resolve name $name")
+                    else
+                        // Unresolved name
+                        Alpha(token, -4, name, Sign.NONE)
                 } else {
                     // classic variable access
                     Alpha(token, vrReference.index, name, vrReference.signature)
@@ -969,6 +972,11 @@ class Parser(private val executor: Executor) {
     }
 
     private fun unitCall(unitExpr: Expression): Expression {
+        // TODO:
+        //  We should design it in a way that it decides if It's a function call
+        //  Or a ShadoInvoke at the end of the scope
+        //  So we need to listen for just before the scope ends
+
         // only limited to functions or shado variables inside the class
         //  does not touch outside classes
         val arguments = callArguments()

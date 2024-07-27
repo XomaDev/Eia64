@@ -7,14 +7,16 @@ import space.themelon.eia64.syntax.Token
 
 data class IfStatement(
     val where: Token,
-    val condition: Expression,
-    val thenBody: Expression,
-    val elseBody: Expression? = null,
+    val condition: Expression, // sig checked
+    val thenBody: Expression, // sig checked
+    val elseBody: Expression? = null, // sig checked
 ) : Expression(where) {
 
     override fun <R> accept(v: Visitor<R>) = v.ifFunction(this)
 
     override fun sig(): Signature {
+        condition.sig() // necessary
+
         val thenSig = thenBody.sig()
         // if else body is null, we cannot conclude on
         // signature, so we HAVE to return Sign NONE

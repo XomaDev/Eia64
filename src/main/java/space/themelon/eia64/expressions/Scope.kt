@@ -3,7 +3,7 @@ package space.themelon.eia64.expressions
 import space.themelon.eia64.Expression
 
 data class Scope(
-    val expr: Expression,
+    val expr: Expression, // sig checked
     val imaginary: Boolean
 ) : Expression(null) {
 

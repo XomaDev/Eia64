@@ -10,13 +10,9 @@ import space.themelon.eia64.syntax.Token
 data class NewObj(
     val where: Token,
     val name: String,
-    val arguments: List<Expression>,
+    val arguments: List<Expression>, // sig checked
     val reference: FunctionReference? // of init() function
 ) : Expression(where) {
-
-    init {
-        sig()
-    }
 
     override fun <R> accept(v: Visitor<R>) = v.new(this)
 

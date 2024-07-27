@@ -11,33 +11,13 @@ data class ArrayLiteral(
     val elements: List<Expression>
 ) : Expression(where) {
 
-    init {
-        sig()
-    }
-
     override fun <R> accept(v: Visitor<R>) = v.array(this)
 
     override fun sig(): Signature {
-        // We need to dynamically decide the signature of elements.
-        // If not all of them have the same signature, we use ANY Signature
-        var signature: Signature
-
-        if (elements.isEmpty()) {
-            signature = Sign.ANY
-        } else {
-            signature = elements[0].sig()
-            for (element in elements) {
-                val elementSignature = element.sig()
-                if (elementSignature != signature) {
-                    signature = Sign.ANY
-                    // if all the elements don't hold the same signature, use ANY
-                    break
-                }
-            }
-        }
+        for (element in elements) element.sig() // Invoke on all sub-elements
 
         // We need to also store elements signature for array access
-        return ArrayExtension(signature)
+        return ArrayExtension(elementSignature())
     }
 
     fun elementSignature(): Signature {

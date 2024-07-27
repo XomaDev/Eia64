@@ -35,11 +35,12 @@ data class ExpressionList(
         val expressionItr = expressions.iterator()
         while (expressionItr.hasNext()) {
             val expr = expressionItr.next()
+            val signature = expr.sig() // Invoke sig() on ALL of the statements
             if (expr is Interruption && expr.operator == Type.RETURN) {
                 if (expressionItr.hasNext()) {
                     expr.where.error<String>("Cannot have more statements after return")
                 }
-                return expr.sig()
+                return signature
             }
         }
         // return last signature of the expression, useful for units

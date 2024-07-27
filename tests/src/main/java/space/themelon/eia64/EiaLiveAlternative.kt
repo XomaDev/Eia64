@@ -7,7 +7,6 @@ object EiaLiveAlternative {
     @JvmStatic
     fun main(args: Array<String>) {
         val scanner = Scanner(System.`in`)
-        val executor = Executor()
 
         var buffer = StringJoiner("\n")
         while (true) {
@@ -15,7 +14,6 @@ object EiaLiveAlternative {
             val line = scanner.nextLine()
             if (line == "exit") break
             else if (line == "~~") {
-                executor.loadMainSource(buffer.toString())
                 buffer = StringJoiner("\n")
             }
             else buffer.add(line)

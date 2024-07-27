@@ -14,6 +14,7 @@ data class ArrayAccess(
 
     override fun <R> accept(v: Visitor<R>) = v.arrayAccess(this)
 
+    // Verify -> child
     override fun sig(): Signature {
         when (val exprSig = expr.sig()) {
             Sign.STRING -> return Sign.CHAR

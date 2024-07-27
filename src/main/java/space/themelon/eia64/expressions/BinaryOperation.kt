@@ -15,10 +15,6 @@ data class BinaryOperation(
     val operator: Type
 ) : Expression(where) {
 
-    init {
-        sig()
-    }
-
     override fun <R> accept(v: Visitor<R>) = v.binaryOperation(this)
 
     override fun sig(): Signature {

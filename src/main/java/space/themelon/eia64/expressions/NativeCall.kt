@@ -16,7 +16,7 @@ data class FunctionInfo(
 data class NativeCall(
     val where: Token,
     val call: Type,
-    val arguments: List<Expression>,
+    val arguments: List<Expression>, // sig checked
 ) : Expression(where) {
 
     companion object {
@@ -43,10 +43,6 @@ data class NativeCall(
             put(Type.MEM_CLEAR, FunctionInfo(Sign.BOOL, 0))
             put(Type.COPY, FunctionInfo(null, 1, listOf(Sign.ANY)))
         }
-    }
-
-    init {
-        sig()
     }
 
     override fun <R> accept(v: Visitor<R>) = v.nativeCall(this)

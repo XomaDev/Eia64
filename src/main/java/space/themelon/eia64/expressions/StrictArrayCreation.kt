@@ -12,7 +12,9 @@ class StrictArrayCreation(
     val elements: List<Expression>,
 ) : Expression() {
 
-    init {
+    override fun <R> accept(v: Visitor<R>) = v.arrayCreation(this)
+
+    override fun sig(): Signature {
         elements.forEach {
             val expressionSignature = it.sig()
             if (!matches(elementSignature, it.sig())) {
@@ -22,13 +24,7 @@ class StrictArrayCreation(
                 )
             }
         }
-    }
 
-    override fun <R> accept(v: Visitor<R>): R {
-        return v.arrayCreation(this)
-    }
-
-    override fun sig(): Signature {
         // Self-signature is an Array, but elements are of $elementSignature.
         // We need to store element signatures.
         // Just like an Object extension

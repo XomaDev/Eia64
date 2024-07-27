@@ -14,5 +14,6 @@ data class Alpha(
 
     override fun <R> accept(v: Visitor<R>) = v.alpha(this)
 
+    // Verify -> child
     override fun sig() = sign
 }

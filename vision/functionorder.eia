@@ -1,0 +1,7 @@
+fn meow() {
+  sayMeow()
+}
+
+fn sayMeow() {
+  println("Miaw!")
+}

@@ -9,12 +9,8 @@ import space.themelon.eia64.syntax.Token
 data class MethodCall(
     val name: Token,
     val reference: FunctionReference,
-    val arguments: List<Expression>,
+    val arguments: List<Expression>, // sig checked
 ) : Expression(name) {
-
-    init {
-        sig()
-    }
 
     override fun <R> accept(v: Visitor<R>) = v.methodCall(this)
 

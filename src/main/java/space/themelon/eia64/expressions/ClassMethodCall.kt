@@ -10,9 +10,9 @@ import space.themelon.eia64.syntax.Token
 data class ClassMethodCall(
     val where: Token,
     val static: Boolean,
-    val objectExpression: Expression,
+    val objectExpression: Expression, // checked sig
     val method: String,
-    val arguments: List<Expression>,
+    val arguments: List<Expression>, // checked sig
     val reference: FunctionReference,
     val moduleInfo: ModuleInfo,
 ) : Expression(where) {
@@ -24,6 +24,9 @@ data class ClassMethodCall(
     override fun <R> accept(v: Visitor<R>) = v.classMethodCall(this)
 
     override fun sig(): Signature {
+        // We need to ensure sig is called
+        val objectExpressionSig = objectExpression.sig()
+
         val declarationSigns = reference.parameters
 
         val expectedArgsSize = declarationSigns.size
@@ -46,9 +49,8 @@ data class ClassMethodCall(
 
         if (moduleInfo.linked) {
             val selfSignature = signIterator.next().second
-            val providedSignature = objectExpression.sig()
-            if (!matches(selfSignature, providedSignature)) {
-                where.error<String>("Self argument mismatch, expected $selfSignature, got $providedSignature")
+            if (!matches(selfSignature, objectExpressionSig)) {
+                where.error<String>("Self argument mismatch, expected $selfSignature, got $objectExpressionSig")
             }
         }
         while (signIterator.hasNext()) {

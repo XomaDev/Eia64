@@ -11,6 +11,7 @@ private let BLUE_COLOR = "[0;34m"
 private let GOLD_COLOR = "[0;33m"
 private let PURPLE_COLOR = "[0;35m"
 private let BOLD = "[1m"
+private let CLEAR = "[H[2J"
 
 private let TRASH = "🗑"
 private let HAPPY_RIGHT = BLUE_COLOR + BOLD + "(> ^_^)>" + RESET
@@ -28,7 +29,7 @@ private fn trash(text: String) {
         var right_space = 10 + i
 
         until (true) {
-            println(TRASH,
+            println(CLEAR, TRASH,
                 " ".repeat(left_space),
                 if (going_right) HAPPY_RIGHT else (GOLD_COLOR + BOLD + l + RESET) + HAPPY_LEFT,
                 " ".repeat(right_space),
@@ -42,7 +43,7 @@ private fn trash(text: String) {
 
                 text = text.substring(1)
             } else if (!going_right && right_space >= 10 + i) {
-                println(TRASH, HAPPY_LEFT, " ".repeat(10 + i + 1), PURPLE_COLOR, BOLD, text, RESET)
+                println(CLEAR, TRASH, HAPPY_LEFT, " ".repeat(10 + i + 1), PURPLE_COLOR, BOLD, text, RESET)
                 sleep(INTERVAL)
                 break
             }

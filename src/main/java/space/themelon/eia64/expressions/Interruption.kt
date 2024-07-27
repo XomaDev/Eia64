@@ -9,12 +9,14 @@ import space.themelon.eia64.syntax.Type
 data class Interruption(
     val where: Token,
     val operator: Type,
-    val expr: Expression? = null
+    val expr: Expression? = null // sig checked
 ) : Expression(where) {
 
     override fun <R> accept(v: Visitor<R>) = v.interruption(this)
 
     override fun sig(): Signature {
+        expr?.sig() // necessary
+
         if (operator == Type.RETURN || operator == Type.USE) {
             if (expr == null) {
                 // `return` may not have an expression, but `use` must.

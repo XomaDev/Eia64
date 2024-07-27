@@ -9,15 +9,11 @@ import space.themelon.eia64.syntax.Type
 data class UnaryOperation(
     val where: Token,
     val operator: Type,
-    val expr: Expression,
+    val expr: Expression, // sig checked
     val towardsLeft: Boolean
 ) : Expression(where) {
 
     override fun <R> accept(v: Visitor<R>) = v.unaryOperation(this)
-
-    init {
-        sig()
-    }
 
     override fun sig(): Signature {
         val exprSign = expr.sig()
