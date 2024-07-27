@@ -70,17 +70,22 @@ class ScopeManager {
         currentScope.scopeHooks += hook
     }
 
-    // reference contains boolean if fn should be visible outside the class
-    fun defineFn(name: String, reference: FunctionReference) {
+    // Skeleton of the function that is defined by semi-parser
+    fun defineSemiFn(name: String, reference: FunctionReference) {
         val unique = UniqueFunction(name, reference.argsSize)
         val existing = currentScope.resolveFn(unique)
         if (existing != null) {
             throw RuntimeException("Function $name is already defined in the current scope")
         }
-        currentScope.functions[unique] = reference
-        currentScope.uniqueFunctionNames += name
+        currentScope.apply {
+            functions[unique] = reference
+            sequentialFunctions += reference
+            uniqueFunctionNames += name
+        }
         trace.declareFn(name, reference.parameters)
     }
+
+    fun readFnOutline(): FunctionReference = currentScope.sequentialFunctions.pop()
 
     // If it is marked Visible, then it can be indexed by external Parsers/Resolvers
     fun defineVariable(name: String,

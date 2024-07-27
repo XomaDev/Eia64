@@ -19,9 +19,6 @@ class ParserX(private val executor: Executor) {
     private var index = 0
     private var size = 0
 
-    // Semi-Parsed Functions outline that is present in the current scope
-    private lateinit var functionOutlines: List<FunctionMetadata>
-
     lateinit var parsed: ExpressionList
 
     fun parse(tokens: List<Token>): ExpressionList {
@@ -30,6 +27,7 @@ class ParserX(private val executor: Executor) {
         this.tokens = tokens
 
         val expressions = ArrayList<Expression>()
+        parseScopeOutline()
         while (!isEOF()) expressions.add(parseNext())
         if (Executor.DEBUG) expressions.forEach { println(it) }
         parsed = ExpressionList(expressions)
@@ -51,7 +49,7 @@ class ParserX(private val executor: Executor) {
         }
         return when (token.type) {
             Type.IF -> ifDeclaration(token)
-            Type.FUN -> fnDeclaration(false)
+            Type.FUN -> fnDeclaration()
             Type.SHADO -> shadoDeclaration()
             Type.INCLUDE -> includeStatement()
             Type.NEW -> newStatement(token)
@@ -89,56 +87,29 @@ class ParserX(private val executor: Executor) {
         }
     }
 
-    private fun enterScope() {
-        parseScopeOutline()
-        manager.enterScope()
-    }
-
-    private fun leaveScope() {
-        manager.leaveScope()
-    }
-
     private fun parseScopeOutline() {
-        // What does this do?
-        //  This maps out all the functions and variables that are
-        //  Declared in the current scope,
-        // Why do we do it?
-        // Sometimes a function could be referencing a function not parsed
-        // Yet. Without parsing the referenced function, we have no idea of knowing
-        // Signature metadata of the function.
-        // So before we begin the actual parsing of the scope, we semi-parse it
-        // This also applies to variables
-        //  - A global variable (current_scope = head_scope) could be accessed in any order by lower scopes (functions)
-        //  - A normal variable can only be used in order
-        //  - TODO: This arises a need for a main() { } function to keep behaviour standardized
-
         // We'll be bumping Indexes, so save it to set back later
         val originalIndex = index
 
-        expectType(Type.OPEN_CURLY)
+        var curlyBracesCount = 0
 
-        // TODO:
-        //  This could lead to weird syntax behavioural patterns that should be
-        //  Thoroughly tested at the end, with good parse-time error reporting
+        fun handleFn() {
+            val public = true
+            // A function, now we parse its signature!
+            val reference = functionOutline(public)
+            // Predefine all the outlines!
+            manager.defineSemiFn(reference.name, reference)
+        }
 
-        // TODO:
-        //  Lets implement global-variable parse indexing later, first complete fn implementation
-
-        val functions = mutableListOf<FunctionMetadata>()
-
-        while (true) {
+        while (!isEOF()) {
             val token = next()
             when (token.type) {
-                Type.CLOSE_CURLY -> break
-                // TODO:
-                //  We may need to care about function and
-                //  Variable modifiers over here
-                Type.FUN -> {
-                    // A function, now we parse its signature!
-                    val meta = functionOutline(true)
-                    // Predefine all the outlines!
-                    manager.defineFn(meta.name, meta.reference)
+                Type.OPEN_CURLY -> curlyBracesCount++
+                Type.CLOSE_CURLY -> {
+                    if (curlyBracesCount == 0) break
+                    else curlyBracesCount--
                 }
+                Type.FUN -> handleFn()
                 else -> { }
             }
         }
@@ -146,12 +117,11 @@ class ParserX(private val executor: Executor) {
         index = originalIndex
     }
 
-
     private fun handleModifier(modifier: Token): Expression {
         val visible = modifier.type == Type.VISIBLE
         val next = next()
         return when (next.type) {
-            Type.FUN -> fnDeclaration(visible)
+            Type.FUN -> fnDeclaration()
             Type.VAR, Type.LET -> variableDeclaration(visible, next)
             else -> next.error("Unexpected token")
         }
@@ -308,7 +278,7 @@ class ParserX(private val executor: Executor) {
                     by = parseNext()
                 }
                 expectType(Type.CLOSE_CURVE)
-                enterScope()
+                manager.enterScope()
                 manager.defineVariable(iName, false, Sign.INT, false)
                 // Manual Scopped!
                 val body = manager.iterativeScope { unscoppedBodyExpr() }
@@ -344,7 +314,7 @@ class ParserX(private val executor: Executor) {
             }
         }
 
-        enterScope()
+        manager.enterScope()
         manager.defineVariable(iName, false, elementSignature, false)
         // Manual Scopped!
         val body = manager.iterativeScope { unscoppedBodyExpr() }
@@ -355,7 +325,7 @@ class ParserX(private val executor: Executor) {
     private fun forVariableLoop(
         where: Token,
     ): ForLoop {
-        enterScope()
+        manager.enterScope()
         val initializer = if (isNext(Type.COMMA)) null else parseNext()
         expectType(Type.COMMA)
         val conditional = if (isNext(Type.COMMA)) null else parseNext()
@@ -406,7 +376,7 @@ class ParserX(private val executor: Executor) {
         )
     }
 
-    private fun functionOutline(public: Boolean): FunctionMetadata {
+    private fun functionOutline(public: Boolean): FunctionReference {
         val where = next()
         val name = readAlpha(where)
 
@@ -433,63 +403,54 @@ class ParserX(private val executor: Executor) {
             Sign.UNIT
         }
 
-        // Sometimes, the function self-references itself, but since it is not
-        // defined fully by then, resolver will find to find itself, so we keep a future
-        // reference of the function which is fulfilled later
-        val reference = FunctionReference(null,
-            requiredArgs,
-            requiredArgs.size,
-            returnSignature, public)
+        //println("Parsed function outline $name")
+        //println("Parsed function outline $requiredArgs")
 
-        return FunctionMetadata(
+        //if (isNext(Type.ASSIGNMENT)) {
+            //skip()
+            //if (returnSignature == Sign.NONE) {
+                // e.g. fn meow() = "hello world"
+                // here return signature is auto decided based on return content
+                //returnSignature = body.sig()
+                //reference.returnSignature = returnSignature
+            //}
+        //}
+
+        return FunctionReference(
             where,
             name,
+            null,
             requiredArgs,
-            isVoid,
+            requiredArgs.size,
             returnSignature,
-            reference
+            isVoid,
+            public,
+            index
         )
     }
 
-    private fun fnDeclaration(public: Boolean): FunctionExpr {
-        val meta = functionOutline(public)
-        val reference = meta.reference
+    private fun fnDeclaration(): FunctionExpr {
+        val reference = manager.readFnOutline()
+        index = reference.tokenIndex
+        manager.enterScope()
+        reference.parameters.forEach { manager.defineVariable(it.first, true, it.second, false) }
 
-        //manager.defineFn(meta.name, meta.reference)
-        enterScope()
-
-        meta.args.forEach { manager.defineVariable(it.first, true, it.second, false) }
-
-        var returnSignature = meta.returnSignature
-        val body: Expression
-        if (isNext(Type.ASSIGNMENT)) {
+        val body: Expression = if (isNext(Type.ASSIGNMENT)) {
             skip()
-            body = parseNext()
-
-            // TODO: this may cause problems if the body
-            //  self references the function
-            //  or if it self references, we need to enforce strictness
-            if (returnSignature == Sign.NONE) {
-                // e.g. fn meow() = "hello world"
-                // here return signature is auto decided based on return content
-                returnSignature = body.sig()
-                meta.reference.returnSignature = returnSignature
-            }
+            parseNext()
         } else {
-            //  expectReturn() ensures the return type matches the one
-            //  promised at function signature
-            body = manager.expectReturn(returnSignature) {
+            manager.expectReturn(reference.returnSignature) {
                 expressions()
             }
         }
         manager.leaveScope()
 
         val fnExpr = FunctionExpr(
-            meta.where,
-            meta.name,
-            meta.args,
-            meta.isVoid,
-            returnSignature,
+            reference.where,
+            reference.name,
+            reference.parameters,
+            reference.isVoid,
+            reference.returnSignature,
             body
         )
         reference.fnExpression = fnExpr
@@ -499,7 +460,7 @@ class ParserX(private val executor: Executor) {
     private fun shadoDeclaration(): Shadow {
         val names = ArrayList<String>()
 
-        enterScope()
+        manager.enterScope()
         expectType(Type.OPEN_CURVE)
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val name = readAlpha()
@@ -525,28 +486,13 @@ class ParserX(private val executor: Executor) {
         val ifBody = autoBodyExpr()
 
         // All is Auto Scopped!
-
-        // Here we need to know if the If Statement is terminative or not
+        // Here we need to know if the Is Statement is terminative or not
         //
-        // Case 1 => Terminative (meaning end-of execution if body is executed)
-        //   then => then we treat rest of the body as a else function
+        // Case 1 => Terminative (meaning end-of execution if the body is executed)
+        //   then => then we treat the rest of the body as an else function
 
-        if (isEOF() || peek().type != Type.ELSE) {
-            val terminativeIf = ifBody.sig().terminative
-
-            //println("of: " + ifBody)
-            //println("of: " + ifBody.sig().terminative)
-            //println("signature: " + ifBody.sig())
-
-            // TODO:turn of imaginary parsing for testing
-            if (terminativeIf) {
-                // if (terminativeIf) means end of execution
-                //  treat the rest of the code in the else body
-                //return IfStatement(where, logicalExpr, ifBody, parseImaginaryElse())
-            }
-
+        if (isEOF() || peek().type != Type.ELSE)
             return IfStatement(where, logicalExpr, ifBody)
-        }
         skip()
 
         val elseBranch = when (peek().type) {
@@ -556,29 +502,16 @@ class ParserX(private val executor: Executor) {
         return IfStatement(where, logicalExpr, ifBody, elseBranch)
     }
 
-    // Parses the remaining expressions into a body, we treat this
-    // as an *else* body when we encounter terminativeIf
-
-    private fun parseImaginaryElse(): Scope {
-        enterScope()
-        val expressions = ArrayList<Expression>()
-        while (!isEOF() && peek().type != Type.CLOSE_CURLY)
-            expressions.add(parseNext())
-        // Do not do any optimizations as of now
-        val imaginaryElse = ExpressionList(expressions)
-        return Scope(imaginaryElse, manager.leaveScope())
-    }
-
     private fun autoBodyExpr(): Scope {
         // used everywhere where there is no manual scope management is required,
         //  e.g., IfExpr, Until, For
         if (peek().type == Type.OPEN_CURLY) return autoScopeBody()
-        enterScope()
+        manager.enterScope()
         return Scope(parseNext(), manager.leaveScope())
     }
 
     private fun autoScopeBody(): Scope {
-        enterScope()
+        manager.enterScope()
         return Scope(expressions(), manager.leaveScope())
     }
 
@@ -589,6 +522,7 @@ class ParserX(private val executor: Executor) {
 
     private fun expressions(): Expression {
         expectType(Type.OPEN_CURLY)
+        parseScopeOutline()
         val expressions = ArrayList<Expression>()
         if (peek().type == Type.CLOSE_CURLY)
             return ExpressionList(expressions)
@@ -1051,22 +985,16 @@ class ParserX(private val executor: Executor) {
 
     private fun unitCall(unitExpr: Expression): Expression {
         val arguments = callArguments()
-
-        val quantum = QuantumExpression()
-        manager.createHook {
-            if (unitExpr is Alpha) {
-                val name = unitExpr.value
-                val fnExpr = manager.resolveFn(name, arguments.size)
-                if (fnExpr != null) {
-                    if (fnExpr.argsSize == -1)
-                        throw RuntimeException("[Internal] Function args size is not yet set")
-                    quantum.expression = MethodCall(unitExpr.marking!!, fnExpr, arguments)
-                    return@createHook
-                }
-                quantum.expression = ShadoInvoke(unitExpr.marking!!, unitExpr, arguments)
+        if (unitExpr is Alpha) {
+            val name = unitExpr.value
+            val fnExpr = manager.resolveFn(name, arguments.size)
+            if (fnExpr != null) {
+                if (fnExpr.argsSize == -1)
+                    throw RuntimeException("[Internal] Function args size is not yet set")
+                return MethodCall(unitExpr.marking!!, fnExpr, arguments)
             }
         }
-        return quantum
+        return ShadoInvoke(unitExpr.marking!!, unitExpr, arguments)
     }
 
     private fun callArguments(): List<Expression> {

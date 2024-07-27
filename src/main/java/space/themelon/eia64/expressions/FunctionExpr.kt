@@ -25,10 +25,12 @@ data class FunctionExpr(
                 where.error<String>("Promised return signature $returnSignature but got $receivedSignature")
             }
         } else {
+            val promised = returnSignature
             val receivedSignature = body.returnSig()
-            if (receivedSignature != returnSignature.returnMetadata) {
+            if (!isVoid && receivedSignature != promised) {
                 where.error<String>("Promised return signature $returnSignature but got $receivedSignature")
             }
+
         }
         return Sign.NONE
     }

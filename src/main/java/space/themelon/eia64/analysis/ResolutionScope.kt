@@ -1,14 +1,18 @@
 package space.themelon.eia64.analysis
 
 import space.themelon.eia64.signatures.Signature
+import java.util.LinkedList
 
 class ResolutionScope(val before: ResolutionScope? = null) {
     // these hooks are dispatched just before the scope ends
     val scopeHooks = mutableListOf<() -> Unit>()
     val uniqueFunctionNames = LinkedHashSet<String>()
 
-    // val functionOutlines = HashMap<UniqueFunction, FunctionReference>
+    // `functions` and `sequentialFunctions` defined by semi-parser
     val functions = HashMap<UniqueFunction, FunctionReference>()
+    // But `sequentialFunctions` is used by real-parsing to use them as they were parsed
+    val sequentialFunctions = LinkedList<FunctionReference>()
+
     val variables = HashMap<String, UniqueVariable>()
 
     fun dispatchHooks() {
