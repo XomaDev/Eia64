@@ -9,11 +9,17 @@ data class Alpha(
     val where: Token,
     val index: Int,
     val value: String,
-    val sign: Signature
+    val sign: Signature,
+    var mature: Boolean
 ) : Expression(where) {
 
     override fun <R> accept(v: Visitor<R>) = v.alpha(this)
 
     // Verify -> child
-    override fun sig() = sign
+    override fun sig(): Signature {
+        if (!mature) {
+            where.error<Expression>("Could not resolve name $value")
+        }
+        return sign
+    }
 }

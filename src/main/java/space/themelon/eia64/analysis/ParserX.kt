@@ -11,7 +11,7 @@ import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 import java.io.File
 
-class Parser(private val executor: Executor) {
+class ParserX(private val executor: Executor) {
 
     private val manager = ScopeManager()
     //private val trace = EiaTrace()
@@ -31,7 +31,7 @@ class Parser(private val executor: Executor) {
         while (!isEOF()) expressions.add(parseNext())
         if (Executor.DEBUG) expressions.forEach { println(it) }
         parsed = ExpressionList(expressions)
-        parsed.sig() // nessasary
+        parsed.sig() // necessary
         return parsed
     }
 
@@ -942,16 +942,16 @@ class Parser(private val executor: Executor) {
                     if (manager.hasFunctionNamed(name))
                         // there could be multiple functions with same name
                         // but different args, this just marks it as a function
-                        Alpha(token, -3, name, Sign.NONE)
+                        Alpha(token, -3, name, Sign.NONE, true)
                     else if (manager.staticClasses.contains(name))
                         // probably referencing a method from an outer class
-                        Alpha(token, -2, name, Sign.NONE)
+                        Alpha(token, -2, name, Sign.NONE, true)
                     else
                         // Unresolved name
-                        Alpha(token, -4, name, Sign.NONE)
+                        Alpha(token, -4, name, Sign.NONE, true)
                 } else {
                     // classic variable access
-                    Alpha(token, vrReference.index, name, vrReference.signature)
+                    Alpha(token, vrReference.index, name, vrReference.signature, false)
                 }
             }
             Type.CLASS_VALUE -> parseType(token)
@@ -972,25 +972,23 @@ class Parser(private val executor: Executor) {
     }
 
     private fun unitCall(unitExpr: Expression): Expression {
-        // TODO:
-        //  We should design it in a way that it decides if It's a function call
-        //  Or a ShadoInvoke at the end of the scope
-        //  So we need to listen for just before the scope ends
-
-        // only limited to functions or shado variables inside the class
-        //  does not touch outside classes
         val arguments = callArguments()
 
-        if (unitExpr is Alpha) {
-            val name = unitExpr.value
-            val fnExpr = manager.resolveFn(name, arguments.size)
-            if (fnExpr != null) {
-                if (fnExpr.argsSize == -1)
-                    throw RuntimeException("[Internal] Function args size is not yet set")
-                return MethodCall(unitExpr.marking!!, fnExpr, arguments)
+        val quantum = QuantumExpression()
+        manager.createHook {
+            if (unitExpr is Alpha) {
+                val name = unitExpr.value
+                val fnExpr = manager.resolveFn(name, arguments.size)
+                if (fnExpr != null) {
+                    if (fnExpr.argsSize == -1)
+                        throw RuntimeException("[Internal] Function args size is not yet set")
+                    quantum.expression = MethodCall(unitExpr.marking!!, fnExpr, arguments)
+                    return@createHook
+                }
+                quantum.expression = ShadoInvoke(unitExpr.marking!!, unitExpr, arguments)
             }
         }
-        return ShadoInvoke(unitExpr.marking!!, unitExpr, arguments)
+        return quantum
     }
 
     private fun callArguments(): List<Expression> {
@@ -1050,12 +1048,4 @@ class Parser(private val executor: Executor) {
     }
 
     private fun isEOF() = index == size
-}
-
-private fun List<Expression>.signatures(): List<Signature> {
-    val signatures = mutableListOf<Signature>()
-    for (expression in this) {
-        signatures += expression.sig()
-    }
-    return signatures
 }

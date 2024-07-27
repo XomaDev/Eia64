@@ -3,10 +3,16 @@ package space.themelon.eia64.analysis
 import space.themelon.eia64.signatures.Signature
 
 class ResolutionScope(val before: ResolutionScope? = null) {
+    // these hooks are dispatched just before the scope ends
+    val scopeHooks = mutableListOf<() -> Unit>()
     val uniqueFunctionNames = LinkedHashSet<String>()
 
     val functions = HashMap<UniqueFunction, FunctionReference>()
     val variables = HashMap<String, UniqueVariable>()
+
+    fun dispatchHooks() {
+        scopeHooks.forEach { it() }
+    }
 
     fun resolveFn(function: UniqueFunction): FunctionReference? {
         val reference = functions[function]

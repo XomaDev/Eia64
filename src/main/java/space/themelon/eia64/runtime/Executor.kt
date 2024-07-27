@@ -1,6 +1,6 @@
 package space.themelon.eia64.runtime
 
-import space.themelon.eia64.analysis.Parser
+import space.themelon.eia64.analysis.ParserX
 import space.themelon.eia64.syntax.Lexer
 import java.io.File
 
@@ -28,8 +28,8 @@ class Executor {
     private val externalExecutors = HashMap<String, Evaluator>()
     private val mainEvaluator = Evaluator("Main", this)
 
-    private val externalParsers = HashMap<String, Parser>()
-    private val mainParser = Parser(this)
+    private val externalParsers = HashMap<String, ParserX>()
+    private val mainParser = ParserX(this)
 
     fun loadMainFile(sourceFile: String) {
         try {
@@ -65,7 +65,7 @@ class Executor {
     // called by parsers, parse the included module
     fun addModule(sourceFile: String, name: String): Boolean {
         if (externalParsers[name] != null) return false
-        externalParsers[name] = Parser(this).also { it.parse(getTokens(sourceFile)) }
+        externalParsers[name] = ParserX(this).also { it.parse(getTokens(sourceFile)) }
         return true
     }
 

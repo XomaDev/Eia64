@@ -54,6 +54,9 @@ class ScopeManager {
         // if (x) { println("Hello, "World") }
         // here you don't require creating a new scope to evaluate it
         trace.leaveScope()
+        // Calls awaiting hooks that must be called before scope ends
+        currentScope.dispatchHooks()
+
         val imaginaryScope = currentScope.variables.isEmpty() && currentScope.functions.isEmpty()
         currentScope.before.let {
             if (it == null)
@@ -61,6 +64,10 @@ class ScopeManager {
             currentScope = it
         }
         return imaginaryScope
+    }
+
+    fun createHook(hook: () -> Unit) {
+        currentScope.scopeHooks += hook
     }
 
     // reference contains boolean if fn should be visible outside the class
