@@ -7,6 +7,7 @@ class ResolutionScope(val before: ResolutionScope? = null) {
     val scopeHooks = mutableListOf<() -> Unit>()
     val uniqueFunctionNames = LinkedHashSet<String>()
 
+    // val functionOutlines = HashMap<UniqueFunction, FunctionReference>
     val functions = HashMap<UniqueFunction, FunctionReference>()
     val variables = HashMap<String, UniqueVariable>()
 

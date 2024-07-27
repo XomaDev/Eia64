@@ -14,11 +14,13 @@ import java.io.File
 class ParserX(private val executor: Executor) {
 
     private val manager = ScopeManager()
-    //private val trace = EiaTrace()
 
     private lateinit var tokens: List<Token>
     private var index = 0
     private var size = 0
+
+    // Semi-Parsed Functions outline that is present in the current scope
+    private lateinit var functionOutlines: List<FunctionMetadata>
 
     lateinit var parsed: ExpressionList
 
@@ -85,6 +87,63 @@ class ParserX(private val executor: Executor) {
             Type.WHEN -> true
             else -> false
         }
+    }
+
+    private fun enterScope() {
+        parseScopeOutline()
+        manager.enterScope()
+    }
+
+    private fun leaveScope() {
+        manager.leaveScope()
+    }
+
+    private fun parseScopeOutline() {
+        // What does this do?
+        //  This maps out all the functions and variables that are
+        //  Declared in the current scope,
+        // Why do we do it?
+        // Sometimes a function could be referencing a function not parsed
+        // Yet. Without parsing the referenced function, we have no idea of knowing
+        // Signature metadata of the function.
+        // So before we begin the actual parsing of the scope, we semi-parse it
+        // This also applies to variables
+        //  - A global variable (current_scope = head_scope) could be accessed in any order by lower scopes (functions)
+        //  - A normal variable can only be used in order
+        //  - TODO: This arises a need for a main() { } function to keep behaviour standardized
+
+        // We'll be bumping Indexes, so save it to set back later
+        val originalIndex = index
+
+        expectType(Type.OPEN_CURLY)
+
+        // TODO:
+        //  This could lead to weird syntax behavioural patterns that should be
+        //  Thoroughly tested at the end, with good parse-time error reporting
+
+        // TODO:
+        //  Lets implement global-variable parse indexing later, first complete fn implementation
+
+        val functions = mutableListOf<FunctionMetadata>()
+
+        while (true) {
+            val token = next()
+            when (token.type) {
+                Type.CLOSE_CURLY -> break
+                // TODO:
+                //  We may need to care about function and
+                //  Variable modifiers over here
+                Type.FUN -> {
+                    // A function, now we parse its signature!
+                    val meta = functionOutline(true)
+                    // Predefine all the outlines!
+                    manager.defineFn(meta.name, meta.reference)
+                }
+                else -> { }
+            }
+        }
+
+        index = originalIndex
     }
 
 
@@ -249,7 +308,7 @@ class ParserX(private val executor: Executor) {
                     by = parseNext()
                 }
                 expectType(Type.CLOSE_CURVE)
-                manager.enterScope()
+                enterScope()
                 manager.defineVariable(iName, false, Sign.INT, false)
                 // Manual Scopped!
                 val body = manager.iterativeScope { unscoppedBodyExpr() }
@@ -285,7 +344,7 @@ class ParserX(private val executor: Executor) {
             }
         }
 
-        manager.enterScope()
+        enterScope()
         manager.defineVariable(iName, false, elementSignature, false)
         // Manual Scopped!
         val body = manager.iterativeScope { unscoppedBodyExpr() }
@@ -296,7 +355,7 @@ class ParserX(private val executor: Executor) {
     private fun forVariableLoop(
         where: Token,
     ): ForLoop {
-        manager.enterScope()
+        enterScope()
         val initializer = if (isNext(Type.COMMA)) null else parseNext()
         expectType(Type.COMMA)
         val conditional = if (isNext(Type.COMMA)) null else parseNext()
@@ -347,19 +406,17 @@ class ParserX(private val executor: Executor) {
         )
     }
 
-    private fun fnDeclaration(public: Boolean): FunctionExpr {
+    private fun functionOutline(public: Boolean): FunctionMetadata {
         val where = next()
         val name = readAlpha(where)
 
         expectType(Type.OPEN_CURVE)
-        val promisedArgSignatures = mutableListOf<Signature>()
         val requiredArgs = mutableListOf<Pair<String, Signature>>()
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val parameterName = readAlpha()
             expectType(Type.COLON)
             val signature = readSignature(next())
 
-            promisedArgSignatures += signature
             requiredArgs += parameterName to signature
             if (!isNext(Type.COMMA)) break
             skip()
@@ -367,7 +424,7 @@ class ParserX(private val executor: Executor) {
         expectType(Type.CLOSE_CURVE)
 
         val isVoid: Boolean
-        var returnSignature = if (isNext(Type.COLON)) {
+        val returnSignature = if (isNext(Type.COLON)) {
             skip()
             isVoid = false
             readSignature(next())
@@ -384,12 +441,26 @@ class ParserX(private val executor: Executor) {
             requiredArgs.size,
             returnSignature, public)
 
-        manager.defineFn(name, reference)
-        manager.enterScope()
+        return FunctionMetadata(
+            where,
+            name,
+            requiredArgs,
+            isVoid,
+            returnSignature,
+            reference
+        )
+    }
 
-        requiredArgs.forEach { manager.defineVariable(it.first, true, it.second, false) }
+    private fun fnDeclaration(public: Boolean): FunctionExpr {
+        val meta = functionOutline(public)
+        val reference = meta.reference
 
-        // Fully Manual Scoped
+        //manager.defineFn(meta.name, meta.reference)
+        enterScope()
+
+        meta.args.forEach { manager.defineVariable(it.first, true, it.second, false) }
+
+        var returnSignature = meta.returnSignature
         val body: Expression
         if (isNext(Type.ASSIGNMENT)) {
             skip()
@@ -402,7 +473,7 @@ class ParserX(private val executor: Executor) {
                 // e.g. fn meow() = "hello world"
                 // here return signature is auto decided based on return content
                 returnSignature = body.sig()
-                reference.returnSignature = returnSignature
+                meta.reference.returnSignature = returnSignature
             }
         } else {
             //  expectReturn() ensures the return type matches the one
@@ -413,7 +484,14 @@ class ParserX(private val executor: Executor) {
         }
         manager.leaveScope()
 
-        val fnExpr = FunctionExpr(where, name, requiredArgs, isVoid, returnSignature, body)
+        val fnExpr = FunctionExpr(
+            meta.where,
+            meta.name,
+            meta.args,
+            meta.isVoid,
+            returnSignature,
+            body
+        )
         reference.fnExpression = fnExpr
         return fnExpr
     }
@@ -421,7 +499,7 @@ class ParserX(private val executor: Executor) {
     private fun shadoDeclaration(): Shadow {
         val names = ArrayList<String>()
 
-        manager.enterScope()
+        enterScope()
         expectType(Type.OPEN_CURVE)
         while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
             val name = readAlpha()
@@ -482,7 +560,7 @@ class ParserX(private val executor: Executor) {
     // as an *else* body when we encounter terminativeIf
 
     private fun parseImaginaryElse(): Scope {
-        manager.enterScope()
+        enterScope()
         val expressions = ArrayList<Expression>()
         while (!isEOF() && peek().type != Type.CLOSE_CURLY)
             expressions.add(parseNext())
@@ -495,12 +573,12 @@ class ParserX(private val executor: Executor) {
         // used everywhere where there is no manual scope management is required,
         //  e.g., IfExpr, Until, For
         if (peek().type == Type.OPEN_CURLY) return autoScopeBody()
-        manager.enterScope()
+        enterScope()
         return Scope(parseNext(), manager.leaveScope())
     }
 
     private fun autoScopeBody(): Scope {
-        manager.enterScope()
+        enterScope()
         return Scope(expressions(), manager.leaveScope())
     }
 
