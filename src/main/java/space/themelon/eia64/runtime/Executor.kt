@@ -41,7 +41,8 @@ class Executor {
 
     fun loadMainSource(source: String): Any {
         try {
-            return mainEvaluator.eval(mainParser.parse(Lexer(source).tokens))
+            val tokens = mainParser.parse(Lexer(source).tokens)
+            return mainEvaluator.eval(tokens)
         } catch (e: ShutdownException) {
             throw RuntimeException("Executor was shutdown")
         }
