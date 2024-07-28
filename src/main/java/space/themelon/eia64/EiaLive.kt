@@ -1,15 +1,15 @@
 package space.themelon.eia64
 
-import space.themelon.eia64.TerminalColors.BLUE_BG
+import space.themelon.eia64.TerminalColors.BLUE
 import space.themelon.eia64.TerminalColors.BOLD
-import space.themelon.eia64.TerminalColors.CYAN
+import space.themelon.eia64.TerminalColors.RED
 import space.themelon.eia64.TerminalColors.RESET
-import space.themelon.eia64.analysis.ParserX
+import space.themelon.eia64.TerminalColors.YELLOW
 import space.themelon.eia64.runtime.Executor
-import space.themelon.eia64.syntax.Lexer
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.PrintStream
+import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 
 class EiaLive(
@@ -18,10 +18,16 @@ class EiaLive(
 ) {
 
     companion object {
-        private val DELETE_CODE = "\b \b".encodeToByteArray()
-
-        private val OUTPUT_STYLE = "$CYAN$BOLD".encodeToByteArray()
-        val SHELL_STYLE = "$RESET$BLUE_BG eia \$ $RESET ".toByteArray()
+        private val INTRO = """
+            Eia64 Dev 2.1
+            Type "debug" to enable debug mode
+            
+            
+        """.trimIndent().encodeToByteArray()
+        private val SHELL_STYLE = "${YELLOW}eia>$RESET ".toByteArray()
+        private val PENDING_SHELL_STYLE = "> ".toByteArray()
+        private val OUTPUT_STYLE = "$BLUE$BOLD".encodeToByteArray()
+        private val ERROR_OUTPUT_STYLE = "$RED$BOLD".encodeToByteArray()
     }
 
     init {
@@ -31,67 +37,37 @@ class EiaLive(
     private fun serve() {
         val executor = AtomicReference(Executor())
 
-        fun writeShell() {
-            output.write(SHELL_STYLE)
-            output.write("\r\n".encodeToByteArray())
-        }
-        writeShell()
+        output.write(INTRO)
+        output.write(SHELL_STYLE)
 
         executor.get().apply {
             standardInput = input
             standardOutput = PrintStream(output)
         }
 
-        val sourceCode = StringBuilder()
-        fun getSourceCode(): String? = if (sourceCode.isEmpty()) null else {
-            val code = sourceCode.toString()
-            sourceCode.setLength(0)
-            code
-        }
-
-        fun execute() {
-            val code = getSourceCode() ?: return
-            output.write(OUTPUT_STYLE)
-            runSafely(output) {
-                executor.get().loadMainSource(code)
-            }
-            writeShell()
-        }
-
-        fun lex() {
-            val code = getSourceCode() ?: return
-            output.write(OUTPUT_STYLE)
-            output.write(10)
-
-            runSafely(output) {
-                Lexer(code).tokens.forEach {
-                    output.write(it.toString().encodeToByteArray())
-                    output.write(10)
+        val helper = CompletionHelper(
+            ready = { tokens ->
+                output.write(OUTPUT_STYLE)
+                runSafely(output) {
+                    executor.get().loadMainTokens(tokens)
                 }
+                output.write(SHELL_STYLE)
+            },
+            syntaxError = { error ->
+                output.write(ERROR_OUTPUT_STYLE)
+                output.write("$error\n".encodeToByteArray())
+                output.write(SHELL_STYLE)
             }
+        )
 
-            writeShell()
-        }
-
-        fun parse() {
-            val code = getSourceCode() ?: return
-            output.write(OUTPUT_STYLE)
-            output.write(10)
-
-            runSafely(output) {
-                val nodes = ParserX(Executor()).parse(Lexer(code).tokens)
-
-                nodes.expressions.forEach {
-                    output.write(it.toString().encodeToByteArray())
-                    output.write(10)
-                }
-            }
-
-            writeShell()
-        }
-
+        val scanner = Scanner(input)
         while (true) {
-            sourceCode.append(input.read())
+            val line = scanner.nextLine()
+            if (line == "debug") Executor.DEBUG = true
+            if (!helper.addLine(line)) {
+                // There's some more code that needs to be typed in
+                output.write(PENDING_SHELL_STYLE)
+            }
         }
     }
 
@@ -102,6 +78,7 @@ class EiaLive(
         try {
             block()
         } catch (e: Exception) {
+            output.write(ERROR_OUTPUT_STYLE)
             output.write("${e.message.toString()}\n".encodeToByteArray())
         }
     }

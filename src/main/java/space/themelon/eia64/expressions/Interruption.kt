@@ -24,12 +24,7 @@ data class Interruption(
                     where.error<String>("No expression for operator $operator provided")
                 } else return Sign.ANY
             }
-            val signature = expr!!.sig()
-            if (operator == Type.RETURN) {
-                signature.returnMetadata = signature
-                signature.terminative = true
-            }
-            return signature
+            return expr!!.sig()
         }
         return Sign.ANY
     }

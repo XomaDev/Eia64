@@ -11,7 +11,9 @@ import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 import java.io.File
 
-class ParserX(private val executor: Executor) {
+class ParserX(
+    private val executor: Executor,
+) {
 
     private val manager = ScopeManager()
 
@@ -28,13 +30,15 @@ class ParserX(private val executor: Executor) {
 
         val expressions = ArrayList<Expression>()
         parseScopeOutline()
-        while (!isEOF()) expressions.add(parseClass())
+        while (!isEOF()) expressions.add(parseStatements())
         if (Executor.DEBUG) expressions.forEach { println(it) }
         parsed = ExpressionList(expressions)
         parsed.sig() // necessary
         return parsed
     }
 
+    // This shall not be used for now, since it interferes with live mode and
+    // easy access; when language is very mature, then we shall enable it
     private fun parseClass(): Expression {
         val token = next()
         if (token.flags.isNotEmpty()) {
@@ -70,6 +74,7 @@ class ParserX(private val executor: Executor) {
             Type.FUN -> fnDeclaration()
             Type.SHADO -> shadoDeclaration()
             Type.NEW -> newStatement(token)
+            Type.INCLUDE -> return includeStatement()
             Type.THROW -> throwStatement(token)
             Type.WHEN -> whenStatement(token)
             //Type.OPEN_SQUARE -> arrayStatement(token)
@@ -501,7 +506,7 @@ class ParserX(private val executor: Executor) {
         //   then => then we treat the rest of the body as an else function
 
         if (isEOF() || peek().type != Type.ELSE)
-            return IfStatement(where, logicalExpr, ifBody)
+            return IfStatement(where, logicalExpr, ifBody, NoneExpression.INSTANCE)
         skip()
 
         val elseBranch = when (peek().type) {

@@ -7,33 +7,39 @@ import java.util.StringJoiner
 
 // This helps us decide when to submit the code for execution
 //  While operating in the live shell environment
-class CompletionHelper {
+class CompletionHelper(
+    val ready: (tokens: List<Token>) -> Unit,
+    val syntaxError: (String) -> Unit,
+) {
 
-    private val buffer = StringJoiner("\n")
-    private var ready = false // are we ready for execution?
+    private var buffer = StringJoiner("\n")
 
-    private var entitiesOpen = 0
-
-    fun addLine(line: String): List<Token>? {
+    fun addLine(line: String): Boolean {
         buffer.add(line)
-        val tokens = Lexer(buffer.toString()).tokens
-        tokens.forEach { analyse(it) }
-        if (ready) {
-            ready = false
-            return tokens
+        val tokens = try {
+            Lexer(buffer.toString()).tokens
+        } catch (e: Exception) {
+            syntaxError(e.message.toString())
+            return false
         }
-        // We are not yet ready, there's some more code
-        return null
-    }
+        var entitiesOpen = 0
+        tokens.forEach {
+            when (it.type) {
+                Type.OPEN_CURVE,
+                Type.OPEN_SQUARE,
+                Type.OPEN_CURLY -> entitiesOpen++
 
-    fun pending() = entitiesOpen > 0
-
-    private fun analyse(token: Token) {
-        when (token.type) {
-            Type.OPEN_CURVE, Type.OPEN_SQUARE, Type.OPEN_CURLY -> entitiesOpen++
-            Type.CLOSE_CURVE, Type.CLOSE_SQUARE -> entitiesOpen--
-            else -> { }
+                Type.CLOSE_CURVE,
+                Type.CLOSE_SQUARE,
+                Type.CLOSE_CURLY -> entitiesOpen--
+                else -> { }
+            }
         }
-        if (entitiesOpen == 0) ready = true
+        if (entitiesOpen == 0) {
+            buffer = StringJoiner("\n")
+            ready(tokens)
+            return true
+        }
+        return false
     }
 }

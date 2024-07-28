@@ -2,12 +2,13 @@ package space.themelon.eia64.runtime
 
 import space.themelon.eia64.analysis.ParserX
 import space.themelon.eia64.syntax.Lexer
+import space.themelon.eia64.syntax.Token
 import java.io.File
 
 class Executor {
 
     companion object {
-        const val DEBUG = false
+        var DEBUG = false
         const val LOGS_PIPE_PATH = "/tmp/pipe1" // where logs are displayed
 
         var STD_LIB = "" // will be set
@@ -43,6 +44,14 @@ class Executor {
         try {
             val tokens = mainParser.parse(Lexer(source).tokens)
             return mainEvaluator.eval(tokens)
+        } catch (e: ShutdownException) {
+            throw RuntimeException("Executor was shutdown")
+        }
+    }
+
+    fun loadMainTokens(tokens: List<Token>): Any {
+        try {
+            return mainEvaluator.eval(mainParser.parse(tokens))
         } catch (e: ShutdownException) {
             throw RuntimeException("Executor was shutdown")
         }

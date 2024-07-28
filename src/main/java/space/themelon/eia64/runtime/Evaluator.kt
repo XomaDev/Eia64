@@ -32,7 +32,7 @@ class Evaluator(
 
     // in the future, we need to give options to enable/ disable:
     //  how about enabling it through eia code?
-    private val tracer = EiaTrace(PrintStream(FileOutputStream(Executor.LOGS_PIPE_PATH)))
+    private val tracer = if (Executor.DEBUG) EiaTrace(PrintStream(FileOutputStream(Executor.LOGS_PIPE_PATH))) else null
 
     fun shutdown() {
         // Reroute all the traffic to Void, which would raise ShutdownException.
@@ -61,6 +61,9 @@ class Evaluator(
         else -> result as EInt
     }
 
+    // Plan future: My opinion would be that this should NOT happen, these types of
+    // Runtime Checks Hinder performance. There should be a common wrapper to all
+    //  the numeric applicable types. Runtime checking should be avoided
     private fun numericExpr(expr: Expression): Numeric = when (val result = unboxEval(expr)) {
         is EChar -> EInt(result.get().code)
         is EInt -> result
@@ -75,6 +78,7 @@ class Evaluator(
         memory.clearMemory()
     }
 
+    override fun noneExpression() = Nothing.INSTANCE
     override fun nilLiteral(nil: NilLiteral) = ENil()
     override fun intLiteral(literal: IntLiteral) = EInt(literal.value)
     override fun floatLiteral(literal: FloatLiteral) = EFloat(literal.value)
@@ -112,7 +116,7 @@ class Evaluator(
                        name: String,
                        value: Any) {
         (memory.getVar(index, name) as Entity).update(value)
-        tracer.updateVariableRuntime(name, getSignature(value), value)
+        tracer?.updateVariableRuntime(name, getSignature(value), value)
     }
 
     private fun update(aMemory: Memory,
@@ -120,7 +124,7 @@ class Evaluator(
                        name: String,
                        value: Any) {
         (aMemory.getVar(index, name) as Entity).update(value)
-        tracer.updateVariableRuntime(name, getSignature(value), value)
+        tracer?.updateVariableRuntime(name, getSignature(value), value)
     }
 
     override fun variable(variable: ExplicitVariable): Any {
@@ -130,7 +134,7 @@ class Evaluator(
         val mutable = variable.mutable
 
         memory.declareVar(name, Entity(name, mutable, value, signature))
-        tracer.declareVariableRuntime(
+        tracer?.declareVariableRuntime(
             mutable,
             name,
             signature,
@@ -151,7 +155,7 @@ class Evaluator(
                 signature
             )
         )
-        tracer.declareVariableRuntime(
+        tracer?.declareVariableRuntime(
             true,
             autoVariable.name,
             signature,
@@ -339,7 +343,7 @@ class Evaluator(
     override fun new(new: NewObj): Evaluator {
         val evaluator = executor.newEvaluator(new.name)
         evaluator.dynamicFnCall("init", evaluateArgs(new.arguments), true)
-        tracer.runtimeObjectCreation(new.name, evaluator)
+        tracer?.runtimeObjectCreation(new.name, evaluator)
         return evaluator
     }
 
@@ -663,7 +667,7 @@ class Evaluator(
             callValues += Pair(definedParameter, callValue)
             argValues += Pair(definedParameter.first, callValue)
         }
-        tracer.runtimeFnCall(fnName, argValues)
+        tracer?.runtimeFnCall(fnName, argValues)
         memory.enterScope()
         callValues.forEach {
             val definedParameter = it.first
@@ -725,7 +729,7 @@ class Evaluator(
         var numIterations = 0
         while (booleanExpr(until.expression).get()) {
             numIterations++
-            tracer.runtimeUntil(numIterations)
+            tracer?.runtimeUntil(numIterations)
             val result = eval(until.body)
             if (result is Entity) {
                 when (result.interruption) {
@@ -771,7 +775,7 @@ class Evaluator(
             memory.enterScope()
             val element = getNext()
             memory.declareVar(named, Entity(named, false, element, getSignature(element)))
-            tracer.runtimeForEach(numIterations, iterable, element)
+            tracer?.runtimeForEach(numIterations, iterable, element)
             val result = eval(body)
             memory.leaveScope()
             if (result is Entity) {
@@ -833,7 +837,7 @@ class Evaluator(
         while (if (conditional == null) true else booleanExpr(conditional).get()) {
             numIterations++
             // Auto Scopped
-            tracer.runtimeFor(numIterations)
+            tracer?.runtimeFor(numIterations)
             val result = eval(forLoop.body)
             // Scope -> Memory -> Array
             if (result is Entity) {
@@ -900,15 +904,14 @@ class Evaluator(
 
     override fun ifFunction(ifExpr: IfStatement): Any {
         val conditionSuccess = booleanExpr(ifExpr.condition).get()
-        val body = if (conditionSuccess) ifExpr.thenBody else ifExpr.elseBody
-        // Auto Scopped
-        if (body != null) return eval(body)
-        return EBool(conditionSuccess)
+        // Here it would be best if we could add a fallback NONE value that
+        // would prevent us from doing a lot of if checks at runtime
+        return eval(if (conditionSuccess) ifExpr.thenBody else ifExpr.elseBody)
     }
 
     override fun function(function: FunctionExpr): Any {
         memory.declareFn(function.name, function)
-        tracer.declareFn(function.name, function.arguments)
+        tracer?.declareFn(function.name, function.arguments)
         return EBool(true)
     }
 
