@@ -33,17 +33,17 @@ class Executor {
 
     fun loadMainFile(sourceFile: String) {
         try {
-            mainEvaluator.eval(mainParser.parse(getTokens(sourceFile)))
+            mainEvaluator.mainEval(mainParser.parse(getTokens(sourceFile)))
         } catch (e: ShutdownException) {
             standardOutput.println("Executor was shutdown")
         }
     }
 
-    fun loadMainSource(source: String) {
+    fun loadMainSource(source: String): Any {
         try {
-            mainEvaluator.eval(mainParser.parse(Lexer(source).tokens))
+            return mainEvaluator.eval(mainParser.parse(Lexer(source).tokens))
         } catch (e: ShutdownException) {
-            standardOutput.println("Executor was shutdown")
+            throw RuntimeException("Executor was shutdown")
         }
     }
 

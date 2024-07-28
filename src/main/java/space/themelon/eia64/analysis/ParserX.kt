@@ -93,23 +93,28 @@ class ParserX(private val executor: Executor) {
 
         var curlyBracesCount = 0
 
-        fun handleFn() {
-            val public = true
+        fun handleFn(visible: Boolean) {
             // A function, now we parse its signature!
-            val reference = functionOutline(public)
+            val reference = functionOutline(visible)
             // Predefine all the outlines!
             manager.defineSemiFn(reference.name, reference)
         }
 
         while (!isEOF()) {
             val token = next()
-            when (token.type) {
+            when (val type = token.type) {
                 Type.OPEN_CURLY -> curlyBracesCount++
                 Type.CLOSE_CURLY -> {
                     if (curlyBracesCount == 0) break
                     else curlyBracesCount--
                 }
-                Type.FUN -> handleFn()
+                Type.FUN -> handleFn(false)
+                Type.VISIBLE, Type.INVISIBLE -> {
+                    if (isNext(Type.FUN)) {
+                        skip()
+                        handleFn(type == Type.VISIBLE)
+                    }
+                }
                 else -> { }
             }
         }
@@ -403,19 +408,6 @@ class ParserX(private val executor: Executor) {
             Sign.UNIT
         }
 
-        //println("Parsed function outline $name")
-        //println("Parsed function outline $requiredArgs")
-
-        //if (isNext(Type.ASSIGNMENT)) {
-            //skip()
-            //if (returnSignature == Sign.NONE) {
-                // e.g. fn meow() = "hello world"
-                // here return signature is auto decided based on return content
-                //returnSignature = body.sig()
-                //reference.returnSignature = returnSignature
-            //}
-        //}
-
         return FunctionReference(
             where,
             name,
@@ -435,6 +427,7 @@ class ParserX(private val executor: Executor) {
         manager.enterScope()
         reference.parameters.forEach { manager.defineVariable(it.first, true, it.second, false) }
 
+        println(reference.parameters)
         val body: Expression = if (isNext(Type.ASSIGNMENT)) {
             skip()
             parseNext()
@@ -960,10 +953,10 @@ class ParserX(private val executor: Executor) {
                         Alpha(token, -2, name, Sign.NONE, true)
                     else
                         // Unresolved name
-                        Alpha(token, -4, name, Sign.NONE, true)
+                        Alpha(token, -4, name, Sign.NONE, false)
                 } else {
                     // classic variable access
-                    Alpha(token, vrReference.index, name, vrReference.signature, false)
+                    Alpha(token, vrReference.index, name, vrReference.signature, true)
                 }
             }
             Type.CLASS_VALUE -> parseType(token)

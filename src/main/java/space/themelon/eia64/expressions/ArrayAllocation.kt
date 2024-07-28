@@ -15,8 +15,10 @@ class ArrayAllocation(
     override fun <R> accept(v: Visitor<R>) = v.arrayAllocation(this)
 
     override fun sig(): Signature {
-        if (!matches(Sign.INT, size.sig())) {
-            where.error<String>("Array allocation expects an Int for array length, but got $size")
+        val gotSig = size.sig()
+        println(size)
+        if (!matches(Sign.INT, gotSig)) {
+            where.error<String>("Array allocation expects an Int for array length, but got $gotSig")
         }
         if (!matches(elementSignature, defaultValue.sig())) {
             where.error<String>("arralloc() element signature and default value does not match (type mismatch)")

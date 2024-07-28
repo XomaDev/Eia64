@@ -19,18 +19,9 @@ data class FunctionExpr(
 
     override fun sig(): Signature {
         body.sig()
-        if (body !is ExpressionList) {
-            val receivedSignature = body.sig()
-            if (!matches(returnSignature, receivedSignature)) {
-                where.error<String>("Promised return signature $returnSignature but got $receivedSignature")
-            }
-        } else {
-            val promised = returnSignature
-            val receivedSignature = body.returnSig()
-            if (!isVoid && receivedSignature != promised) {
-                where.error<String>("Promised return signature $returnSignature but got $receivedSignature")
-            }
-
+        val receivedSignature = if (body is ExpressionList) body.returnSig() else body.sig()
+        if (!isVoid && !matches(returnSignature, receivedSignature)) {
+            where.error<String>("Promised return signature $returnSignature but got $receivedSignature")
         }
         return Sign.NONE
     }

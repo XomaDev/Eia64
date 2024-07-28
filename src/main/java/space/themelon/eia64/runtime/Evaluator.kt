@@ -40,6 +40,16 @@ class Evaluator(
         evaluator = VoidEvaluator()
     }
 
+    fun mainEval(expr: Expression): Any {
+        val normalEvaluated = eval(expr)
+        val mainEvaluated = dynamicFnCall(
+            "main",
+            emptyArray(),
+            true, "")
+        if (mainEvaluated == null || mainEvaluated == "") return normalEvaluated
+        return mainEvaluated
+    }
+
     fun eval(expr: Expression) = expr.accept(evaluator)
 
     private fun unboxEval(expr: Expression) = unbox(eval(expr))
@@ -351,7 +361,6 @@ class Evaluator(
         val promisedSignature = cast.expectSignature
         val gotSignature = getSignature(result)
 
-        println(result)
         if (promisedSignature is ObjectExtension) {
             val promisedClass = promisedSignature.extensionClass
             if (result !is Evaluator) {
@@ -384,7 +393,6 @@ class Evaluator(
     }
 
     override fun nativeCall(call: NativeCall): Any {
-        val argsSize = call.arguments.size
         when (val type = call.call) {
             PRINT, PRINTLN -> {
                 var printCount = 0
@@ -396,7 +404,7 @@ class Evaluator(
                     executor.standardOutput.print(printable)
                 }
                 if (type == PRINTLN) executor.standardOutput.print('\n')
-                return EInt(printCount)
+                return Nothing.INSTANCE
             }
 
             READ, READLN -> {
@@ -404,9 +412,8 @@ class Evaluator(
             }
 
             SLEEP -> {
-                val millis = intExpr(call.arguments[0])
-                Thread.sleep(millis.get().toLong())
-                return millis
+                Thread.sleep(intExpr(call.arguments[0]).get().toLong())
+                return Nothing.INSTANCE
             }
 
             LEN -> {
@@ -502,7 +509,7 @@ class Evaluator(
 
                 val name = parts[1]
                 executor.addModule("$group/$name.eia", name)
-                return EBool(true)
+                return Nothing.INSTANCE
             }
 
             COPY -> {
@@ -525,7 +532,7 @@ class Evaluator(
             MEM_CLEAR -> {
                 // for clearing memory of the current class
                 memory.clearMemory()
-                return EBool(true)
+                return Nothing.INSTANCE
             }
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
@@ -647,7 +654,6 @@ class Evaluator(
         val callExpressions = callArgs.iterator()
 
         val argValues = ArrayList<Pair<String, Any>>() // used for logging only
-        // Pair<Pair<Parameter Name, Signature>, Call Value>
 
         val callValues = ArrayList<Pair<Pair<String, Signature>, Any>>()
         while (parameters.hasNext()) {
@@ -667,6 +673,7 @@ class Evaluator(
         }
         val result = unboxEval(fn.body)
         memory.leaveScope()
+        // Return the function itself as a unit
         if (fn.isVoid) return fn
         return result
     }

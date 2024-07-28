@@ -1,6 +1,7 @@
 package space.themelon.eia64
 
 import space.themelon.eia64.runtime.Executor
+import space.themelon.eia64.runtime.Nothing
 import java.util.*
 
 object EiaLive {
@@ -15,7 +16,10 @@ object EiaLive {
             val line = scanner.nextLine()
             if (line == "exit") break
             else if (line == "~~") {
-                executor.loadMainSource(buffer.toString())
+                val result = executor.loadMainSource(buffer.toString())
+                if (result !is Nothing) {
+                    println(result)
+                }
                 buffer = StringJoiner("\n")
             }
             else buffer.add(line)

@@ -13,6 +13,13 @@ data class Alpha(
     var mature: Boolean
 ) : Expression(where) {
 
+    init {
+        // happens to early defined functions
+        //if (!mature) {
+            //throw RuntimeException("Not mature $value")
+        //}
+    }
+
     override fun <R> accept(v: Visitor<R>) = v.alpha(this)
 
     // Verify -> child
