@@ -22,7 +22,6 @@ data class ExpressionList(
                 // this ensures there are no more statements after
                 // return statement is encountered
                 if (expressionItr.hasNext()) {
-                    println(expressionItr.next())
                     expr.where.error<String>("Cannot have more statements after return")
                 }
                 return expr.sig()

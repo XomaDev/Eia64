@@ -1,5 +1,13 @@
 package space.themelon.eia64
 
+import space.themelon.eia64.TerminalColors.BLUE
+import space.themelon.eia64.TerminalColors.BOLD
+import space.themelon.eia64.TerminalColors.CYAN
+import space.themelon.eia64.TerminalColors.GOLD
+import space.themelon.eia64.TerminalColors.GREEN
+import space.themelon.eia64.TerminalColors.PURPLE
+import space.themelon.eia64.TerminalColors.RESET
+import space.themelon.eia64.TerminalColors.YELLOW
 import space.themelon.eia64.signatures.Signature
 import java.io.PrintStream
 import java.util.*
@@ -7,22 +15,6 @@ import java.util.*
 class EiaTrace(
     private val output: PrintStream
 ) {
-
-    companion object {
-        private const val RESET: String = "\u001b[0m"
-        private const val BLACK: String = "\u001b[0;30m"
-        private const val RED: String = "\u001b[0;31m"
-        private const val GREEN: String = "\u001b[0;32m"
-        private const val YELLOW: String = "\u001b[0;33m"
-        private const val BLUE: String = "\u001b[0;34m"
-        private const val PURPLE: String = "\u001b[0;35m"
-        private const val CYAN: String = "\u001b[0;36m"
-        private const val WHITE: String = "\u001b[0;37m"
-        private const val BOLD: String = "\u001b[1m"
-        private const val UNDERLINE: String = "\u001b[4m"
-
-        const val GOLD: String = "\u001b[38;2;255;215;0m"
-    }
 
     private var scope = 0
 

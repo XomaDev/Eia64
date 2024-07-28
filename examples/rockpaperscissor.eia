@@ -20,25 +20,31 @@ private fn robotChoose(user: String): Array {
   return arrayOf(robot, 2)
 }
 
-println("Pick 'rock' 'paper' or 'scissor'")
+fn play() {
+  println("Pick 'rock' 'paper' or 'scissor'")
 
-until (true) {
-  print("Enter your choice: ")
-  let input = readln().lowercase()
-  if (input == "endgame") {
-    break
-  }
-  if (!(input == "rock" || input == "paper" || input == "scissor")) {
-    println("Invalid Choice, pick 'rock' 'paper' or 'scissor'")
-  } else {
-    let result = robotChoose(input)
-    println("Robot picked " + result[0])
-    if (result[1] == 1) {
-      println("You won!")
-      break
-    } else if (result[1] == 2) {
-      println("Ono! Human looses to Robot!")
+  until (true) {
+    print("Enter your choice: ")
+    let input = readln().lowercase()
+    if (input == "endgame") {
       break
     }
+    if (!(input == "rock" || input == "paper" || input == "scissor")) {
+      println("Invalid Choice, pick 'rock' 'paper' or 'scissor'")
+    } else {
+      let result = robotChoose(input)
+      println("Robot picked " + result[0])
+      if (result[1] == 1) {
+        println("You won!")
+        break
+      } else if (result[1] == 2) {
+        println("Ono! Human looses to Robot!")
+        break
+      }
+    }
   }
+}
+
+fn main() {
+  play()
 }

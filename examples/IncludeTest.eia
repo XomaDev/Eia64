@@ -2,10 +2,12 @@ include(
   "examples/Person"
 )
 
-let melon = new Person("Melon", "Ekita")
-let ekita = new Person("Ekita", "Melon")
+fn main() {
+  let melon = new Person("Melon", "Ekita")
+  let ekita = new Person("Ekita", "Melon")
 
-ekita.hello()
-melon.hello()
+  ekita.hello()
+  melon.hello()
 
-println(typeOf(melon))
+  println(typeOf(melon))
+}

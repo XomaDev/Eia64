@@ -20,8 +20,6 @@ private fn binarySearch(array: Array<Int>, x: Int): Int {
   return -1
 }
 
-println("Hello! I'm a binary searcher")
-
 private fn toNumberArray(array: Array<String>): Array<Int> {
   let size = len(array)
   let numeric = arrayOf<Int>(size, 0)
@@ -31,14 +29,21 @@ private fn toNumberArray(array: Array<String>): Array<Int> {
   return numeric
 }
 
-until (true) {
-  print("Enter numbers in ascending numbers seperated by commas: ")
-  var input = readln().trim()
-  until (input.contains(" ")) {
-    input = input.replace(" ", "")
+fn searches() {
+  println("Hello! I'm a binary searcher")
+  until (true) {
+    print("Enter numbers in ascending numbers seperated by commas: ")
+    var input = readln().trim()
+    until (input.contains(" ")) {
+      input = input.replace(" ", "")
+    }
+    let numbers = toNumberArray(input.split(","))
+    println("Now enter a number to search")
+    let target = int(readln())
+    println("Located at index " + binarySearch(numbers, target))
   }
-  let numbers = toNumberArray(input.split(","))
-  println("Now enter a number to search")
-  let target = int(readln())
-  println("Located at index " + binarySearch(numbers, target))
+}
+
+fn main() {
+  searches()
 }

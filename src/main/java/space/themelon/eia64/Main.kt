@@ -15,7 +15,7 @@ object Main {
         Executor.STD_LIB = stdlib.absolutePath
 
         if (args.size != 1 || args[0] == "live") {
-            EiaLiveOld.main(emptyArray<String>())
+            EiaLive(System.`in`, System.out)
         } else {
             val executor = Executor()
             val startTime = System.nanoTime()

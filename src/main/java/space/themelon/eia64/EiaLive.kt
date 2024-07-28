@@ -1,23 +1,34 @@
 package space.themelon.eia64
 
+import space.themelon.eia64.TerminalColors.BLUE_BG
+import space.themelon.eia64.TerminalColors.BOLD
+import space.themelon.eia64.TerminalColors.CYAN
+import space.themelon.eia64.TerminalColors.RESET
 import space.themelon.eia64.analysis.ParserX
-import space.themelon.eia64.io.FilteredInput
-import space.themelon.eia64.io.FilteredOutput
 import space.themelon.eia64.runtime.Executor
 import space.themelon.eia64.syntax.Lexer
+import java.io.InputStream
+import java.io.OutputStream
 import java.io.PrintStream
 import java.util.concurrent.atomic.AtomicReference
 
-class EiaLive(input: FilteredInput, output: FilteredOutput) {
+class EiaLive(
+    private val input: InputStream,
+    private val output: OutputStream
+) {
 
     companion object {
         private val DELETE_CODE = "\b \b".encodeToByteArray()
-        //private val OUTPUT_STYLE = "$CYAN$BOLD".encodeToByteArray()
-        //val SHELL_STYLE = "$RESET$BLUE_BG eia \$ $RESET ".toByteArray()
-        val SHELL_STYLE = "eia \$".toByteArray()
+
+        private val OUTPUT_STYLE = "$CYAN$BOLD".encodeToByteArray()
+        val SHELL_STYLE = "$RESET$BLUE_BG eia \$ $RESET ".toByteArray()
     }
 
-    private fun serve(input: FilteredInput, output: FilteredOutput) {
+    init {
+        serve()
+    }
+
+    private fun serve() {
         val executor = AtomicReference(Executor())
 
         fun writeShell() {
@@ -27,96 +38,71 @@ class EiaLive(input: FilteredInput, output: FilteredOutput) {
         writeShell()
 
         executor.get().apply {
-            standardInput = input.input
+            standardInput = input
             standardOutput = PrintStream(output)
         }
 
-        // TODO: implement Array Pattern -> Left -> Right
-        // Or vice versa when certain conditions are met Right -> Left
-        val codeByts = CodeByteArray()
-
-        fun getFilteredCode() = String(codeByts.get())
-            .replace(Regex("\\p{Cntrl}"), "")
-            .trim()
+        val sourceCode = StringBuilder()
+        fun getSourceCode(): String? = if (sourceCode.isEmpty()) null else {
+            val code = sourceCode.toString()
+            sourceCode.setLength(0)
+            code
+        }
 
         fun execute() {
-            val filteredCode = getFilteredCode()
-            if (filteredCode.isEmpty()) return
-            codeByts.reset()
-            //output.write(OUTPUT_STYLE)
-            //safeRun(output) {
-                executor.get().loadMainSource(filteredCode)
-            //}
+            val code = getSourceCode() ?: return
+            output.write(OUTPUT_STYLE)
+            runSafely(output) {
+                executor.get().loadMainSource(code)
+            }
             writeShell()
         }
 
         fun lex() {
-            val filteredCode = getFilteredCode()
-            if (filteredCode.isEmpty()) return
-            codeByts.reset()
-            //output.write(OUTPUT_STYLE)
+            val code = getSourceCode() ?: return
+            output.write(OUTPUT_STYLE)
             output.write(10)
 
-            //safeRun(output) {
-                Lexer(filteredCode).tokens.forEach {
+            runSafely(output) {
+                Lexer(code).tokens.forEach {
                     output.write(it.toString().encodeToByteArray())
                     output.write(10)
                 }
-            //}
+            }
 
             writeShell()
         }
 
         fun parse() {
-            println(String(codeByts.get()))
-            val filteredCode = getFilteredCode()
-            if (filteredCode.isEmpty()) return
-            codeByts.reset()
-            //output.write(OUTPUT_STYLE)
+            val code = getSourceCode() ?: return
+            output.write(OUTPUT_STYLE)
             output.write(10)
 
-            //safeRun(output) {
-                val trees = ParserX(Executor()).parse( Lexer(filteredCode).tokens)
+            runSafely(output) {
+                val nodes = ParserX(Executor()).parse(Lexer(code).tokens)
 
-                trees.expressions.forEach {
+                nodes.expressions.forEach {
                     output.write(it.toString().encodeToByteArray())
                     output.write(10)
                 }
-            //}
+            }
 
             writeShell()
         }
 
         while (true) {
-            val letterCode = input.read()
-            if (letterCode == -1) break
+            sourceCode.append(input.read())
+        }
+    }
 
-            when (letterCode.toChar()) {
-                // Delete Char
-                '\u007F' -> {
-                    if (codeByts.isNotEmpty()) {
-                        output.write(DELETE_CODE)
-                        codeByts.delete()
-                    }
-                }
-
-                // Ctrl C
-                '\u0003' -> break
-
-                // Ctrl E
-                '\u0005' -> execute()
-
-                '\u001B' -> {
-                    // Ignore Escape Characters
-                    input.read()
-                    input.read()
-                }
-
-                else -> {
-                    output.write(letterCode)
-                    codeByts.put(letterCode.toByte())
-                }
-            }
+    private fun runSafely(
+        output: OutputStream,
+        block: () -> Unit
+    ) {
+        try {
+            block()
+        } catch (e: Exception) {
+            output.write("${e.message.toString()}\n".encodeToByteArray())
         }
     }
 }

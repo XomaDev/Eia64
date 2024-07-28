@@ -108,7 +108,7 @@ class Lexer(private val source: String) {
 
     private fun parseString(): Token {
         val content = StringBuilder()
-        while (!isEOF()) {
+        while (true) {
             var c = next()
             if (c == '\"') break
             else if (c == '\\') {

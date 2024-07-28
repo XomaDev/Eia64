@@ -28,15 +28,33 @@ class ParserX(private val executor: Executor) {
 
         val expressions = ArrayList<Expression>()
         parseScopeOutline()
-        while (!isEOF()) expressions.add(parseNext())
+        while (!isEOF()) expressions.add(parseClass())
         if (Executor.DEBUG) expressions.forEach { println(it) }
         parsed = ExpressionList(expressions)
         parsed.sig() // necessary
         return parsed
     }
 
+    private fun parseClass(): Expression {
+        val token = next()
+        if (token.flags.isNotEmpty()) {
+            when (token.flags[0]) {
+                Flag.V_KEYWORD -> return variableDeclaration(false, token)
+                Flag.MODIFIER -> return handleModifier(token)
+                else -> { }
+            }
+        }
+        when (token.type) {
+            Type.FUN -> return fnDeclaration()
+            Type.INCLUDE -> return includeStatement()
+            else -> { }
+        }
+        return token.error("Unexpected token")
+    }
+
+
     // make sure to update canParseNext() when we add stuff here!
-    private fun parseNext(): Expression {
+    private fun parseStatements(): Expression {
         val token = next()
         if (token.flags.isNotEmpty()) {
             when (token.flags[0]) {
@@ -51,7 +69,6 @@ class ParserX(private val executor: Executor) {
             Type.IF -> ifDeclaration(token)
             Type.FUN -> fnDeclaration()
             Type.SHADO -> shadoDeclaration()
-            Type.INCLUDE -> includeStatement()
             Type.NEW -> newStatement(token)
             Type.THROW -> throwStatement(token)
             Type.WHEN -> whenStatement(token)
@@ -108,9 +125,9 @@ class ParserX(private val executor: Executor) {
                     if (curlyBracesCount == 0) break
                     else curlyBracesCount--
                 }
-                Type.FUN -> handleFn(false)
+                Type.FUN -> if (curlyBracesCount == 0) handleFn(false)
                 Type.VISIBLE, Type.INVISIBLE -> {
-                    if (isNext(Type.FUN)) {
+                    if (curlyBracesCount == 0 && isNext(Type.FUN)) {
                         skip()
                         handleFn(type == Type.VISIBLE)
                     }
@@ -132,7 +149,7 @@ class ParserX(private val executor: Executor) {
         }
     }
 
-    private fun throwStatement(token: Token) = ThrowExpr(token, parseNext())
+    private fun throwStatement(token: Token) = ThrowExpr(token, parseStatements())
 
     private fun includeStatement(): Expression {
         expectType(Type.OPEN_CURVE)
@@ -222,7 +239,7 @@ class ParserX(private val executor: Executor) {
         // which may make it harder to debug the Parser.
 
         expectType(Type.OPEN_CURVE)
-        val expr = parseNext()
+        val expr = parseStatements()
         expectType(Type.CLOSE_CURVE)
         return expr
     }
@@ -244,7 +261,7 @@ class ParserX(private val executor: Executor) {
             if (p.type == Type.CLOSE_CURLY) {
                 where.error<String>("Expected else branch for the when statement")
             }
-            matches.add(parseNext() to readStatement())
+            matches.add(parseStatements() to readStatement())
         }
         expectType(Type.ELSE)
         val elseBranch = readStatement()
@@ -273,14 +290,14 @@ class ParserX(private val executor: Executor) {
                 expectType(Type.COLON)
 
                 skip()
-                val from = parseNext()
+                val from = parseStatements()
                 expectType(Type.TO)
-                val to = parseNext()
+                val to = parseStatements()
 
                 var by: Expression? = null
                 if (isNext(Type.BY)) {
                     skip()
-                    by = parseNext()
+                    by = parseStatements()
                 }
                 expectType(Type.CLOSE_CURVE)
                 manager.enterScope()
@@ -305,7 +322,7 @@ class ParserX(private val executor: Executor) {
     private fun forEach(where: Token): ForEach {
         val iName = readAlpha()
         expectType(Type.IN)
-        val entity = parseNext()
+        val entity = parseStatements()
         expectType(Type.CLOSE_CURVE)
 
         val elementSignature = when (val iterableSignature = entity.sig()) {
@@ -331,11 +348,11 @@ class ParserX(private val executor: Executor) {
         where: Token,
     ): ForLoop {
         manager.enterScope()
-        val initializer = if (isNext(Type.COMMA)) null else parseNext()
+        val initializer = if (isNext(Type.COMMA)) null else parseStatements()
         expectType(Type.COMMA)
-        val conditional = if (isNext(Type.COMMA)) null else parseNext()
+        val conditional = if (isNext(Type.COMMA)) null else parseStatements()
         expectType(Type.COMMA)
-        val operational = if (isNext(Type.CLOSE_CURVE)) null else parseNext()
+        val operational = if (isNext(Type.CLOSE_CURVE)) null else parseStatements()
         expectType(Type.CLOSE_CURVE)
         // double layer scope wrapping
         // Scope: Automatic
@@ -366,7 +383,7 @@ class ParserX(private val executor: Executor) {
                     if (expectedSignature == Sign.NONE) {
                         null
                     } else {
-                        val expr = parseNext()
+                        val expr = parseStatements()
                         val gotSignature = expr.sig()
                         if (!matches(expectedSignature, gotSignature)) {
                             token.error<String>("Was expecting return type of $expectedSignature but got $gotSignature")
@@ -375,7 +392,7 @@ class ParserX(private val executor: Executor) {
                         expr
                     }
                 }
-                Type.USE -> parseNext()
+                Type.USE -> parseStatements()
                 else -> null
             }
         )
@@ -427,10 +444,9 @@ class ParserX(private val executor: Executor) {
         manager.enterScope()
         reference.parameters.forEach { manager.defineVariable(it.first, true, it.second, false) }
 
-        println(reference.parameters)
         val body: Expression = if (isNext(Type.ASSIGNMENT)) {
             skip()
-            parseNext()
+            parseStatements()
         } else {
             manager.expectReturn(reference.returnSignature) {
                 expressions()
@@ -468,7 +484,7 @@ class ParserX(private val executor: Executor) {
         expectType(Type.CLOSE_CURVE)
         val body = if (isNext(Type.ASSIGNMENT)) {
             skip()
-            parseNext()
+            parseStatements()
         } else expressions() // Fully Manual Scopped
         manager.leaveScope()
         return Shadow(names, body)
@@ -500,7 +516,7 @@ class ParserX(private val executor: Executor) {
         //  e.g., IfExpr, Until, For
         if (peek().type == Type.OPEN_CURLY) return autoScopeBody()
         manager.enterScope()
-        return Scope(parseNext(), manager.leaveScope())
+        return Scope(parseStatements(), manager.leaveScope())
     }
 
     private fun autoScopeBody(): Scope {
@@ -510,7 +526,7 @@ class ParserX(private val executor: Executor) {
 
     private fun unscoppedBodyExpr(): Expression {
         if (peek().type == Type.OPEN_CURLY) return expressions()
-        return parseNext()
+        return parseStatements()
     }
 
     private fun expressions(): Expression {
@@ -520,7 +536,7 @@ class ParserX(private val executor: Executor) {
         if (peek().type == Type.CLOSE_CURLY)
             return ExpressionList(expressions)
         while (!isEOF() && peek().type != Type.CLOSE_CURLY)
-            expressions.add(parseNext())
+            expressions.add(parseStatements())
         expectType(Type.CLOSE_CURLY)
         // such optimisations may alter expressions behaviour
         // if (expressions.size == 1) return expressions[0]
@@ -603,11 +619,11 @@ class ParserX(private val executor: Executor) {
         return when (nextToken.type) {
             Type.ASSIGNMENT -> {
                 skip()
-                parseNext()
+                parseStatements()
             }
 
             Type.OPEN_CURVE -> shadoDeclaration()
-            Type.OPEN_CURLY -> parseNext()
+            Type.OPEN_CURLY -> parseStatements()
             else -> nextToken.error("Unexpected variable expression")
         }
     }
@@ -667,7 +683,7 @@ class ParserX(private val executor: Executor) {
                 Type.OPEN_SQUARE -> {
                     // array access
                     val where = next()
-                    val expr = parseNext()
+                    val expr = parseStatements()
                     expectType(Type.CLOSE_SQUARE)
                     ArrayAccess(left.marking!!, left, expr)
                 }
@@ -867,7 +883,7 @@ class ParserX(private val executor: Executor) {
         when (peek().type) {
             Type.OPEN_CURVE -> {
                 skip()
-                val expr = parseNext()
+                val expr = parseStatements()
                 expectType(Type.CLOSE_CURVE)
                 return expr
             }
@@ -902,16 +918,16 @@ class ParserX(private val executor: Executor) {
                 expectType(Type.RIGHT_DIAMOND)
 
                 expectType(Type.OPEN_CURVE)
-                val size = parseNext()
+                val size = parseStatements()
                 expectType(Type.COMMA)
-                val defaultValue = parseNext()
+                val defaultValue = parseStatements()
                 expectType(Type.CLOSE_CURVE)
 
                 return ArrayAllocation(token, elementSignature, size, defaultValue)
             }
         }
         back()
-        if (canParseNext()) return parseNext()
+        if (canParseNext()) return parseStatements()
         return token.error("Unexpected token")
     }
 
@@ -921,7 +937,7 @@ class ParserX(private val executor: Executor) {
         if (peek().type != Type.CLOSE_CURVE) {
             while (true) {
                 // usable() makes sure values are not void
-                arrayElements.add(parseNext())
+                arrayElements.add(parseStatements())
                 val next = next()
                 if (next.type == Type.CLOSE_CURVE) break
                 else if (next.type != Type.COMMA) next.error<String>("Expected comma for array element separator")
@@ -962,7 +978,7 @@ class ParserX(private val executor: Executor) {
             Type.CLASS_VALUE -> parseType(token)
 
             Type.OPEN_CURVE -> {
-                val expr = parseNext()
+                val expr = parseStatements()
                 expectType(Type.CLOSE_CURVE)
                 expr
             }
@@ -1002,7 +1018,7 @@ class ParserX(private val executor: Executor) {
         if (!isEOF() && peek().type == Type.CLOSE_CURVE)
             return expressions
         while (!isEOF()) {
-            expressions.add(parseNext())
+            expressions.add(parseStatements())
             if (!isNext(Type.COMMA)) break
             skip()
         }

@@ -116,7 +116,9 @@ private fn evaluate(expr: String) {
   println(execute(parsed))
 }
 
-until (true) {
-  print("> ")
-  evaluate(readln())
+fn main() {
+  until (true) {
+    print("> ")
+    evaluate(readln())
+  }
 }

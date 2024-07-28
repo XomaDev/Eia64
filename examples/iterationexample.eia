@@ -3,6 +3,13 @@ include(
   static:std:string
 )
 
+fn main() {
+  let callback(sequence: String) {
+    println("Callback received: " + sequence)
+  }
+  iterateEveryN(4, "HACKCLUB!", callback)
+}
+
 private fn iterateEveryN(n: Int, text: String, callback: Unit) {
   n = copy(n)
   var j = 0
@@ -15,8 +22,3 @@ private fn iterateEveryN(n: Int, text: String, callback: Unit) {
     j = till
   }
 }
-
-let callback(sequence: String) {
-  println("Callback received: " + sequence)
-}
-iterateEveryN(4, "HACKCLUB!", callback)

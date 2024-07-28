@@ -16,7 +16,6 @@ class ArrayAllocation(
 
     override fun sig(): Signature {
         val gotSig = size.sig()
-        println(size)
         if (!matches(Sign.INT, gotSig)) {
             where.error<String>("Array allocation expects an Int for array length, but got $gotSig")
         }
