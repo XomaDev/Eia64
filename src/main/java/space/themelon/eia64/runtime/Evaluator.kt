@@ -458,6 +458,7 @@ class Evaluator(
                     Sign.INT -> obj
                     Sign.CHAR -> EInt((obj as EChar).get().code)
                     Sign.STRING -> EInt(obj.toString().toInt())
+                    Sign.FLOAT -> EInt((obj as EFloat).get().toInt())
                     else -> throw RuntimeException("Unknown type for int() cast $objType")
                 }
             }

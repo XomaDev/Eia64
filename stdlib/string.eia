@@ -195,7 +195,7 @@ visible fn split(self: String, delimiter: String): Array<String> {
   return arrayOf(self)
 }
 
-fn size(self: String): Int = len(self)
+visible fn size(self: String): Int = len(self)
 
 fn numberFormatError(string: String) {
     throw "toInt() Number Format Error for string \"" + string + "\""

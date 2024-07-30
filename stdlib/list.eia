@@ -36,7 +36,7 @@ fn checkBounds(at: Int) {
 
 visible fn get(at: Int): Any {
   checkBounds(at)
-  := list[at]
+  return list[at]
 }
 
 visible fn set(element: Any, at: Int) {
@@ -96,9 +96,9 @@ visible fn clear() {
   index = 0
 }
 
-visible fn arrayOfRange(from: Int, end: Int) {
+visible fn arrayOfRange(from: Int, end: Int): Array {
   checkBounds(from)
-  checkBounds(end)
+  checkBounds(end - 1)
 
   let sublistSize = end - from
   let subarray = arrayOf<Any>(sublistSize, 0)
@@ -109,11 +109,13 @@ visible fn arrayOfRange(from: Int, end: Int) {
   return subarray
 }
 
+visible fn toArray(): Array = arrayOfRange(0, index)
+
 visible fn string(): String {
   if (size == 0) return "[]"
   var result = "["
-  each (element in list) {
-    result += str(element) + ", "
+  for (var i = 0, i < index, i++) {
+    result += str(list[i]) + ", "
   }
   result = result.part(0, result.size() - 2)
   result += "]"

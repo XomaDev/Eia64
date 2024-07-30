@@ -3,9 +3,10 @@ visible fn max(a: Int, b: Int): Int = if (a >= b) a else b
 
 visible fn abs(a: Int): Int = if (a < 0) -a else a
 
-visible fn avg(nums: Array): Int {
+visible fn avg(nums: Array<Int>): Int {
     var sum = 0
-    each (num in nums)
-        sum = sum + num
+    for (num in nums) {
+      sum += num
+    }
     return sum / len(nums)
 }
