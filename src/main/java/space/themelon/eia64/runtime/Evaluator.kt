@@ -385,6 +385,10 @@ class Evaluator(
             }
             val castArrayType = promisedSignature.elementSignature
             val currentArrayType = gotSignature.elementSignature
+            // TODO:
+            //  Here we would need to verify all the element types and reassign signature
+            //  If cast is being from Array<Int> we need to ensure all elements of Array are of Int
+            //  before renaming signature to Array<Int>
             if (castArrayType != currentArrayType) {
                 cast.where.error<String>("Cannot cast array element type $currentArrayType into $castArrayType")
             }
@@ -798,7 +802,7 @@ class Evaluator(
         val by = if (itr.by == null) EInt(1) else intExpr(itr.by)
 
         val reverse = from > to
-        if (reverse) by.set(-by.get())
+        if (reverse) by.set(EInt(-by.get()))
 
         var numIterations = 0
         while (if (reverse) from >= to else from <= to) {

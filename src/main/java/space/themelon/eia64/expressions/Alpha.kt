@@ -10,23 +10,8 @@ data class Alpha(
     val index: Int,
     val value: String,
     val sign: Signature,
-    var mature: Boolean
 ) : Expression(where) {
 
-    init {
-        // happens to early defined functions
-        //if (!mature) {
-            //throw RuntimeException("Not mature $value")
-        //}
-    }
-
     override fun <R> accept(v: Visitor<R>) = v.alpha(this)
-
-    // Verify -> child
-    override fun sig(): Signature {
-        if (!mature) {
-            where.error<Expression>("Could not resolve name $value")
-        }
-        return sign
-    }
+    override fun sig() = sign
 }

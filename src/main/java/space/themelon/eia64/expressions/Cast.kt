@@ -19,6 +19,8 @@ data class Cast(
         val exprSign = expr.sig()
         // Allow casting from Any to <T>
         if (exprSign == Sign.ANY) return expectSignature
+        // TODO: check/add this condition at runtime
+        if (expectSignature == Sign.ANY) return Sign.ANY
 
         // Object to Object<N>
         if (expectSignature is ObjectExtension) {

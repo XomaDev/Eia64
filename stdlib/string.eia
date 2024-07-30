@@ -157,7 +157,7 @@ visible fn isNumeric(self: String): Bool {
  return true
 }
 
-visible fn toCharArray(self: String): Array {
+visible fn toCharArray(self: String): Array<Char> {
   let charCount = len(self)
   ; Allocate a char array
   let chars = arrayOf<Char>(charCount, ' ')
@@ -196,7 +196,6 @@ visible fn split(self: String, delimiter: String): Array<String> {
 }
 
 fn size(self: String): Int = len(self)
-
 
 fn numberFormatError(string: String) {
     throw "toInt() Number Format Error for string \"" + string + "\""
