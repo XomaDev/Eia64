@@ -20,7 +20,7 @@ class EiaLive(
     companion object {
         private val INTRO = """
             Eia64 Dev 2.1
-            Type "debug" to enable debug mode
+            Type "debug" to toggle debug mode
             
             
         """.trimIndent().encodeToByteArray()
@@ -63,8 +63,11 @@ class EiaLive(
         val scanner = Scanner(input)
         while (true) {
             val line = scanner.nextLine()
-            if (line == "debug") Executor.DEBUG = true
-            if (!helper.addLine(line)) {
+            if (line == "debug") {
+                Executor.DEBUG = !Executor.DEBUG
+                output.write(SHELL_STYLE)
+            }
+            else if (!helper.addLine(line)) {
                 // There's some more code that needs to be typed in
                 output.write(PENDING_SHELL_STYLE)
             }
