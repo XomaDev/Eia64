@@ -3,7 +3,7 @@ Eia64 is an interpreted language that draws inspiration from the lovely syntax o
 
 Look at asciinema recording [here](https://asciinema.org/a/666650).
 
-Language is extensively documented at [themelon.space/eia](https://themelon.space/eia)
+Language is extensively documented at [Eia Docs](https://eia-docs.vercel.app/)
 
 `/stdlib` is where the standard library of Eia is located, it supports `string`, `array` and some `math`.\
 `/examples` are some really cool codes written in Eia 👀
@@ -16,6 +16,12 @@ Clone the repository
 
 ```bash
 git clone https://github.com/XomaDev/Eia64
+```
+
+Usage of the Eia binary:
+
+```
+java -jar Eia64.jar [debug] live|source_file_path
 ```
 
 ### Live Mode

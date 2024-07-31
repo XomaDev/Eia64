@@ -55,6 +55,7 @@ private fn eatOperator(): String {
   let op = next().trim()
   if (SUPPORTED_OPERATORS.contains(op)) return op
   throw "Unknown OP Code: " + op
+  return "never reached"
 }
 
 private fn parse(): Any {
