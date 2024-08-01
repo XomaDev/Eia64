@@ -500,11 +500,7 @@ class Evaluator(
                 })
             }
 
-            TYPE_OF -> {
-                // We return EType to the user instead of a plain
-                // Signature String
-                return EType(getSignature(unboxEval(call.arguments[0])))
-            }
+            TYPE_OF -> return EType(getSignature(unboxEval(call.arguments[0])))
 
             INCLUDE -> {
                 val obj = unboxEval(call.arguments[0])

@@ -8,8 +8,9 @@ import java.io.File
 class Executor {
 
     companion object {
-        var DEBUG = false
-        const val LOGS_PIPE_PATH = "/tmp/pipe1" // where logs are displayed
+        var DEBUG = true
+        // where runtime logs are displayed
+        var LOGS_PIPE_PATH = "/tmp/pipe1"
 
         var STD_LIB = "" // will be set
         var EXECUTION_DIRECTORY: String = File(System.getProperty("user.dir")).absolutePath

@@ -14,3 +14,7 @@ visible fn init(name: String, _age: Int) {
 visible fn printUser() {
   println(format("Person named %s of age %d", person, age))
 }
+
+visible fn string(): String {
+  return "Person(name=" + person + ", age=" + age + ")"
+}
