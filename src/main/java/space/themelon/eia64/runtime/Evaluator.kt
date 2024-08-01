@@ -532,7 +532,12 @@ class Evaluator(
                 return EInt(Random.nextInt(from.get(), to.get()))
             }
 
-            EXIT -> exitProcess(intExpr(call.arguments[0]).get())
+            // don't do a direct exitProcess(n), Eia could be running in a server
+            // you don't need the entire server to shut down
+            EXIT -> {
+                Executor.EIA_SHUTDOWN(intExpr(call.arguments[0]).get())
+                return EBool(true) // never reached (hopefully?)
+            }
 
             MEM_CLEAR -> {
                 // for clearing memory of the current class

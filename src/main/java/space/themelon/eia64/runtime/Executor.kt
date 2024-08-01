@@ -4,6 +4,7 @@ import space.themelon.eia64.analysis.ParserX
 import space.themelon.eia64.syntax.Lexer
 import space.themelon.eia64.syntax.Token
 import java.io.File
+import kotlin.system.exitProcess
 
 class Executor {
 
@@ -14,6 +15,11 @@ class Executor {
 
         var STD_LIB = "" // will be set
         var EXECUTION_DIRECTORY: String = File(System.getProperty("user.dir")).absolutePath
+
+        // This unit could be overridden to replace default exitProcess() behaviour
+        // When you are demonstrating Eia for e.g., in a server, you shouldn't to allow a random
+        // dude to shut down your whole server by doing exit(n) in Eia
+        var EIA_SHUTDOWN: (Int) -> Unit = { exitCode -> exitProcess(exitCode) }
     }
 
     init {
