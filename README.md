@@ -32,7 +32,7 @@ and tada! You have a fully interactive shell
 
 If you are afraid of Git, you can try out our SSH version! 👀
 
-```shell
+```bash
 ssh -p 2121 hackclub.app
 ```
 
@@ -48,3 +48,8 @@ You can find all the docs at [eia-docs.vercel.app](https://eia-docs.vercel.app)
 
 - Eia SSH server: [XomaDev/EiaAPI](https://github/XomaDev/EiaAPI)
 - Eia docs: [XomaDev/Eia-Docs](https://github/XomaDev/eia-docs)
+
+## Credits
+
+Thanks to [HackClub](https://hackclub.com/) and the community! Especially the lang-jam event and the Arcade. <b><3</b> \
+It filled me with enthusiasm and encouragement for more than 2 years.
