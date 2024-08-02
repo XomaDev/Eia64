@@ -47,9 +47,11 @@ class EiaLive(
 
         val helper = CompletionHelper(
             ready = { tokens ->
-                output.write(OUTPUT_STYLE)
-                runSafely(output) {
-                    executor.get().loadMainTokens(tokens)
+                if (tokens.isNotEmpty()) {
+                    output.write(OUTPUT_STYLE)
+                    runSafely(output) {
+                        executor.get().loadMainTokens(tokens)
+                    }
                 }
                 output.write(SHELL_STYLE)
             },
