@@ -8,7 +8,7 @@ enum class Type {
     LOGICAL_AND, LOGICAL_OR,
     BITWISE_AND, BITWISE_OR,
     EQUALS, NOT_EQUALS,
-    GREATER_THAN, LESSER_THAN,
+    RIGHT_DIAMOND, LEFT_DIAMOND,
     GREATER_THAN_EQUALS, LESSER_THAN_EQUALS,
     SLASH, TIMES, POWER,
     PLUS, NEGATE,
@@ -17,7 +17,7 @@ enum class Type {
     DOT,
     RIGHT_ARROW,
 
-    COLON,
+    COLON, DOUBLE_COLON,
     ASSIGNMENT,
     ADDITIVE_ASSIGNMENT, DEDUCTIVE_ASSIGNMENT,
     MULTIPLICATIVE_ASSIGNMENT, DIVIDIVE_ASSIGNMENT,
@@ -26,22 +26,30 @@ enum class Type {
     OPEN_CURLY, CLOSE_CURLY,
     COMMA,
 
-    E_INT, E_BOOL, E_STRING, E_CHAR,
-    E_ARRAY, E_ANY, E_UNIT,
+    IS,
+
+    E_NIL,
+    E_NUMBER, E_INT, E_FLOAT, E_BOOL, E_STRING, E_CHAR,
+    E_ARRAY, E_ANY, E_UNIT, E_OBJECT, E_TYPE,
 
     ALPHA,
-    E_TRUE, E_FALSE,
+    E_TRUE, E_FALSE, CLASS_VALUE,
+    NIL,
 
-    BOOL_CAST, INT_CAST, STRING_CAST,
-    TYPE,
+    VISIBLE, INVISIBLE,
+
+    BOOL_CAST, INT_CAST, FLOAT_CAST, CHAR_CAST, STRING_CAST,
+    TYPE_OF,
 
     LET, VAR, SHADO, WHEN,
     IF, ELSE,
-    ITR, TO, IN, BY,
+    EACH, TO, IN, BY, AS,
     FOR, UNTIL,
     FUN,
-    INCLUDE, COPY, ARRALLOC, ARRAYOF, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT,
-    STDLIB,
+    ARRAY_OF, MAKE_ARRAY,
+    COPY, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT, MEM_CLEAR,
+    INCLUDE, STD, STATIC, NEW,
+    THROW, TRY, CATCH,
 
     RETURN, BREAK, CONTINUE,
     ;
@@ -71,8 +79,8 @@ enum class Type {
                 it["=="] = StaticToken(EQUALS, arrayOf(Flag.EQUALITY, Flag.OPERATOR))
                 it["!="] = StaticToken(NOT_EQUALS, arrayOf(Flag.EQUALITY, Flag.OPERATOR))
 
-                it[">"] = StaticToken(GREATER_THAN, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
-                it["<"] = StaticToken(LESSER_THAN, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
+                it[">"] = StaticToken(RIGHT_DIAMOND, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
+                it["<"] = StaticToken(LEFT_DIAMOND, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
                 it[">="] = StaticToken(GREATER_THAN_EQUALS, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
                 it["<="] = StaticToken(LESSER_THAN_EQUALS, arrayOf(Flag.RELATIONAL, Flag.OPERATOR))
 
@@ -91,6 +99,7 @@ enum class Type {
                 it["->"] = StaticToken(RIGHT_ARROW)
 
                 it[":"] = StaticToken(COLON)
+                it["::"] = StaticToken(DOUBLE_COLON)
 
                 it["["] = StaticToken(OPEN_SQUARE, arrayOf(Flag.NONE))
                 it["]"] = StaticToken(CLOSE_SQUARE, arrayOf(Flag.NONE))
@@ -105,27 +114,41 @@ enum class Type {
             }
 
             KEYWORDS.let {
+                it["Nil"] = StaticToken(E_NIL, arrayOf(Flag.CLASS))
+                it["Number"] = StaticToken(E_NUMBER, arrayOf(Flag.CLASS))
                 it["Int"] = StaticToken(E_INT, arrayOf(Flag.CLASS))
+                it["Float"] = StaticToken(E_FLOAT, arrayOf(Flag.CLASS))
                 it["Bool"] = StaticToken(E_BOOL, arrayOf(Flag.CLASS))
                 it["String"] = StaticToken(E_STRING, arrayOf(Flag.CLASS))
                 it["Char"] = StaticToken(E_CHAR, arrayOf(Flag.CLASS))
                 it["Any"] = StaticToken(E_ANY, arrayOf(Flag.CLASS))
                 it["Array"] = StaticToken(E_ARRAY, arrayOf(Flag.CLASS))
                 it["Unit"] = StaticToken(E_UNIT, arrayOf(Flag.CLASS))
+                it["Object"] = StaticToken(E_OBJECT, arrayOf(Flag.CLASS))
+                it["Type"] = StaticToken(E_TYPE, arrayOf(Flag.CLASS))
 
+                it["nil"] = StaticToken(NIL, arrayOf(Flag.VALUE))
                 it["true"] = StaticToken(E_TRUE, arrayOf(Flag.VALUE, Flag.E_BOOL))
                 it["false"] = StaticToken(E_FALSE, arrayOf(Flag.VALUE, Flag.E_BOOL))
+                it["type"] = StaticToken(CLASS_VALUE, arrayOf(Flag.VALUE))
+
+                it["visible"] = StaticToken(VISIBLE, arrayOf(Flag.MODIFIER))
+                it["private"] = StaticToken(INVISIBLE, arrayOf(Flag.MODIFIER))
 
                 it["bool"] = StaticToken(BOOL_CAST, arrayOf(Flag.NATIVE_CALL))
                 it["int"] = StaticToken(INT_CAST, arrayOf(Flag.NATIVE_CALL))
+                it["float"] = StaticToken(FLOAT_CAST, arrayOf(Flag.NATIVE_CALL))
+                it["char"] = StaticToken(CHAR_CAST, arrayOf(Flag.NATIVE_CALL))
                 it["str"] = StaticToken(STRING_CAST, arrayOf(Flag.NATIVE_CALL))
 
-                it["type"] = StaticToken(TYPE, arrayOf(Flag.NATIVE_CALL))
+                it["is"] = StaticToken(IS, arrayOf(Flag.IS, Flag.OPERATOR))
 
-                it["include"] = StaticToken(INCLUDE, arrayOf(Flag.NATIVE_CALL))
+                it["typeOf"] = StaticToken(TYPE_OF, arrayOf(Flag.NATIVE_CALL))
                 it["copy"] = StaticToken(COPY, arrayOf(Flag.NATIVE_CALL))
-                it["arralloc"] = StaticToken(ARRALLOC, arrayOf(Flag.NATIVE_CALL))
-                it["arrayOf"] = StaticToken(ARRAYOF, arrayOf(Flag.NATIVE_CALL))
+
+                it["arrayOf"] = StaticToken(ARRAY_OF)
+                it["makeArray"] = StaticToken(MAKE_ARRAY)
+
                 it["time"] = StaticToken(TIME, arrayOf(Flag.NATIVE_CALL))
                 it["rand"] = StaticToken(RAND, arrayOf(Flag.NATIVE_CALL))
                 it["print"] = StaticToken(PRINT, arrayOf(Flag.NATIVE_CALL))
@@ -136,14 +159,22 @@ enum class Type {
                 it["len"] = StaticToken(LEN, arrayOf(Flag.NATIVE_CALL))
                 it["format"] = StaticToken(FORMAT, arrayOf(Flag.NATIVE_CALL))
                 it["exit"] = StaticToken(EXIT, arrayOf(Flag.NATIVE_CALL))
+                it["memclear"] = StaticToken(MEM_CLEAR, arrayOf(Flag.NATIVE_CALL))
 
-                it["stdlib"] = StaticToken(STDLIB)
+                it["std"] = StaticToken(STD)
+                it["static"] = StaticToken(STATIC)
+                it["include"] = StaticToken(INCLUDE)
+                it["new"] = StaticToken(NEW)
+                it["throw"] = StaticToken(THROW)
+                it["try"] = StaticToken(TRY)
+                it["catch"] = StaticToken(CATCH)
 
                 it["until"] = StaticToken(UNTIL, arrayOf(Flag.LOOP)) // auto scope
-                it["itr"] = StaticToken(ITR, arrayOf(Flag.LOOP)) // TODO check this later
+                it["each"] = StaticToken(EACH, arrayOf(Flag.LOOP)) // TODO check this later
                 it["to"] = StaticToken(TO)
                 it["in"] = StaticToken(IN)
                 it["by"] = StaticToken(BY)
+                it["as"] = StaticToken(AS)
                 it["for"] = StaticToken(FOR, arrayOf(Flag.LOOP)) // auto scope
 
                 it["let"] = StaticToken(LET, arrayOf(Flag.V_KEYWORD))

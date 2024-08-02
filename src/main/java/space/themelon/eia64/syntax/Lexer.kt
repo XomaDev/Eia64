@@ -1,6 +1,6 @@
 package space.themelon.eia64.syntax
 
-import space.themelon.eia64.Config
+import space.themelon.eia64.runtime.Executor
 import space.themelon.eia64.syntax.Type.*
 import space.themelon.eia64.syntax.Type.Companion.KEYWORDS
 
@@ -13,7 +13,7 @@ class Lexer(private val source: String) {
 
     init {
         while (!isEOF()) parseNext()
-        if (Config.DEBUG) {
+        if (Executor.DEBUG) {
             tokens.forEach { println(it) }
         }
     }
@@ -55,8 +55,13 @@ class Lexer(private val source: String) {
             '>' -> if (consumeNext('=')) createOp(">=") else createOp(">")
             '<' -> if (consumeNext('=')) createOp("<=") else createOp("<")
 
-            '.' -> createOp(".")
-            ':' -> if (consumeNext('=')) createOp(":=") else createOp(":")
+            '.' -> if (isNumeric(peek())) {
+                index--
+                parseNumeric()
+            } else createOp(".")
+            ':' -> if (consumeNext('=')) createOp(":=")
+                   else if (consumeNext(':')) createOp("::")
+                   else createOp(":")
             ',' -> createOp(",")
             '(' -> createOp("(")
             ')' -> createOp(")")
@@ -68,7 +73,10 @@ class Lexer(private val source: String) {
             '"' -> parseString()
             else -> {
                 if (isAlpha(char)) parseAlpha(char)
-                else if (isNumeric(char)) parseNumeric(char)
+                else if (isNumeric(char)) {
+                    index--
+                    parseNumeric()
+                }
                 else throw RuntimeException("Unknown operator at line $line: '$char'")
             }
         })
@@ -95,12 +103,12 @@ class Lexer(private val source: String) {
         }
         if (next() != '\'')
             reportError("Invalid syntax while using single quotes")
-        return Token(line, E_CHAR, arrayOf(Flag.VALUE), char)
+        return Token(line, E_CHAR, arrayOf(Flag.VALUE, Flag.CONSTANT_VALUE), char)
     }
 
     private fun parseString(): Token {
         val content = StringBuilder()
-        while (!isEOF()) {
+        while (true) {
             var c = next()
             if (c == '\"') break
             else if (c == '\\') {
@@ -108,13 +116,13 @@ class Lexer(private val source: String) {
                     'n' -> c = '\n'
                     't' -> c = '\t'
                     's' -> c = ' '
-                    '\'', '\"', '\\' -> break
+                    '\'', '\"', '\\' -> { c = e }
                     else -> reportError("Invalid escape character '$e'")
                 }
             }
             content.append(c)
         }
-        return Token(line, E_STRING, arrayOf(Flag.VALUE), content.toString())
+        return Token(line, E_STRING, arrayOf(Flag.VALUE, Flag.CONSTANT_VALUE), content.toString())
     }
 
     private fun parseAlpha(c: Char): Token {
@@ -131,16 +139,28 @@ class Lexer(private val source: String) {
         return token?.normalToken(line) ?: Token(line, ALPHA, arrayOf(Flag.VALUE), value)
     }
 
-    private fun parseNumeric(c: Char): Token {
+    private fun parseNumeric(): Token {
         val content = StringBuilder()
-        content.append(c)
-        while (!isEOF()) {
-            val p = peek()
-            if (isNumeric(p)) {
-                content.append(next())
-            } else break
+
+        while (!isEOF() && isNumeric(peek())) content.append(next())
+
+        val type: Type
+        val value: Any
+
+        if (!isEOF() && peek() == '.' && isNumeric(peekNext())) {
+            type = E_FLOAT
+            content.append('.')
+            next()
+            while (!isEOF() && isNumeric(peek())) content.append(next())
+            value = content.toString().toFloat()
+        } else {
+            type = E_INT
+            value = content.toString().toInt()
         }
-        return Token(line, E_INT, arrayOf(Flag.VALUE), content.toString().toInt())
+        return Token(line,
+            type,
+            arrayOf(Flag.VALUE, Flag.CONSTANT_VALUE),
+            value)
     }
 
     private fun isNumeric(c: Char) = c in '0'..'9'
@@ -167,5 +187,10 @@ class Lexer(private val source: String) {
     private fun peek(): Char {
         if (isEOF()) throw RuntimeException("Early EOF at line $line")
         return source[index]
+    }
+
+    private fun peekNext(): Char {
+        if (index + 1 > source.length) return '\u0000'
+        return source[index + 1]
     }
 }

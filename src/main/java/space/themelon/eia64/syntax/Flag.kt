@@ -2,6 +2,7 @@ package space.themelon.eia64.syntax
 
 enum class Flag {
     ASSIGNMENT_TYPE,
+    IS,
     LOGICAL_OR, LOGICAL_AND,
     BITWISE_OR, BITWISE_AND,
 
@@ -12,7 +13,9 @@ enum class Flag {
     CLASS,
     E_BOOL,
 
+    MODIFIER,
     VALUE,
+    CONSTANT_VALUE,
 
     V_KEYWORD,
 

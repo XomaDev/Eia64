@@ -11,7 +11,9 @@ class EBool(initialValue: Boolean): Primitive<EBool> {
     }
 
     override fun get() = boolValue
-    override fun stdlibName() = "bool"
+    override fun stdlibName(): String {
+        throw UnsupportedOperationException()
+    }
 
     override fun isCopyable() = true
     override fun copy() = EBool(boolValue)
