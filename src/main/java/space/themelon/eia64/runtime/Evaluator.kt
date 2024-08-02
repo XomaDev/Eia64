@@ -548,9 +548,21 @@ class Evaluator(
     }
 
     override fun throwExpr(throwExpr: ThrowExpr): Any {
-        throwExpr.where.error<String>(unboxEval(throwExpr.error).toString())
-        // End of Execution
-        throw RuntimeException()
+        val message = throwExpr.where.prepareError(unboxEval(throwExpr.error).toString())
+        throw EiaRuntimeException(message)
+    }
+
+    override fun tryCatch(tryCatch: TryCatch): Any {
+        try {
+            return unboxEval(tryCatch.tryBlock)
+        } catch (e: EiaRuntimeException) {
+            // manual scope handling begins
+            memory.enterScope()
+            memory.declareVar(tryCatch.catchIdentifier, EString(e.message))
+            val result = unboxEval(tryCatch.catchBlock)
+            memory.leaveScope()
+            return result
+        }
     }
 
     override fun scope(scope: Scope): Any {

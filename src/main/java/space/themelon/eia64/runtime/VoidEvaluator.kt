@@ -67,6 +67,10 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
+    override fun tryCatch(tryCatch: TryCatch): Any {
+        throw ShutdownException()
+    }
+
     override fun variable(variable: ExplicitVariable): Any {
         throw ShutdownException()
     }

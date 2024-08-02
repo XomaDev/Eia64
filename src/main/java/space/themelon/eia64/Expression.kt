@@ -26,6 +26,7 @@ abstract class Expression(
         fun include(include: Include): R
         fun new(new: NewObj): R
         fun throwExpr(throwExpr: ThrowExpr): R
+        fun tryCatch(tryCatch: TryCatch): R
         fun variable(variable: ExplicitVariable): R
         fun autoVariable(autoVariable: AutoVariable): R
         fun isStatement(isStatement: IsStatement): R

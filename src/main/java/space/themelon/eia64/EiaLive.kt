@@ -65,9 +65,10 @@ class EiaLive(
             val line = scanner.nextLine()
             if (line == "debug") {
                 Executor.DEBUG = !Executor.DEBUG
+                output.write(OUTPUT_STYLE)
+                println("Debug mode ${if (Executor.DEBUG) "Enabled" else "Disabled"}")
                 output.write(SHELL_STYLE)
-            }
-            else if (!helper.addLine(line)) {
+            } else if (!helper.addLine(line)) {
                 // There's some more code that needs to be typed in
                 output.write(PENDING_SHELL_STYLE)
             }

@@ -13,13 +13,15 @@ data class Token(
 
     @Throws(RuntimeException::class)
     fun <T> error(message: String): T {
+        throw RuntimeException(prepareError(message))
+    }
+
+    fun prepareError(message: String): String {
         val error = StringBuilder()
         error.append("[line $lineCount] [$type")
-        if (data != null) {
-            error.append(" '$data'")
-        }
+        if (data != null) error.append(" '$data'")
         error.append("] $message")
-        throw RuntimeException(error.toString())
+        return error.toString()
     }
 
     override fun toString(): String {

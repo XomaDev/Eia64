@@ -74,12 +74,13 @@ class ParserX(
             Type.FUN -> fnDeclaration()
             Type.SHADO -> shadoDeclaration()
             Type.NEW -> newStatement(token)
-            Type.INCLUDE -> return includeStatement()
-            Type.THROW -> throwStatement(token)
+            Type.INCLUDE -> includeStatement()
             Type.WHEN -> whenStatement(token)
+            Type.THROW -> throwStatement(token)
+            Type.TRY -> tryCatchStatement(token)
             else -> {
                 back()
-                return parseExpr(0)
+                parseExpr(0)
             }
         }
     }
@@ -101,8 +102,8 @@ class ParserX(
             Type.INCLUDE,
             Type.NEW,
             Type.THROW,
+            Type.TRY,
             Type.SHADO,
-            //Type.OPEN_SQUARE,
             Type.WHEN -> true
             else -> false
         }
@@ -154,6 +155,19 @@ class ParserX(
     }
 
     private fun throwStatement(token: Token) = ThrowExpr(token, parseStatement())
+
+    private fun tryCatchStatement(token: Token): TryCatch {
+        // try { ... } catch message { ... }
+        val tryBlock = autoBodyExpr()
+        expectType(Type.CATCH)
+        val catchIdentifier = readAlpha()
+        manager.enterScope()
+        manager.defineVariable(catchIdentifier, false, Sign.STRING, false)
+        val catchBody = unscoppedBodyExpr()
+        manager.leaveScope()
+
+        return TryCatch(token, tryBlock, catchIdentifier, catchBody)
+    }
 
     private fun includeStatement(): Expression {
         expectType(Type.OPEN_CURVE)
@@ -808,7 +822,7 @@ class ParserX(
         )
     }
 
-    // Whether the expression references an externally static
+    // Whether the expression references an external static
     // included class
     private fun isStatic(expression: Expression)
         = expression is Alpha && manager.staticClasses.contains(expression.value)
