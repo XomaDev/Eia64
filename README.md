@@ -2,7 +2,6 @@
 
 
 <a href="https://asciinema.org/a/zIBiB6Zh36CEppeWcOsKALxNn" target="_blank"><img src="https://asciinema.org/a/zIBiB6Zh36CEppeWcOsKALxNn.svg" /></a>
-![good.gif](good.gif)
 
 Eia64 is an interpreted language that draws inspiration from the lovely syntax of Kotlin and many other languages like Go.
 
