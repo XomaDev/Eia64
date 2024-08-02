@@ -15,6 +15,8 @@ Eia64 is an interpreted language that draws inspiration from the lovely syntax o
 - Decent support for tracing errors along with try-catch
 - Live trace ability — see how your code flows while it runs
 
+<hr>
+
 ## Quick start
 
 - Requires minimum Java version 11
@@ -42,17 +44,22 @@ and look what you got! You can try out Eia without installing it. 😎
 
 It's hosted on [Nest](https://github.com/hackclub/nest) by HackClub <b><3</b>
 
+<hr>
 
 ## Links
 
 - Eia SSH server: [XomaDev/EiaAPI](https://github/XomaDev/EiaAPI)
 - Eia docs: [XomaDev/Eia-Docs](https://github/XomaDev/eia-docs)
 
+<hr>
+
 ## Credits
 
 Thanks to [HackClub](https://hackclub.com/) and the community!
 Especially the lang-jam event and the Arcade. <b><3</b> \
 It filled me with enthusiasm and encouragement for more than 2 years.
+
+<hr>
 
 Enjoy!\
 Crafted with Love  ❤️\
