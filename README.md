@@ -42,7 +42,6 @@ and look what you got! You can try out Eia without installing it. 😎
 
 It's hosted on [Nest](https://github.com/hackclub/nest) by HackClub <b><3</b>
 
-You can find all the docs at [eia-docs.vercel.app](https://eia-docs.vercel.app)
 
 ## Links
 
@@ -51,5 +50,10 @@ You can find all the docs at [eia-docs.vercel.app](https://eia-docs.vercel.app)
 
 ## Credits
 
-Thanks to [HackClub](https://hackclub.com/) and the community! Especially the lang-jam event and the Arcade. <b><3</b> \
+Thanks to [HackClub](https://hackclub.com/) and the community!
+Especially the lang-jam event and the Arcade. <b><3</b> \
 It filled me with enthusiasm and encouragement for more than 2 years.
+
+Enjoy!\
+Crafted with Love  ❤️\
+Kumaraswamy B G • 16-year-old
