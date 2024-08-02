@@ -77,7 +77,6 @@ class ParserX(
             Type.INCLUDE -> return includeStatement()
             Type.THROW -> throwStatement(token)
             Type.WHEN -> whenStatement(token)
-            //Type.OPEN_SQUARE -> arrayStatement(token)
             else -> {
                 back()
                 return parseExpr(0)
@@ -849,6 +848,7 @@ class ParserX(
         Sign.NONE -> where.error("Signature type NONE has no module")
         Sign.ANY -> where.error("Signature type ANY has no module")
         Sign.CHAR -> where.error("Signature type CHAR has no module")
+        Sign.FLOAT -> where.error("Signature type FLOAT has no module")
         Sign.UNIT -> where.error("Signature type UNIT has no module")
         Sign.OBJECT -> where.error("Signature type OBJECT has no module") // (Raw Object sign)
         Sign.INT -> "eint"
@@ -901,26 +901,34 @@ class ParserX(
             else -> {}
         }
         val token = next()
-        if (token.hasFlag(Flag.VALUE)) {
-            val value = parseValue(token)
-            if (!token.hasFlag(Flag.CONSTANT_VALUE) // not a hard constant, like `123` or `"Hello, World"`
-                && !isEOF()
-                && peek().type == Type.OPEN_CURVE)
-                return unitCall(value)
-            return value
-        } else if (token.hasFlag(Flag.UNARY)) {
-            return UnaryOperation(token, token.type, parseTerm(), true)
-        } else if (token.hasFlag(Flag.NATIVE_CALL)) {
-            val arguments = callArguments()
-            return NativeCall(token, token.type, arguments)
-        } else if (token.type == Type.ARRAY_OF) {
-            // Used to allocate arrays
-            // let names = arralloc<String>(5, "default value")
-            // println(names[0])
-            if (isNext(Type.OPEN_CURVE)) {
-                skip()
-                return arrayStatement(token)
-            } else {
+        when {
+            token.hasFlag(Flag.VALUE) -> {
+                val value = parseValue(token)
+                if (!token.hasFlag(Flag.CONSTANT_VALUE) // not a hard constant, like `123` or `"Hello, World"`
+                    && !isEOF()
+                    && peek().type == Type.OPEN_CURVE)
+                    return unitCall(value)
+                return value
+            }
+            token.hasFlag(Flag.UNARY) -> return UnaryOperation(token, token.type, parseTerm(), true)
+            token.hasFlag(Flag.NATIVE_CALL) -> {
+                val arguments = callArguments()
+                return NativeCall(token, token.type, arguments)
+            }
+            token.type == Type.ARRAY_OF -> {
+                if (isNext(Type.OPEN_CURVE)) {
+                    skip()
+                    return arrayStatement(token)
+                } else {
+                    // not for array allocation, array declaration with initial elements
+                    expectType(Type.LEFT_DIAMOND)
+                    val elementSignature = readSignature(next())
+                    expectType(Type.RIGHT_DIAMOND)
+                    expectType(Type.OPEN_CURVE)
+                    return arrayStatementSignature(token, elementSignature)
+                }
+            }
+            token.type == Type.MAKE_ARRAY -> {
                 expectType(Type.LEFT_DIAMOND)
                 val elementSignature = readSignature(next())
                 expectType(Type.RIGHT_DIAMOND)
@@ -940,19 +948,30 @@ class ParserX(
     }
 
     private fun arrayStatement(token: Token): ArrayLiteral {
-        // an array declared using [ ]
+        // auto array where signature is decided based on elements
+        val arrayElements = parseArrayElements()
+        return ArrayLiteral(token, arrayElements)
+    }
+
+    private fun arrayStatementSignature(token: Token, signature: Signature): ExplicitArrayLiteral {
+        // there's an explicit set signature for the array
+        val arrayElements = parseArrayElements()
+        return ExplicitArrayLiteral(token, signature, arrayElements)
+    }
+
+    private fun parseArrayElements(): MutableList<Expression> {
         val arrayElements = mutableListOf<Expression>()
         if (peek().type != Type.CLOSE_CURVE) {
             while (true) {
-                // usable() makes sure values are not void
                 arrayElements.add(parseStatement())
                 val next = next()
-                if (next.type == Type.CLOSE_CURVE) break
-                else if (next.type != Type.COMMA) next.error<String>("Expected comma for array element separator")
+                val nextType = next.type
+
+                if (nextType == Type.CLOSE_CURVE) break
+                else if (nextType != Type.COMMA) next.error<String>("Expected comma for array element separator")
             }
         }
-        // Auto array, element-signature is selected based on array content
-        return ArrayLiteral(token, arrayElements)
+        return arrayElements
     }
 
     private fun parseValue(token: Token): Expression {

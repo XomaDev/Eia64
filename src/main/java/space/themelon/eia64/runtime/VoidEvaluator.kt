@@ -43,7 +43,7 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
-    override fun arrayCreation(arrayCreation: StrictArrayCreation): Any {
+    override fun explicitArrayLiteral(arrayCreation: ExplicitArrayLiteral): Any {
         throw ShutdownException()
     }
 

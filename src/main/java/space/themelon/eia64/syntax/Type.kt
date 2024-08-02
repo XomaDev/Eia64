@@ -46,7 +46,8 @@ enum class Type {
     EACH, TO, IN, BY, AS,
     FOR, UNTIL,
     FUN,
-    COPY, ARRAY_OF, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT, MEM_CLEAR,
+    ARRAY_OF, MAKE_ARRAY,
+    COPY, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT, MEM_CLEAR,
     INCLUDE, STD, STATIC, NEW,
     THROW,
 
@@ -145,10 +146,8 @@ enum class Type {
                 it["typeOf"] = StaticToken(TYPE_OF, arrayOf(Flag.NATIVE_CALL))
                 it["copy"] = StaticToken(COPY, arrayOf(Flag.NATIVE_CALL))
 
-                // Deprecated, now entire work is being done by arrayOf()
-                //it["arralloc"] = StaticToken(ARRALLOC)
-
                 it["arrayOf"] = StaticToken(ARRAY_OF)
+                it["makeArray"] = StaticToken(MAKE_ARRAY)
 
                 it["time"] = StaticToken(TIME, arrayOf(Flag.NATIVE_CALL))
                 it["rand"] = StaticToken(RAND, arrayOf(Flag.NATIVE_CALL))

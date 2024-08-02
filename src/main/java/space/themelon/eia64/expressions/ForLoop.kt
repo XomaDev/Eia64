@@ -19,6 +19,7 @@ data class ForLoop(
         initializer?.sig()
         conditional?.sig()
         operational?.sig()
+        body.sig()
 
         return Sign.NONE
     }

@@ -35,7 +35,7 @@ data class MethodCall(
             val suppliedArgSign = argIterator.next().sig()
 
             if (!matches(expectedArgSign, suppliedArgSign)) {
-                name.error<String>("Function $name expected $expectedArgSign for argument $argName but got $suppliedArgSign")
+                name.error<String>("Function $name expected ${expectedArgSign.logName()} for argument $argName but got ${suppliedArgSign.logName()}")
             }
         }
         return reference.returnSignature

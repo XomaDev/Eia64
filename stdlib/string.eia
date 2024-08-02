@@ -157,7 +157,7 @@ visible fn isNumeric(self: String): Bool {
   var hasDecimalPoint = false
 
   for (var i = 0, i < size, i++) {
-    let c = self[i]
+    let c = trimmed[i]
 
     if (c == '-' || c == '+' && i == 0) {
       continue

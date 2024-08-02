@@ -19,7 +19,6 @@ import java.util.Scanner
 import kotlin.collections.ArrayList
 import kotlin.math.pow
 import kotlin.random.Random
-import kotlin.system.exitProcess
 
 class Evaluator(
     val className: String,
@@ -103,7 +102,7 @@ class Evaluator(
 
     override fun array(literal: ArrayLiteral) = prepareArrayOf(literal.elements, literal.elementSignature())
 
-    override fun arrayCreation(arrayCreation: StrictArrayCreation) = 
+    override fun explicitArrayLiteral(arrayCreation: ExplicitArrayLiteral) =
         prepareArrayOf(arrayCreation.elements, arrayCreation.elementSignature)
 
     override fun arrayAllocation(arrayAllocation: ArrayAllocation): Any {
@@ -144,7 +143,6 @@ class Evaluator(
 
     override fun autoVariable(autoVariable: AutoVariable): Any {
         val name = autoVariable.name
-        //  println(autoVariable.expr)
         val value = unboxEval(autoVariable.expr)
         val signature = getSignature(value)
         memory.declareVar(

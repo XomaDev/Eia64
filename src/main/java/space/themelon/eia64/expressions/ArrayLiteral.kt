@@ -15,11 +15,11 @@ data class ArrayLiteral(
 
     override fun sig(): Signature {
         for (element in elements) element.sig() // Invoke on all sub-elements
-
         // We need to also store elements signature for array access
         return ArrayExtension(elementSignature())
     }
 
+    // also called by Evaluator
     fun elementSignature(): Signature {
         // dynamic deciding of array element signature based on content
         if (elements.isEmpty()) return Sign.ANY
