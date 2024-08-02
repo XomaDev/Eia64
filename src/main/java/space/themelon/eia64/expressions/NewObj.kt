@@ -11,19 +11,19 @@ data class NewObj(
     val where: Token,
     val name: String,
     val arguments: List<Expression>, // sig checked
-    val reference: FunctionReference? // of init() function
+    val reference: FunctionReference // of init() function
 ) : Expression(where) {
 
     override fun <R> accept(v: Visitor<R>) = v.new(this)
 
     override fun sig(): Signature {
-        if (reference == null) {
-            if (arguments.isNotEmpty()) {
-                where.error<String>("init() expects no arguments but ${arguments.size} were provided")
-                throw RuntimeException()
-            }
-            return ObjectExtension(name)
-        }
+//        if (reference == null) {
+//            if (arguments.isNotEmpty()) {
+//                where.error<String>("init() expects no arguments but ${arguments.size} were provided")
+//                throw RuntimeException()
+//            }
+//            return ObjectExtension(name)
+//        }
         val argSigns = reference.parameters
 
         val expectedArgsSize = argSigns.size

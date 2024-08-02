@@ -144,6 +144,7 @@ class Evaluator(
 
     override fun autoVariable(autoVariable: AutoVariable): Any {
         val name = autoVariable.name
+        //  println(autoVariable.expr)
         val value = unboxEval(autoVariable.expr)
         val signature = getSignature(value)
         memory.declareVar(
@@ -342,7 +343,7 @@ class Evaluator(
 
     override fun new(new: NewObj): Evaluator {
         val evaluator = executor.newEvaluator(new.name)
-        evaluator.dynamicFnCall("init", evaluateArgs(new.arguments), true)
+        fnInvoke(new.reference.fnExpression!!, evaluateArgs(new.arguments))
         tracer?.runtimeObjectCreation(new.name, evaluator)
         return evaluator
     }

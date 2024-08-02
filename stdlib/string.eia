@@ -148,13 +148,28 @@ visible fn isAlpha(self: String): Bool {
 }
 
 visible fn isNumeric(self: String): Bool {
-  if (startsWith(self, "-")) {
-    self = substring(self, 1)
+  var trimmed = trim(self)
+  var size = len(trimmed)
+
+  if (size == 0) return false
+
+  var hasDigits = false
+  var hasDecimalPoint = false
+
+  for (var i = 0, i < size, i++) {
+    let c = self[i]
+
+    if (c == '-' || c == '+' && i == 0) {
+      continue
+    } else if (contains("0123456789", str(c))) {
+      hasDigits = true
+    } else if (c == '.' && !hasDecimalPoint) {
+      hasDecimalPoint = true
+    } else {
+      return false
+    }
   }
-  for (ch in self) {
-    if (!contains("1234567890.", str(ch))) return false
-  }
- return true
+  return hasDigits
 }
 
 visible fn toCharArray(self: String): Array<Char> {

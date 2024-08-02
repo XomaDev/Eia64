@@ -233,10 +233,14 @@ class ParserX(
     private fun newStatement(token: Token): NewObj {
         val module = readAlpha()
         val arguments = callArguments()
+        val argsSize = arguments.size
+        val reference = executor.getModule(module).resolveGlobalFn(token, "init", argsSize)
+                    ?: token.error("Could not find init() function of argument size $argsSize")
         return NewObj(token,
             module,
             arguments,
-            executor.getModule(module).resolveGlobalFn(token, "init", arguments.size))
+            reference
+        )
     }
 
     private fun parseNextInBrace(): Expression {
