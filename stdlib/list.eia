@@ -2,12 +2,12 @@ include(
   static:std:string
 )
 
-var list = arrayOf<Any>(0, 0)
+var list = makeArray<Any>(0, 0)
 var size = 0
 var index = 0
 
 visible fn init(initSize: Int) {
-  list = arrayOf<Any>(initSize, 0)
+  list = makeArray<Any>(initSize, 0)
   size = initSize
   index = 0
 }
@@ -20,7 +20,7 @@ fn initArray(array: Array) {
 
 fn enlarge() {
   let newSize = size * 2
-  let newList = arrayOf<Any>(newSize, 0)
+  let newList = makeArray<Any>(newSize, 0)
   for (var i = 0, i < index, i++) {
     newList[i] = list[i]
   }
@@ -54,7 +54,7 @@ visible fn add(element: Any) {
 
 visible fn addAt(element: Any, at: Int) {
   checkBounds(at)
-  let newList = arrayOf<Any>(size + 1, 0)
+  let newList = makeArray<Any>(size + 1, 0)
   var j = 0
   for (var i = 0, i < size, i++) {
     if (i == at) {
@@ -101,7 +101,7 @@ visible fn arrayOfRange(from: Int, end: Int): Array {
   checkBounds(end - 1)
 
   let sublistSize = end - from
-  let subarray = arrayOf<Any>(sublistSize, 0)
+  let subarray = makeArray<Any>(sublistSize, 0)
 
   for (var i = 0, i < sublistSize, i++) {
     subarray[i] = list[from + i]

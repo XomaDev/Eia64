@@ -34,7 +34,7 @@ visible fn size(self: Array): Int = len(self)
 
 visible fn add(self: Array, element: Any): Any {
   let oldSize = len(self)
-  let newAlloc = arrayOf<Any>(oldSize + 1, 0)
+  let newAlloc = makeArray<Any>(oldSize + 1, 0)
   for (var i = 0, i < oldSize, i++)
     newAlloc[i] = self[i]
   newAlloc[oldSize] = element
@@ -43,7 +43,7 @@ visible fn add(self: Array, element: Any): Any {
 
 visible fn removeAt(self: Array, index: Int): Any {
   let oldSize = len(self)
-  let newAlloc = arrayOf<Any>(oldSize - 1, 0)
+  let newAlloc = makeArray<Any>(oldSize - 1, 0)
   var j = 0
   for (var i = 0, i < oldSize, i++)
     if (i != index)

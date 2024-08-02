@@ -175,7 +175,7 @@ visible fn isNumeric(self: String): Bool {
 visible fn toCharArray(self: String): Array<Char> {
   let charCount = len(self)
   ; Allocate a char array
-  let chars = arrayOf<Char>(charCount, ' ')
+  let chars = makeArray<Char>(charCount, ' ')
   for (var i = 0, i < charCount, i++)
     chars[i] = self[i]
   return chars
@@ -205,7 +205,7 @@ fn splitRecursive(self: String, delimiter: String): Any {
 visible fn split(self: String, delimiter: String): Array<String> {
   if (contains(self, delimiter)) {
     let not_flat = splitRecursive(self, delimiter)::Array
-    return not_flat.flatten(arrayOf<String>(not_flat.recursiveLen(), ""))::Array<String>
+    return not_flat.flatten(makeArray<String>(not_flat.recursiveLen(), ""))::Array<String>
   }
   return arrayOf(self)
 }
