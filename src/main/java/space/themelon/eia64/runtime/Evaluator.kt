@@ -87,7 +87,10 @@ class Evaluator(
     override fun charLiteral(literal: CharLiteral) = EChar(literal.value)
     override fun typeLiteral(literal: TypeLiteral) = EType(literal.signature)
 
-    override fun alpha(alpha: Alpha) = memory.getVar(alpha.index, alpha.value)
+    override fun alpha(alpha: Alpha): Any {
+        //for debug only println(alpha.where.prepareError(""))
+        return memory.getVar(alpha.index, alpha.value)
+    }
 
     private fun prepareArrayOf(
         arguments: List<Expression>,
@@ -208,6 +211,7 @@ class Evaluator(
         NEGATE -> numericExpr(expr.left) - numericExpr(expr.right)
         TIMES -> numericExpr(expr.left) * numericExpr(expr.right)
         SLASH -> numericExpr(expr.left) / numericExpr(expr.right)
+        REMAINDER -> numericExpr(expr.left) % numericExpr(expr.right)
         EQUALS, NOT_EQUALS -> {
             val left = unboxEval(expr.left)
             val right = unboxEval(expr.right)

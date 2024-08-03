@@ -37,6 +37,9 @@ data class BinaryOperation(
             Type.SLASH -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
                 applyError("arithmetic", "Numeric", "/")
 
+            Type.REMAINDER -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
+                applyError("arithmetic", "Remainder", "%")
+
             Type.BITWISE_AND -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
                 applyError("bitwise", "Numeric", "&")
 

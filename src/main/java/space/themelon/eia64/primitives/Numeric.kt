@@ -22,6 +22,8 @@ interface Numeric {
     operator fun div(number: Numeric): Numeric { throw NotImplementedError() }
     operator fun divAssign(number: Numeric) { throw NotImplementedError() }
 
+    operator fun rem(number: Numeric): Numeric { throw NotImplementedError() }
+
     fun and(number: Numeric): Numeric { throw NotImplementedError() }
     fun or(number: Numeric): Numeric { throw NotImplementedError() }
 
