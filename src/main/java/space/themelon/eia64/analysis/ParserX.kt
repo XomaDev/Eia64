@@ -816,9 +816,16 @@ class ParserX(
         // bump argsSize if it's linked invocation
         val argsSize = if (moduleInfo.linked) arguments.size + 1 else arguments.size
 
-        val fnReference = executor.getModule(moduleInfo.name)
-            .resolveGlobalFn(moduleInfo.where, elementName, argsSize)
-            ?: moduleInfo.where.error("Could not find function '$elementName' in module ${moduleInfo.name}")
+        val fnReference = executor.getModule(moduleInfo.name).resolveGlobalFn(moduleInfo.where, elementName, argsSize)
+
+        if (fnReference == null) {
+            val sigRepresentation = StringJoiner(", ")
+            arguments.forEach {
+                sigRepresentation.add(it.sig().logName())
+            }
+            moduleInfo.where.error<String>("Could not find $elementName($sigRepresentation) function in module ${moduleInfo.name}")
+            throw RuntimeException() // not reached
+        }
 
         return ClassMethodCall(
             where = objectExpression.marking!!,

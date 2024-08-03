@@ -87,17 +87,11 @@ data class BinaryOperation(
                 else -> where.error("Unknown expression signature for operator (+= Additive Assignment): $rightExprSign")
             }
 
-            Type.POWER -> if (!leftExprSign.isInt() || !rightExprSign.isInt())
-                applyError("arithmetic", "Numeric", "**")
+            Type.POWER -> if (!leftExprSign.isInt() || !rightExprSign.isInt()) applyError("arithmetic", "Numeric", "**")
 
-            Type.DEDUCTIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric())
-                where.error<String>("Value for operation (-= Deductive Assignment) requires Numeric expression, got: $rightExprSign")
-
-            Type.MULTIPLICATIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric())
-                where.error<String>("Value for operation (*= Times Assignment) requires Numeric expression, got: $rightExprSign")
-
-            Type.DIVIDIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric())
-                where.error<String>("Value for operation (/= Dividive Assignment) requires Numeric expression, got: $rightExprSign")
+            Type.DEDUCTIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric()) simpleApplyError("Numeric", "-=")
+            Type.MULTIPLICATIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric()) simpleApplyError("Numeric", "*=")
+            Type.DIVIDIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric()) simpleApplyError("Numeric", "/=")
 
             else -> where.error("Unknown Binary Operator $operator")
         }
@@ -107,5 +101,9 @@ data class BinaryOperation(
     private fun applyError(group: String, type: String, operator: String) {
         where.error<String>("Cannot apply $group operator on non $type expressions: " +
                 "(${left.sig().logName()} $operator ${right.sig().logName()})")
+    }
+
+    private fun simpleApplyError(type: String, operator: String) {
+        where.error<String>("Expected $type expression for ($operator) but got ${right.sig().logName()}")
     }
 }
