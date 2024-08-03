@@ -66,12 +66,10 @@ fn recursiveLen(tokens: Array): Int {
 fn tokenize(expr: String): Array<String> {
   ; +, -, *, /, ( and ) are the only possible delimiters
   if (containsDelimiter(expr)) {
-    println("trying to unflat")
     let unflat_array = splitRecursive(expr)::Array
-    println("unflat: " + unflat_array)
-
     let flat_size = recursiveLen(unflat_array)
     let flat_array = makeArray<String>(flat_size, "")
+
     fillRecursive(flat_array, unflat_array, 0)
     return flat_array
   }
@@ -109,9 +107,18 @@ fn expression(): Any {
 
 fn parse(): Any {
   var left: Any = expression()
+  println(left)
   until (!isEOF() && peek() != ")") {
-    let op = operator()
+    var op = operator()
+    println("at: " + op)
+    until (op == '/' || op == '*') {
+      left = arrayOf(left, op, expression())
+      if (isEOF() || peek() == ")") break
+      else op = operator()
+    }
+    if (isEOF()) break
     let right = parse()
+    println("right: " + right)
     left = arrayOf(left, op, right)
   }
   return left
@@ -121,16 +128,14 @@ fn eval(expr: String) {
   tokens = lex(expr)
   index = 0
   size = len(tokens)
-  println(tokens)
+  println("tokens: " + tokens)
+  println("parsed: " + parse())
 }
 
-eval("62 + (2 * 2)")
-eval("53 * 3 / 3 + (2 * 2)")
-eval("3242 * (3 + 3) + 3 + (2 * 2)")
-eval("223 * (3 + 0 * (34)) + 3 + (2 * 2)")
+eval("1 + 2 * 3")
+eval("1 * 2 + 3")
 
 fn main() {
-  eval("2 + (2 * 2)")
   until (true) {
     let expr = readln().trim()
     if (expr == "break") break
