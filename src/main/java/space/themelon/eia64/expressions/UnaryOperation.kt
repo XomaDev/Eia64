@@ -39,10 +39,10 @@ data class UnaryOperation(
         } else {
             when (operator) {
                 Type.INCREMENT ->
-                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (++ Increment), got $exprSignLog")
+                    if (!exprSign.isNumeric()) where.error<String>("Expected Numeric expression type for (++ Increment), got $exprSignLog")
 
                 Type.DECREMENT ->
-                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (-- Decrement), got $exprSignLog")
+                    if (!exprSign.isNumeric()) where.error<String>("Expected Numeric expression type for (-- Decrement), got $exprSignLog")
 
                 else -> where.error<String>("Unknown unary operator towards left")
             }

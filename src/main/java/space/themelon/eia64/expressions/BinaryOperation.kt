@@ -31,27 +31,27 @@ data class BinaryOperation(
             Type.PLUS -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric()) resultSign = Sign.STRING
 
             Type.NEGATE -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
-                where.error<String>("Cannot apply arithmetic on non Numeric expressions ($leftLogName - $rightLogName)")
+                applyError("arithmetic", "Numeric", "-")
 
             Type.TIMES -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
-                where.error<String>("Cannot apply arithmetic operator on non Numeric expressions ($leftLogName + $rightLogName)")
+                applyError("arithmetic", "Numeric", "*")
 
             Type.SLASH -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
-                where.error<String>("Cannot apply arithmetic operator on non Numeric expressions ($leftLogName / $rightLogName)")
+                applyError("arithmetic", "Numeric", "/")
 
             Type.BITWISE_AND -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
-                where.error<String>("Cannot apply bitwise operator on non Numeric expressions ($leftLogName & $rightLogName)")
+                applyError("bitwise", "Numeric", "&")
 
             Type.BITWISE_OR -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
-                where.error<String>("Cannot apply bitwise operator on non Numeric expressions ($leftLogName | $rightLogName)")
+                applyError("bitwise", "Numeric", "|")
 
             Type.EQUALS, Type.NOT_EQUALS -> resultSign = Sign.BOOL
 
             Type.LOGICAL_AND -> if (leftExprSign != Sign.BOOL || rightExprSign != Sign.BOOL)
-                where.error<String>("Cannot apply logical operator on non Bool expressions: ($leftLogName && $rightLogName)")
+                applyError("logical", "Numeric", "&&")
 
             Type.LOGICAL_OR -> if (leftExprSign != Sign.BOOL || rightExprSign != Sign.BOOL) {
-                where.error<String>("Cannot apply logical operator on non Bool expressions: ($leftLogName || $rightLogName)")
+                applyError("logical", "Numeric", "||")
             } else resultSign = Sign.BOOL
 
             Type.RIGHT_DIAMOND -> if (!numericOrChar(left, right)) {
@@ -90,7 +90,7 @@ data class BinaryOperation(
             }
 
             Type.POWER -> if (!leftExprSign.isInt() || !rightExprSign.isInt())
-                where.error<String>("Cannot apply arithmetic operator on non Numeric expressions: ($leftLogName ** $rightLogName)")
+                applyError("arithmetic", "Numeric", "**")
 
             Type.DEDUCTIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric())
                 where.error<String>("Value for operation (-= Deductive Assignment) requires Numeric expression, got: $rightExprSign")
@@ -104,5 +104,10 @@ data class BinaryOperation(
             else -> where.error("Unknown Binary Operator $operator")
         }
         return resultSign
+    }
+
+    private fun applyError(group: String, type: String, operator: String) {
+        where.error<String>("Cannot apply $group operator on non $type expressions: " +
+                "(${left.sig().logName()} $operator ${right.sig().logName()})")
     }
 }
