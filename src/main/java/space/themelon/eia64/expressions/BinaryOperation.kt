@@ -10,8 +10,8 @@ import space.themelon.eia64.syntax.Type
 
 data class BinaryOperation(
     val where: Token,
-    val left: Expression,
-    val right: Expression,
+    val left: Expression, // sig checked
+    val right: Expression, // sig checked
     val operator: Type
 ) : Expression(where) {
 
@@ -26,8 +26,6 @@ data class BinaryOperation(
 
         var resultSign = leftExprSign
         when (operator) {
-            // TODO:
-            //  look into here, look for different combinations that can mess up
             Type.PLUS -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric()) resultSign = Sign.STRING
 
             Type.NEGATE -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
