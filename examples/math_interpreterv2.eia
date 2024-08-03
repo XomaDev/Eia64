@@ -1,3 +1,7 @@
+; A Math Interpreter written in Eia!
+; Fun statement: This is an interpreter that is written in an interpreted language Eia64
+;   which is written in a language called Kotlin
+
 include(
   static:std:string,
   static:std:array,
