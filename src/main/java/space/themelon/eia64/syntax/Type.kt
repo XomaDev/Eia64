@@ -20,7 +20,7 @@ enum class Type {
     COLON, DOUBLE_COLON,
     ASSIGNMENT,
     ADDITIVE_ASSIGNMENT, DEDUCTIVE_ASSIGNMENT,
-    MULTIPLICATIVE_ASSIGNMENT, DIVIDIVE_ASSIGNMENT,
+    MULTIPLICATIVE_ASSIGNMENT, DIVIDIVE_ASSIGNMENT, REMAINDER_ASSIGNMENT,
     OPEN_CURVE, CLOSE_CURVE,
     OPEN_SQUARE, CLOSE_SQUARE,
     OPEN_CURLY, CLOSE_CURLY,
@@ -69,6 +69,7 @@ enum class Type {
                 it["-="] = StaticToken(DEDUCTIVE_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.NONE))
                 it["*="] = StaticToken(MULTIPLICATIVE_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.NONE))
                 it["/="] = StaticToken(DIVIDIVE_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.NONE))
+                it["%="] = StaticToken(REMAINDER_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.NONE))
 
                 it["||"] = StaticToken(LOGICAL_OR, arrayOf(Flag.LOGICAL_OR, Flag.OPERATOR))
                 it["&&"] = StaticToken(LOGICAL_AND, arrayOf(Flag.LOGICAL_AND, Flag.OPERATOR))

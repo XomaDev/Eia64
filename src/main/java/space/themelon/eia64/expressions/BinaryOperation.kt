@@ -95,6 +95,7 @@ data class BinaryOperation(
             Type.DEDUCTIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric()) simpleApplyError("Numeric", "-=")
             Type.MULTIPLICATIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric()) simpleApplyError("Numeric", "*=")
             Type.DIVIDIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric()) simpleApplyError("Numeric", "/=")
+            Type.REMAINDER_ASSIGNMENT -> if (!rightExprSign.isNumeric()) simpleApplyError("Numeric", "%=")
 
             else -> where.error("Unknown Binary Operator $operator")
         }

@@ -87,10 +87,7 @@ class Evaluator(
     override fun charLiteral(literal: CharLiteral) = EChar(literal.value)
     override fun typeLiteral(literal: TypeLiteral) = EType(literal.signature)
 
-    override fun alpha(alpha: Alpha): Any {
-        //for debug only println(alpha.where.prepareError(""))
-        return memory.getVar(alpha.index, alpha.value)
-    }
+    override fun alpha(alpha: Alpha) = memory.getVar(alpha.index, alpha.value)
 
     private fun prepareArrayOf(
         arguments: List<Expression>,
@@ -244,28 +241,24 @@ class Evaluator(
             element
         }
         DEDUCTIVE_ASSIGNMENT -> {
-            val element = unboxEval(expr.left)
-            when (element) {
-                is Numeric -> element.minusAssign(numericExpr(expr.right))
-                else -> throw RuntimeException("Cannot apply -= operator on element $element")
-            }
-            element
+            val variable = numericExpr(expr.left)
+            variable /= (numericExpr(expr.right))
+            variable
         }
         MULTIPLICATIVE_ASSIGNMENT -> {
-            val element = unboxEval(expr.left)
-            when (element) {
-                is Numeric -> element.timesAssign(numericExpr(expr.right))
-                else -> throw RuntimeException("Cannot apply *= operator on element $element")
-            }
-            element
+            val variable = numericExpr(expr.left)
+            variable *= (numericExpr(expr.right))
+            variable
         }
         DIVIDIVE_ASSIGNMENT -> {
-            val element = unboxEval(expr.left)
-            when (element) {
-                is Numeric -> element.divAssign(intExpr(expr.right))
-                else -> throw RuntimeException("Cannot apply /= operator on element $element")
-            }
-            element
+            val variable = numericExpr(expr.left)
+            variable /= (numericExpr(expr.right))
+            variable
+        }
+        REMAINDER_ASSIGNMENT -> {
+            val variable = numericExpr(expr.left)
+            variable %= (numericExpr(expr.right))
+            variable
         }
         POWER -> {
             val left = numericExpr(expr.left)
