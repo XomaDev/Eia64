@@ -17,31 +17,32 @@ data class UnaryOperation(
 
     override fun sig(): Signature {
         val exprSign = expr.sig()
+        val exprSignLog = exprSign.logName()
         // TODO:
         //  In future we need to notify user the wrong signature received
         if (towardsLeft) {
             when (operator) {
                 Type.NEGATE ->
-                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (- Negate)")
+                    if (!exprSign.isNumeric()) where.error<String>("Expected Numeric expression type for (- Negate), got $exprSignLog")
 
                 Type.INCREMENT ->
-                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (++ Increment)")
+                    if (!exprSign.isNumeric()) where.error<String>("Expected Numeric expression type for (++ Increment), got $exprSignLog")
 
                 Type.DECREMENT ->
-                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (-- Decrement)")
+                    if (!exprSign.isNumeric()) where.error<String>("Expected Numeric expression type for (-- Decrement), got $exprSignLog")
 
                 Type.NOT ->
-                    if (exprSign != Sign.BOOL) where.error<String>("Expected expression type Bool for (! Not)")
+                    if (exprSign != Sign.BOOL) where.error<String>("Expected Bool expression type for (! Not), got $exprSignLog")
 
                 else -> where.error<String>("Unknown unary operator towards left")
             }
         } else {
             when (operator) {
                 Type.INCREMENT ->
-                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (++ Increment)")
+                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (++ Increment), got $exprSignLog")
 
                 Type.DECREMENT ->
-                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (-- Decrement)")
+                    if (!exprSign.isNumeric()) where.error<String>("Expected expression type Numeric for (-- Decrement), got $exprSignLog")
 
                 else -> where.error<String>("Unknown unary operator towards left")
             }
