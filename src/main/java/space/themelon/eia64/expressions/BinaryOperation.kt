@@ -21,51 +21,54 @@ data class BinaryOperation(
         val leftExprSign = left.sig()
         val rightExprSign = right.sig()
 
+        val leftLogName = leftExprSign.logName()
+        val rightLogName = rightExprSign.logName()
+
         var resultSign = leftExprSign
         when (operator) {
             // TODO:
             //  look into here, look for different combinations that can mess up
             Type.PLUS -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric()) resultSign = Sign.STRING
 
-            Type.NEGATE -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric())
-                where.error<String>("Cannot apply operator (- Minus) on non Numeric expressions")
+            Type.NEGATE -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
+                where.error<String>("Cannot apply arithmetic on non Numeric expressions ($leftLogName - $rightLogName)")
 
-            Type.TIMES -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric())
-                where.error<String>("Cannot apply operator (* Times) on non Numeric expressions")
+            Type.TIMES -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
+                where.error<String>("Cannot apply arithmetic operator on non Numeric expressions ($leftLogName + $rightLogName)")
 
-            Type.SLASH -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric())
-                where.error<String>("Cannot apply operator (/ Divide) on non Numeric expressions")
+            Type.SLASH -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
+                where.error<String>("Cannot apply arithmetic operator on non Numeric expressions ($leftLogName / $rightLogName)")
 
-            Type.BITWISE_AND -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric())
-                where.error<String>("Cannot apply operator (& Bitwise And) on non Numeric expressions")
+            Type.BITWISE_AND -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
+                where.error<String>("Cannot apply bitwise operator on non Numeric expressions ($leftLogName & $rightLogName)")
 
-            Type.BITWISE_OR -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric())
-                where.error<String>("Cannot apply operator (| Bitwise Or) on non Numeric expressions")
+            Type.BITWISE_OR -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
+                where.error<String>("Cannot apply bitwise operator on non Numeric expressions ($leftLogName | $rightLogName)")
 
             Type.EQUALS, Type.NOT_EQUALS -> resultSign = Sign.BOOL
 
-            Type.LOGICAL_AND -> if (leftExprSign != Sign.BOOL && rightExprSign != Sign.BOOL)
-                where.error<String>("Cannot apply logical operator (&& Logical And) on non Bool expressions")
+            Type.LOGICAL_AND -> if (leftExprSign != Sign.BOOL || rightExprSign != Sign.BOOL)
+                where.error<String>("Cannot apply logical operator on non Bool expressions: ($leftLogName && $rightLogName)")
 
-            Type.LOGICAL_OR -> if (leftExprSign != Sign.BOOL && rightExprSign != Sign.BOOL) {
-                where.error<String>("Cannot apply logical operator (|| Logical Or) on non Bool expressions")
+            Type.LOGICAL_OR -> if (leftExprSign != Sign.BOOL || rightExprSign != Sign.BOOL) {
+                where.error<String>("Cannot apply logical operator on non Bool expressions: ($leftLogName || $rightLogName)")
             } else resultSign = Sign.BOOL
 
             Type.RIGHT_DIAMOND -> if (!numericOrChar(left, right)) {
-                where.error<String>("Cannot apply logical operator (> Greater Than) on non [Numeric/Char] expressions")
+                where.error<String>("Cannot apply logical operator on non [Numeric/Char] expressions: ($leftLogName > $rightLogName)")
             } else resultSign = Sign.BOOL
 
             Type.LEFT_DIAMOND -> if (!numericOrChar(left, right)) {
-                where.error<String>("Cannot apply logical operator (< Lesser Than) on non [Numeric/Char] expressions")
+                where.error<String>("Cannot apply logical operator on non [Numeric/Char] expressions: ($leftLogName < $rightLogName)")
             } else resultSign = Sign.BOOL
 
             Type.GREATER_THAN_EQUALS -> if (!numericOrChar(left, right)) {
-                where.error<String>("Cannot apply logical operator (>= Greater Than Equals) on non [Numeric/Char] expressions")
+                where.error<String>("Cannot apply logical operator on non [Numeric/Char] expressions: ($leftLogName >= $rightLogName)")
                 resultSign = Sign.BOOL
             } else resultSign = Sign.BOOL
 
             Type.LESSER_THAN_EQUALS -> if (!numericOrChar(left, right)) {
-                where.error<String>("Cannot apply logical operator (<= Lesser Than Equals) on [Numeric/Char] expressions")
+                where.error<String>("Cannot apply logical operator on [Numeric/Char] expressions: ($leftLogName <= $rightLogName)")
             } else resultSign = Sign.BOOL
 
             Type.ASSIGNMENT -> {
@@ -87,16 +90,16 @@ data class BinaryOperation(
             }
 
             Type.POWER -> if (!leftExprSign.isInt() || !rightExprSign.isInt())
-                where.error<String>("Value for operation (** Power) requires Int expression")
+                where.error<String>("Cannot apply arithmetic operator on non Numeric expressions: ($leftLogName ** $rightLogName)")
 
             Type.DEDUCTIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric())
-                where.error<String>("Value for operation (-= Deductive Assignment) requires Numeric expression")
+                where.error<String>("Value for operation (-= Deductive Assignment) requires Numeric expression, got: $rightExprSign")
 
             Type.MULTIPLICATIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric())
-                where.error<String>("Value for operation (*= Times Assignment) requires Numeric expression")
+                where.error<String>("Value for operation (*= Times Assignment) requires Numeric expression, got: $rightExprSign")
 
             Type.DIVIDIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric())
-                where.error<String>("Value for operation (/= Dividive Assignment) requires Numeric expression")
+                where.error<String>("Value for operation (/= Dividive Assignment) requires Numeric expression, got: $rightExprSign")
 
             else -> where.error("Unknown Binary Operator $operator")
         }

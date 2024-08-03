@@ -10,6 +10,7 @@ import space.themelon.eia64.syntax.Flag
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 import java.io.File
+import java.util.StringJoiner
 
 class ParserX(
     private val executor: Executor,
@@ -247,8 +248,16 @@ class ParserX(
         val module = readAlpha()
         val arguments = callArguments()
         val argsSize = arguments.size
+
         val reference = executor.getModule(module).resolveGlobalFn(token, "init", argsSize)
-                    ?: token.error("Could not find init() function of argument size $argsSize")
+        if (reference == null) {
+            val sigRepresentation = StringJoiner(", ")
+            arguments.forEach {
+                sigRepresentation.add(it.sig().logName())
+            }
+            token.error<String>("Could not find init($sigRepresentation) function")
+            throw RuntimeException() // never reached
+        }
         return NewObj(token,
             module,
             arguments,
