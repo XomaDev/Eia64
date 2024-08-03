@@ -101,16 +101,24 @@ fn operator(): Char {
 }
 
 fn expression(): Any {
-  if (peek() == "(") return parse()
+  if (peek() == "(") {
+    ; ( eat this one
+    ; ) will be eaten by parse()
+    next()
+    return parse()
+  }
   return numeric()
 }
 
 fn parse(): Any {
   var left: Any = expression()
-  println(left)
-  until (!isEOF() && peek() != ")") {
+  until (!isEOF()) {
+    if (peek() == ")") {
+      ; just eat and break
+      next()
+      break
+    }
     var op = operator()
-    println("at: " + op)
     until (op == '/' || op == '*') {
       left = arrayOf(left, op, expression())
       if (isEOF() || peek() == ")") break
@@ -118,25 +126,48 @@ fn parse(): Any {
     }
     if (isEOF()) break
     let right = parse()
-    println("right: " + right)
     left = arrayOf(left, op, right)
   }
   return left
+}
+
+fn execute(node: Any): Float {
+  let nodeArray = node::Array
+  var left: Any = nodeArray[0]::String
+  let op = nodeArray[1]::String
+  var right: Any = nodeArray[2]
+
+  if (left is Array) left = execute(left)
+  if (right is Array) right = execute(right)
+
+  left = float(left)
+  right = float(right)
+
+  return (when (op) {
+    '+' -> { left::Float + right::Float }
+    '-' -> { left::Float - right::Float }
+    '*' -> { left::Float * right::Float }
+    '/' -> { left::Float / right::Float }
+    else -> {
+      println("Unexpected operator '" + op + "'")
+      exit(1)
+    }
+  })::Float
 }
 
 fn eval(expr: String) {
   tokens = lex(expr)
   index = 0
   size = len(tokens)
-  println("tokens: " + tokens)
-  println("parsed: " + parse())
+  let parsed = parse()
+  println(execute(parsed))
 }
 
-eval("1 + 2 * 3")
-eval("1 * 2 + 3")
+println("\nWelcome to math interpreter v2!")
 
 fn main() {
   until (true) {
+    print("math> ")
     let expr = readln().trim()
     if (expr == "break") break
     eval(expr)
