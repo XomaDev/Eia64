@@ -10,7 +10,7 @@ enum class Type {
     EQUALS, NOT_EQUALS,
     RIGHT_DIAMOND, LEFT_DIAMOND,
     GREATER_THAN_EQUALS, LESSER_THAN_EQUALS,
-    SLASH, TIMES, POWER,
+    SLASH, TIMES, REMAINDER, POWER,
     PLUS, NEGATE,
     NOT, INCREMENT, DECREMENT,
     USE,
@@ -86,6 +86,8 @@ enum class Type {
 
                 it["/"] = StaticToken(SLASH, arrayOf(Flag.BINARY_L2, Flag.PRESERVE_ORDER, Flag.OPERATOR))
                 it["*"] = StaticToken(TIMES, arrayOf(Flag.BINARY_L2, Flag.PRESERVE_ORDER, Flag.OPERATOR))
+                it["%"] = StaticToken(REMAINDER, arrayOf(Flag.BINARY_L2, Flag.PRESERVE_ORDER, Flag.OPERATOR))
+
                 it["^"] = StaticToken(POWER, arrayOf(Flag.BINARY_L3, Flag.PRESERVE_ORDER, Flag.OPERATOR))
 
                 it["+"] = StaticToken(PLUS, arrayOf(Flag.BINARY, Flag.OPERATOR))
