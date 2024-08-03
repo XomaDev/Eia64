@@ -26,11 +26,15 @@ fn splitOnce(expr: String): Array {
       nearestDelimiter = math.min(nearestDelimiter, index)
     }
   }
+  let delimiterPart = str(expr[nearestDelimiter])
+  let firstPart = expr.part(0, nearestDelimiter).trim()
+  let lastPart = expr.substring(nearestDelimiter + 1).trim()
+
   return arrayOf<Any>(
-    expr.part(0, nearestDelimiter).trim(),
-    str(expr[nearestDelimiter]),
-    expr.substring(nearestDelimiter + 1).trim()
-  )
+      expr.part(0, nearestDelimiter).trim(),
+      str(expr[nearestDelimiter]),
+      expr.substring(nearestDelimiter + 1).trim()
+    )
 }
 
 fn splitRecursive(expr: String): Any {
@@ -40,11 +44,36 @@ fn splitRecursive(expr: String): Any {
   return splitOnce
 }
 
+fn fillRecursive(flattened: Array, unflattened: Array, fillIndex: Int) {
+  for (element in unflattened) {
+    if (element is Array) {
+      fillRecursive(flattened, element::Array, fillIndex)
+    } else if (!(element::String.isEmpty())) {
+      flattened[fillIndex++] = element
+    }
+  }
+}
+
+fn recursiveLen(tokens: Array): Int {
+  var size = 0
+  for (element in tokens) {
+    if (element is Array) size += recursiveLen(element::Array)
+    else if (!(element::String.isEmpty())) size++
+  }
+  return size
+}
+
 fn tokenize(expr: String): Array<String> {
   ; +, -, *, /, ( and ) are the only possible delimiters
   if (containsDelimiter(expr)) {
+    println("trying to unflat")
     let unflat_array = splitRecursive(expr)::Array
-    return unflat_array.flatten(makeArray<String>(unflat_array.recursiveLen(), ""))::Array<String>
+    println("unflat: " + unflat_array)
+
+    let flat_size = recursiveLen(unflat_array)
+    let flat_array = makeArray<String>(flat_size, "")
+    fillRecursive(flat_array, unflat_array, 0)
+    return flat_array
   }
   return arrayOf(expr)
 }
@@ -56,12 +85,7 @@ var index = 0
 var size = 0
 
 fn next(): String = tokens[index++]
-fn peek(): String {
-  println(index + " | " + isEOF())
-  let access = tokens[index]
-  println("access success")
-  return access
-}
+fn peek(): String = tokens[index]
 fn isEOF(): Bool = index == size
 
 fn numeric(): Float = float(next())
@@ -97,14 +121,16 @@ fn eval(expr: String) {
   tokens = lex(expr)
   index = 0
   size = len(tokens)
-  println(parse())
+  println(tokens)
 }
 
-eval("2 + 2")
-
+eval("62 + (2 * 2)")
+eval("53 * 3 / 3 + (2 * 2)")
+eval("3242 * (3 + 3) + 3 + (2 * 2)")
+eval("223 * (3 + 0 * (34)) + 3 + (2 * 2)")
 
 fn main() {
-  eval("2 + 2")
+  eval("2 + (2 * 2)")
   until (true) {
     let expr = readln().trim()
     if (expr == "break") break

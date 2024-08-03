@@ -5,6 +5,7 @@ import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
+import kotlin.math.exp
 
 data class UnaryOperation(
     val where: Token,
@@ -17,6 +18,11 @@ data class UnaryOperation(
 
     override fun sig(): Signature {
         val exprSign = expr.sig()
+        //println(exprSign)
+        //println(expr)
+
+        // TODO:
+        //  In future we need to notify user the wrong signature received
         if (towardsLeft) {
             when (operator) {
                 Type.NEGATE ->
