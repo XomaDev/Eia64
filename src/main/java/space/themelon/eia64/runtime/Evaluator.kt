@@ -213,8 +213,8 @@ class Evaluator(
             val right = unboxEval(expr.right)
             EBool(if (type == EQUALS) valueEquals(left, right) else !valueEquals(left, right))
         }
-        LOGICAL_AND -> booleanExpr(expr.left).and(booleanExpr(expr.right))
-        LOGICAL_OR -> booleanExpr(expr.left).or(booleanExpr(expr.right))
+        LOGICAL_AND -> EBool(booleanExpr(expr.left).get() && (booleanExpr(expr.right).get()))
+        LOGICAL_OR -> EBool(booleanExpr(expr.left).get() || booleanExpr(expr.right).get())
         RIGHT_DIAMOND -> EBool(numericExpr(expr.left) > numericExpr(expr.right))
         LEFT_DIAMOND -> EBool(numericExpr(expr.left) < numericExpr(expr.right))
         GREATER_THAN_EQUALS -> EBool(intExpr(expr.left) >= intExpr(expr.right))
