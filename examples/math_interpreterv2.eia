@@ -1,0 +1,67 @@
+include(
+  static:std:string,
+  static:std:array,
+  static:std:math
+)
+
+let DELIMITERS = arrayOf("+", "-", "/", "*", "(", ")")
+let DELIMITERS_SIZE = DELIMITERS.size()
+
+fn containsDelimiter(expr: String): Bool {
+  for (delimiter in DELIMITERS) {
+    if (expr.contains(delimiter)) {
+      return true
+    }
+  }
+  return false
+}
+
+; splitOnce is not called if there's no delimiter remaining!
+fn splitOnce(expr: String): Array {
+  ; find the nearest possible delimiter
+  var nearestDelimiter = 99999999
+  for (var i = 0, i < DELIMITERS_SIZE, i++) {
+    let index = expr.indexOf(DELIMITERS[i])
+    if (index > -1) {
+      nearestDelimiter = math.min(nearestDelimiter, index)
+    }
+  }
+  return arrayOf<Any>(
+    expr.part(0, nearestDelimiter).trim(),
+    str(expr[nearestDelimiter]),
+    expr.substring(nearestDelimiter + 1).trim()
+  )
+}
+
+fn splitRecursive(expr: String): Any {
+  if (!containsDelimiter(expr)) return expr
+  let splitOnce = splitOnce(expr)
+  splitOnce[2] = splitRecursive(splitOnce[2]::String)
+  return splitOnce
+}
+
+fn tokenize(expr: String): Array<String> {
+  ; +, -, *, /, ( and ) are the only possible delimiters
+  if (containsDelimiter(expr)) {
+    let unflat_array = splitRecursive(expr)::Array
+    return unflat_array.flatten(makeArray<String>(unflat_array.recursiveLen(), ""))::Array<String>
+  }
+  return arrayOf(expr)
+}
+
+fn lex(expr: String): Array<String> {
+  expr = expr.trim()
+  return tokenize(expr)
+}
+
+println(lex("2 + 2"))
+println(lex(" 2 + 2 * 2 / 2 "))
+println(lex(" 2 + 3 * 3 + 34 2 * 2 / 2 "))
+
+fn main() {
+  until (true) {
+    let expr = readln().trim()
+    if (expr == "break") break
+    println(lex(expr))
+  }
+}
