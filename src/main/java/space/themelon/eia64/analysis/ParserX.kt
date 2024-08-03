@@ -251,11 +251,7 @@ class ParserX(
 
         val reference = executor.getModule(module).resolveGlobalFn(token, "init", argsSize)
         if (reference == null) {
-            val sigRepresentation = StringJoiner(", ")
-            arguments.forEach {
-                sigRepresentation.add(it.sig().logName())
-            }
-            token.error<String>("Could not find init($sigRepresentation) function")
+            token.error<String>("Could not find init(${arguments.toSignString()}) function")
             throw RuntimeException() // never reached
         }
         return NewObj(token,
@@ -819,11 +815,7 @@ class ParserX(
         val fnReference = executor.getModule(moduleInfo.name).resolveGlobalFn(moduleInfo.where, elementName, argsSize)
 
         if (fnReference == null) {
-            val sigRepresentation = StringJoiner(", ")
-            arguments.forEach {
-                sigRepresentation.add(it.sig().logName())
-            }
-            moduleInfo.where.error<String>("Could not find $elementName($sigRepresentation) function in module ${moduleInfo.name}")
+            moduleInfo.where.error<String>("Could not find $elementName(${arguments.toSignString()}) function in module ${moduleInfo.name}")
             throw RuntimeException() // not reached
         }
 
@@ -1120,4 +1112,10 @@ class ParserX(
     }
 
     private fun isEOF() = index == size
+}
+
+private fun List<Expression>.toSignString(): String {
+    val string = StringJoiner(", ")
+    for (expression in this) string.add(expression.sig().logName())
+    return string.toString()
 }
