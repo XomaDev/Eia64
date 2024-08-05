@@ -570,6 +570,27 @@ class ParserX(
     }
 
     private fun variableDeclaration(public: Boolean, where: Token): Expression {
+        if (!isNext(Type.EXCLAMATION)) {
+            // for now, later when ';' will be swapped with //, we won't need it
+            return readVariableDeclaration(where, public)
+        }
+        // '!' mark after let or var represents multi expressions
+        next()
+        // note => same modifier applied to all variables
+        val expressions = mutableListOf<Expression>()
+        do {
+            // read minimum one declaration
+            expressions += readVariableDeclaration(where, public)
+        } while (isNext(Type.COMMA).also { if (it) next() })
+
+        if (expressions.size == 1) return expressions.first()
+        return ExpressionBind(expressions)
+    }
+
+    private fun readVariableDeclaration(
+        where: Token,
+        public: Boolean
+    ): Expression {
         val name = readAlpha()
 
         val expr: Expression
@@ -577,15 +598,12 @@ class ParserX(
 
         val mutable = where.type == Type.VAR
         if (!isNext(Type.COLON)) {
-            // signature decided by variable content
             val assignmentExpr = readVariableExpr()
-
             signature = assignmentExpr.sig()
             expr = AutoVariable(where, name, assignmentExpr)
         } else {
             skip()
             signature = readSignature(next())
-
             expr = ExplicitVariable(
                 where,
                 where.type == Type.VAR,
@@ -594,7 +612,6 @@ class ParserX(
                 signature
             )
         }
-        //trace.declareVariable(mutable, name, signature)
         manager.defineVariable(name, mutable, signature, public)
         return expr
     }
@@ -668,25 +685,25 @@ class ParserX(
             val precedence = operatorPrecedence(opToken.flags[0])
             if (precedence == -1) return left
 
-            if (precedence >= minPrecedence) {
-                skip() // operator token
-                if (opToken.type == Type.IS) {
-                    val signature = readSignature(next())
-                    left = IsStatement(left, signature)
-                } else {
-                    // need to verify that variable is mutable
-                    if (opToken.type == Type.ASSIGNMENT) checkMutability(opToken, left)
-                    val right =
-                        if (opToken.hasFlag(Flag.PRESERVE_ORDER)) parseElement()
-                        else parseExpr(precedence)
-                    left = BinaryOperation(
-                        opToken,
-                        left,
-                        right,
-                        opToken.type
-                    )
-                }
-            } else return left
+            if (precedence < minPrecedence) return left
+
+            skip() // operator token
+            if (opToken.type == Type.IS) {
+                val signature = readSignature(next())
+                left = IsStatement(left, signature)
+            } else {
+                // need to verify that variable is mutable
+                if (opToken.type == Type.ASSIGNMENT) checkMutability(opToken, left)
+                val right =
+                    if (opToken.hasFlag(Flag.PRESERVE_ORDER)) parseElement()
+                    else parseExpr(precedence)
+                left = BinaryOperation(
+                    opToken,
+                    left,
+                    right,
+                    opToken.type
+                )
+            }
         }
         return left
     }
@@ -1018,7 +1035,7 @@ class ParserX(
                         Alpha(token, -2, name, Sign.NONE)
                     else
                         // Unresolved name
-                        token.error("Unknown name '$name'")
+                        token.error("Cannot find symbol '$name'")
                 } else {
                     // classic variable access
                     Alpha(token, vrReference.index, name, vrReference.signature)

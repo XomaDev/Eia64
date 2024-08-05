@@ -1,0 +1,21 @@
+; main note: for variables to be recognized as multi expr, they need to have ! mark
+; or else it may collide with comma of for loop
+
+; future adjustments
+;  ';' must be swapped with // for comments
+;  ';' must be repurposed for separating entities in for loop
+
+; adding feat for declaring multiple variables in a single expression
+let! a = 2, b = 23
+
+; can contain more than 1 type
+; this will be useful inside for() loop (initializer|conditional|operational    )
+let! c: Int = 2, d: String = "meow"
+
+println("Values: ")
+println(a, b)
+println(c, d)
+
+println("Types: ")
+println(typeOf(a), " ", typeOf(b))
+println(typeOf(c), " ", typeOf(d))
