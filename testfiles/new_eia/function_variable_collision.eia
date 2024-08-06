@@ -1,5 +1,5 @@
-; declaring a variable and function with same name to check for name collision
-; update -> works
+// declaring a variable and function with same name to check for name collision
+// update -> works
 
 let name = "meow"
 fn name() {

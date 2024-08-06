@@ -1,4 +1,4 @@
-; meddling with function and variable names to confuse parser
+// meddling with function and variable names to confuse parser
 
 fn meow() {
   println("Meow!")

@@ -374,10 +374,10 @@ class ParserX(
         where: Token,
     ): ForLoop {
         manager.enterScope()
-        val initializer = if (isNext(Type.COMMA)) null else parseStatement()
-        expectType(Type.COMMA)
-        val conditional = if (isNext(Type.COMMA)) null else parseStatement()
-        expectType(Type.COMMA)
+        val initializer = if (isNext(Type.SEMI_COLON)) null else parseStatement()
+        expectType(Type.SEMI_COLON)
+        val conditional = if (isNext(Type.SEMI_COLON)) null else parseStatement()
+        expectType(Type.SEMI_COLON)
         val operational = if (isNext(Type.CLOSE_CURVE)) null else parseStatement()
         expectType(Type.CLOSE_CURVE)
         // double layer scope wrapping
@@ -570,17 +570,18 @@ class ParserX(
     }
 
     private fun variableDeclaration(public: Boolean, where: Token): Expression {
-        if (!isNext(Type.EXCLAMATION)) {
+        //if (!isNext(Type.EXCLAMATION)) {
             // for now, later when ';' will be swapped with //, we won't need it
-            return readVariableDeclaration(where, public)
-        }
+            //return readVariableDeclaration(where, public)
+        //}
         // '!' mark after let or var represents multi expressions
-        next()
+        //next()
         // note => same modifier applied to all variables
         val expressions = mutableListOf<Expression>()
         do {
             // read minimum one declaration
             expressions += readVariableDeclaration(where, public)
+            //println("Iteration: " + expressions.last())
         } while (isNext(Type.COMMA).also { if (it) next() })
 
         if (expressions.size == 1) return expressions.first()
@@ -863,20 +864,28 @@ class ParserX(
         // Third Case: Object Invocation
         //    let myPerson = new Person("Miaw")
         //    println(myPerson.sayHello())
-        val signature = objectExpression.sig()
         if (objectExpression is Alpha && objectExpression.index == -2) {
             // Pure static invocation
             return ModuleInfo(where, objectExpression.value, false)
-        } else if (signature is SimpleSignature) {
-            // Linked Static Invocation (String, Int, Array)
-            return ModuleInfo(where, getLinkedModule(signature, where), true)
-        } else if (signature is ObjectExtension) {
-            // Object Invocation
-            return ModuleInfo(where, signature.extensionClass, false)
         } else {
-            // TODO: we'll have to work on a fix for this
-            signature as ArrayExtension
-            return ModuleInfo(where, "array", true)
+            val signature = objectExpression.sig()
+            when (signature) {
+                is SimpleSignature -> {
+                    // Linked Static Invocation (String, Int, Array)
+                    return ModuleInfo(where, getLinkedModule(signature, where), true)
+                }
+
+                is ObjectExtension -> {
+                    // Object Invocation
+                    return ModuleInfo(where, signature.extensionClass, false)
+                }
+
+                else -> {
+                    // TODO: we'll have to work on a fix for this
+                    signature as ArrayExtension
+                    return ModuleInfo(where, "array", true)
+                }
+            }
         }
     }
 

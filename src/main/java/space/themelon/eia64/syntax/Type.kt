@@ -17,7 +17,7 @@ enum class Type {
     DOT,
     RIGHT_ARROW,
 
-    COLON, DOUBLE_COLON,
+    SEMI_COLON, COLON, DOUBLE_COLON,
     ASSIGNMENT,
     ADDITIVE_ASSIGNMENT, DEDUCTIVE_ASSIGNMENT,
     MULTIPLICATIVE_ASSIGNMENT, DIVIDIVE_ASSIGNMENT, REMAINDER_ASSIGNMENT,
@@ -101,6 +101,7 @@ enum class Type {
                 it["."] = StaticToken(DOT)
                 it["->"] = StaticToken(RIGHT_ARROW)
 
+                it[";"] = StaticToken(SEMI_COLON)
                 it[":"] = StaticToken(COLON)
                 it["::"] = StaticToken(DOUBLE_COLON)
 
