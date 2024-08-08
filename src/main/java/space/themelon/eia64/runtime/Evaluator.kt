@@ -163,7 +163,7 @@ class Evaluator(
     }
 
     override fun unaryOperation(expr: UnaryOperation): Any = when (val type = expr.operator) {
-        NOT -> EBool(!(booleanExpr(expr.expr).get()))
+        EXCLAMATION -> EBool(!(booleanExpr(expr.expr).get()))
         NEGATE -> {
             // first, we need to check the type to ensure we negate Float
             // and Int separately and properly
@@ -329,6 +329,11 @@ class Evaluator(
             }
         }
         return result!!
+    }
+
+    override fun expressionBind(bind: ExpressionBind): Any {
+        bind.expressions.forEach { unboxEval(it) }
+        return Nothing.INSTANCE
     }
 
     override fun include(include: Include): Any {

@@ -12,12 +12,12 @@ enum class Type {
     GREATER_THAN_EQUALS, LESSER_THAN_EQUALS,
     SLASH, TIMES, REMAINDER, POWER,
     PLUS, NEGATE,
-    NOT, INCREMENT, DECREMENT,
+    EXCLAMATION, INCREMENT, DECREMENT,
     USE,
     DOT,
     RIGHT_ARROW,
 
-    COLON, DOUBLE_COLON,
+    SEMI_COLON, COLON, DOUBLE_COLON,
     ASSIGNMENT,
     ADDITIVE_ASSIGNMENT, DEDUCTIVE_ASSIGNMENT,
     MULTIPLICATIVE_ASSIGNMENT, DIVIDIVE_ASSIGNMENT, REMAINDER_ASSIGNMENT,
@@ -94,13 +94,14 @@ enum class Type {
                 it["+"] = StaticToken(PLUS, arrayOf(Flag.BINARY, Flag.OPERATOR))
                 it["-"] = StaticToken(NEGATE, arrayOf(Flag.BINARY, Flag.UNARY, Flag.OPERATOR))
 
-                it["!"] = StaticToken(NOT, arrayOf(Flag.UNARY))
+                it["!"] = StaticToken(EXCLAMATION, arrayOf(Flag.UNARY))
                 it["++"] = StaticToken(INCREMENT, arrayOf(Flag.UNARY, Flag.POSSIBLE_RIGHT_UNARY))
                 it["--"] = StaticToken(DECREMENT, arrayOf(Flag.UNARY, Flag.POSSIBLE_RIGHT_UNARY))
 
                 it["."] = StaticToken(DOT)
                 it["->"] = StaticToken(RIGHT_ARROW)
 
+                it[";"] = StaticToken(SEMI_COLON)
                 it[":"] = StaticToken(COLON)
                 it["::"] = StaticToken(DOUBLE_COLON)
 

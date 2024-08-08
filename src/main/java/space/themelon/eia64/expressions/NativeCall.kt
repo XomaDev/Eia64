@@ -49,6 +49,7 @@ data class NativeCall(
     override fun <R> accept(v: Visitor<R>) = v.nativeCall(this)
 
     override fun sig(): Signature {
+        arguments.forEach { it.sig() } // functions like println() have indefinite args
         val functionInfo = OLD_FUNCTION_SIGNATURES[call] ?: where.error("Could not find native function type $call")
         val expectedArgsSize = functionInfo.argsSize
         val gotArgsSize = arguments.size

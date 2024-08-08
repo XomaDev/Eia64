@@ -22,7 +22,7 @@ data class UnaryOperation(
                 Type.NEGATE -> if (!exprSign.isNumeric()) applyError("Numeric", "- Negate")
                 Type.INCREMENT -> if (!exprSign.isNumeric()) applyError("Numeric", "++ Increment")
                 Type.DECREMENT -> if (!exprSign.isNumeric()) applyError("Numeric", "-- Decrement")
-                Type.NOT -> if (exprSign != Sign.BOOL) applyError("Bool", "! Not")
+                Type.EXCLAMATION -> if (exprSign != Sign.BOOL) applyError("Bool", "! Not")
                 else -> where.error<String>("Unknown unary operator towards left")
             }
         } else {

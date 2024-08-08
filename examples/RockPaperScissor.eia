@@ -1,5 +1,5 @@
-; a rock-paper-scissor game written in Eia, you pick 'rock', 'paper' or a 'scissor'
-; robot picks it's option randomly
+// a rock-paper-scissor game written in Eia, you pick 'rock', 'paper' or a 'scissor'
+// robot picks it's option randomly
 
 include(
   static:std:string

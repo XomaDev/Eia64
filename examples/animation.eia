@@ -1,6 +1,6 @@
-; TrashGuy Animation written in Eia64!
-; You type in some text in the terminal and he steals them! 👀
-; https://zac.cy/trashguy/
+// TrashGuy Animation written in Eia64!
+// You type in some text in the terminal and he steals them! 👀
+// https://zac.cy/trashguy/
 
 include(
   static:std:string
@@ -20,7 +20,7 @@ private let INTERVAL = 500
 private fn trash(text: String) {
     let size = len(text)
 
-    for (var i = 0, i < size, i++) {
+    for (var i = 0; i < size; i++) {
         var l = text[0]
         var going_right = true
 

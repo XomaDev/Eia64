@@ -1,6 +1,6 @@
 visible fn indexOf(self: Array, element: Any): Int {
   let upto = len(self)
-  for (var i = 0, i < upto, i++)
+  for (var i = 0; i < upto; i++)
     if (self[i] == element) return i
   return -1
 }
@@ -35,7 +35,7 @@ visible fn size(self: Array): Int = len(self)
 visible fn add(self: Array, element: Any): Any {
   let oldSize = len(self)
   let newAlloc = makeArray<Any>(oldSize + 1, 0)
-  for (var i = 0, i < oldSize, i++)
+  for (var i = 0; i < oldSize; i++)
     newAlloc[i] = self[i]
   newAlloc[oldSize] = element
   return newAlloc
@@ -45,7 +45,7 @@ visible fn removeAt(self: Array, index: Int): Any {
   let oldSize = len(self)
   let newAlloc = makeArray<Any>(oldSize - 1, 0)
   var j = 0
-  for (var i = 0, i < oldSize, i++)
+  for (var i = 0; i < oldSize; i++)
     if (i != index)
       newAlloc[j++] = self[i]
   return newAlloc

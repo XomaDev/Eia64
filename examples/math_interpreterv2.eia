@@ -1,6 +1,6 @@
-; A Math Interpreter written in Eia!
-; Fun statement: This is an interpreter that is written in an interpreted language Eia64
-;   which is written in a language called Kotlin
+// A Math Interpreter written in Eia!
+// Fun statement: This is an interpreter that is written in an interpreted language Eia64
+//   which is written in a language called Kotlin
 
 include(
   static:std:string,
@@ -20,11 +20,11 @@ private fn containsDelimiter(expr: String): Bool {
   return false
 }
 
-; splitOnce is not called if there's no delimiter remaining!
+// splitOnce is not called if there's no delimiter remaining!
 private fn splitOnce(expr: String): Array {
-  ; find the nearest possible delimiter
+  // find the nearest possible delimiter
   var nearestDelimiter = 99999999
-  for (var i = 0, i < DELIMITERS_SIZE, i++) {
+  for (var i = 0; i < DELIMITERS_SIZE; i++) {
     let index = expr.indexOf(DELIMITERS[i])
     if (index > -1) {
       nearestDelimiter = math.min(nearestDelimiter, index)
@@ -68,7 +68,7 @@ private fn recursiveLen(tokens: Array): Int {
 }
 
 private fn tokenize(expr: String): Array<String> {
-  ; +, -, *, /, ( and ) are the only possible delimiters
+  // +, -, *, /, ( and ) are the only possible delimiters
   if (containsDelimiter(expr)) {
     let unflat_array = splitRecursive(expr)::Array
     let flat_size = recursiveLen(unflat_array)
@@ -96,18 +96,18 @@ private fn operator(): Char {
   let operator = next()
   for (delimiter in DELIMITERS) {
     if (delimiter == operator) {
-      ; a recognized operator
+      // a recognized operator
       return operator[0]
     }
   }
   throw "Unknown operator '" + operator + "'"
-  return '_'        ; never reached
+  return '_'        // never reached
 }
 
 private fn expression(): Any {
   if (peek() == "(") {
-    ; ( eat this one
-    ; ) will be eaten by parse()
+    // ( eat this one
+    // ) will be eaten by parse()
     next()
     return parse()
   }
@@ -118,7 +118,7 @@ private fn parse(): Any {
   var left: Any = expression()
   until (!isEOF()) {
     if (peek() == ")") {
-      ; just eat and break
+      // just eat and break
       next()
       break
     }
