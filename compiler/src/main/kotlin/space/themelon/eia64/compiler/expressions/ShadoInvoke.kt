@@ -1,9 +1,9 @@
-package space.themelon.eia64.expressions
+package space.themelon.eia64.compiler.expressions
 
-import space.themelon.eia64.Expression
-import space.themelon.eia64.signatures.Sign
-import space.themelon.eia64.signatures.Signature
-import space.themelon.eia64.syntax.Token
+import space.themelon.eia64.compiler.Expression
+import space.themelon.eia64.compiler.signatures.Sign
+import space.themelon.eia64.compiler.signatures.Signature
+import space.themelon.eia64.compiler.syntax.Token
 
 data class ShadoInvoke(
     val where: Token,
@@ -14,7 +14,7 @@ data class ShadoInvoke(
     override fun <R> accept(v: Visitor<R>) = v.unitInvoke(this)
 
     override fun sig(): Signature {
-        // nessasary
+        // necessary
         expr.sig()
         arguments.forEach { it.sig() }
         return Sign.ANY

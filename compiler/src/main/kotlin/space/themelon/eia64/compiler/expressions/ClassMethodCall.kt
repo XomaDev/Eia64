@@ -1,11 +1,11 @@
-package space.themelon.eia64.expressions
+package space.themelon.eia64.compiler.expressions
 
-import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.FunctionReference
-import space.themelon.eia64.analysis.ModuleInfo
-import space.themelon.eia64.signatures.Matching.matches
-import space.themelon.eia64.signatures.Signature
-import space.themelon.eia64.syntax.Token
+import space.themelon.eia64.compiler.Expression
+import space.themelon.eia64.compiler.analysis.FunctionReference
+import space.themelon.eia64.compiler.analysis.ModuleInfo
+import space.themelon.eia64.compiler.signatures.Matching.matches
+import space.themelon.eia64.compiler.signatures.Signature
+import space.themelon.eia64.compiler.syntax.Token
 
 data class ClassMethodCall(
     val where: Token,

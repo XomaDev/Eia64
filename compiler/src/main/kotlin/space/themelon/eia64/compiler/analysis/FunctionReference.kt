@@ -1,8 +1,8 @@
 package space.themelon.eia64.compiler.analysis
 
+import space.themelon.eia64.compiler.expressions.FunctionExpr
 import space.themelon.eia64.compiler.signatures.Signature
 import space.themelon.eia64.compiler.syntax.Token
-import space.themelon.eia64.expressions.FunctionExpr
 
 data class FunctionReference(
     val where: Token,

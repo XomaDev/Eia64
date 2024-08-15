@@ -1,10 +1,8 @@
-package space.themelon.eia64
+package space.themelon.eia64.compiler
 
-import space.themelon.eia64.expressions.*
-import space.themelon.eia64.expressions.ArrayLiteral
-import space.themelon.eia64.expressions.FunctionExpr
-import space.themelon.eia64.signatures.Signature
-import space.themelon.eia64.syntax.Token
+import space.themelon.eia64.compiler.expressions.*
+import space.themelon.eia64.compiler.signatures.Signature
+import space.themelon.eia64.compiler.syntax.Token
 
 abstract class Expression(
     val marking: Token? = null,

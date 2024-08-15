@@ -1,9 +1,7 @@
 package space.themelon.eia64.compiler.analysis
 
-import space.themelon.eia64.compiler.Compiler
+import space.themelon.eia64.compiler.signatures.Sign
 import space.themelon.eia64.compiler.signatures.Signature
-import java.io.FileOutputStream
-import java.io.PrintStream
 
 class ScopeManager {
 

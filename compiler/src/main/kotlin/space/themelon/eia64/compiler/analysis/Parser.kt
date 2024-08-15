@@ -1,19 +1,18 @@
-package space.themelon.eia64.analysis
+package space.themelon.eia64.compiler.analysis
 
-import space.themelon.eia64.Expression
-import space.themelon.eia64.expressions.*
-import space.themelon.eia64.expressions.ArrayLiteral
-import space.themelon.eia64.runtime.Executor
-import space.themelon.eia64.signatures.*
-import space.themelon.eia64.signatures.Matching.matches
-import space.themelon.eia64.syntax.Flag
-import space.themelon.eia64.syntax.Token
-import space.themelon.eia64.syntax.Type
+import space.themelon.eia64.compiler.Compiler
+import space.themelon.eia64.compiler.Expression
+import space.themelon.eia64.compiler.expressions.*
+import space.themelon.eia64.compiler.signatures.*
+import space.themelon.eia64.compiler.signatures.Matching.matches
+import space.themelon.eia64.compiler.syntax.Flag
+import space.themelon.eia64.compiler.syntax.Token
+import space.themelon.eia64.compiler.syntax.Type
 import java.io.File
-import java.util.StringJoiner
+import java.util.*
 
-class ParserX(
-    private val executor: Executor,
+class Parser(
+    private val compiler: Compiler,
 ) {
 
     private val manager = ScopeManager()
@@ -32,7 +31,7 @@ class ParserX(
         val expressions = ArrayList<Expression>()
         parseScopeOutline()
         while (!isEOF()) expressions.add(parseStatement())
-        if (Executor.DEBUG) expressions.forEach { println(it) }
+        if (Compiler.DEBUG) expressions.forEach { println(it) }
         parsed = ExpressionList(expressions)
         parsed.sig() // necessary
         return parsed
@@ -184,25 +183,25 @@ class ParserX(
                     val filePath = if (isNext(Type.ALPHA)) readAlpha()
                     else expectType(Type.E_STRING).data as String
 
-                    val file = File("${Executor.STD_LIB}/$filePath.eia")
+                    val file = File("${Compiler.STD_LIB}/$filePath.eia")
                     val moduleName = getModuleName(file)
                     classNames.add(moduleName)
 
                     manager.classes.add(moduleName)
-                    executor.addModule(file.absolutePath, moduleName)
+                    compiler.addModule(file.absolutePath, moduleName)
                 }
                 Type.E_STRING -> {
                     // include("simulationenv/HelloProgram")
                     var path = next.data as String + ".eia"
                     if (path.startsWith("stdlib")) {
-                        path = path.replaceFirst("stdlib", Executor.STD_LIB)
+                        path = path.replaceFirst("stdlib", Compiler.STD_LIB)
                     }
                     val sourceFile = getModulePath(path)
 
                     verifyFilePath(sourceFile, next)
                     val moduleName = getModuleName(sourceFile)
                     manager.classes.add(moduleName)
-                    executor.addModule(sourceFile.absolutePath, moduleName)
+                    compiler.addModule(sourceFile.absolutePath, moduleName)
                 }
                 else -> next.error("Unexpected token")
             }
@@ -218,7 +217,7 @@ class ParserX(
         val path = next()
         val sourceFile = if (path.type == Type.STD) {
             expectType(Type.COLON)
-            File("${Executor.STD_LIB}/${readAlpha()}.eia")
+            File("${Compiler.STD_LIB}/${readAlpha()}.eia")
         } else {
             if (path.type != Type.E_STRING)
                 path.error<String>("Expected a string type for static:")
@@ -228,7 +227,7 @@ class ParserX(
         val moduleName = getModuleName(sourceFile)
         manager.classes.add(moduleName)
         manager.staticClasses.add(moduleName)
-        executor.addModule(sourceFile.absolutePath, moduleName)
+        compiler.addModule(sourceFile.absolutePath, moduleName)
         return moduleName
     }
 
@@ -242,14 +241,14 @@ class ParserX(
 
     private fun getModulePath(path: String) =
         if (path.startsWith('/')) File(path)
-        else File("${Executor.EXECUTION_DIRECTORY}/$path")
+        else File("${Compiler.EXECUTION_DIRECTORY}/$path")
 
     private fun newStatement(token: Token): NewObj {
         val module = readAlpha()
         val arguments = callArguments()
         val argsSize = arguments.size
 
-        val reference = executor.getModule(module).resolveGlobalFn(token, "init", argsSize)
+        val reference = compiler.getModule(module).resolveGlobalFn(token, "init", argsSize)
         if (reference == null) {
             token.error<String>("Could not find init(${arguments.toSignString()}) function")
             throw RuntimeException() // never reached
@@ -808,7 +807,7 @@ class ParserX(
         //  Global variables of other class are located in scope 0
         //  So we need to just maintain position of that variable in
         //  super scope, then access it at runtime
-        val uniqueVariable = executor.getModule(moduleInfo.name).resolveGlobalVr(moduleInfo.where, property)
+        val uniqueVariable = compiler.getModule(moduleInfo.name).resolveGlobalVr(moduleInfo.where, property)
             ?: moduleInfo.where.error("Could not find global variable '$property' in module ${moduleInfo.name}")
         return ForeignField(
             where = moduleInfo.where,
@@ -830,7 +829,7 @@ class ParserX(
         // bump argsSize if it's linked invocation
         val argsSize = if (moduleInfo.linked) arguments.size + 1 else arguments.size
 
-        val fnReference = executor.getModule(moduleInfo.name).resolveGlobalFn(moduleInfo.where, elementName, argsSize)
+        val fnReference = compiler.getModule(moduleInfo.name).resolveGlobalFn(moduleInfo.where, elementName, argsSize)
 
         if (fnReference == null) {
             moduleInfo.where.error<String>("Could not find $elementName(${arguments.toSignString()}) function in module ${moduleInfo.name}")

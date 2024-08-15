@@ -1,7 +1,7 @@
-package space.themelon.eia64.expressions
+package space.themelon.eia64.compiler.expressions
 
-import space.themelon.eia64.Expression
-import space.themelon.eia64.syntax.Token
+import space.themelon.eia64.compiler.Expression
+import space.themelon.eia64.compiler.syntax.Token
 
 data class AutoVariable(
     val where: Token,

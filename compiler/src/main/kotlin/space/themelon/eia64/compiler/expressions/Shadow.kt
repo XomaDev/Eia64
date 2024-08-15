@@ -1,8 +1,8 @@
-package space.themelon.eia64.expressions
+package space.themelon.eia64.compiler.expressions
 
-import space.themelon.eia64.Expression
-import space.themelon.eia64.signatures.Sign
-import space.themelon.eia64.signatures.Signature
+import space.themelon.eia64.compiler.Expression
+import space.themelon.eia64.compiler.signatures.Sign
+import space.themelon.eia64.compiler.signatures.Signature
 
 data class Shadow(
     val names: List<String>,

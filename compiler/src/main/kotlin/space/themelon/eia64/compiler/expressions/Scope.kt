@@ -1,6 +1,6 @@
-package space.themelon.eia64.expressions
+package space.themelon.eia64.compiler.expressions
 
-import space.themelon.eia64.Expression
+import space.themelon.eia64.compiler.Expression
 
 data class Scope(
     val expr: Expression, // sig checked

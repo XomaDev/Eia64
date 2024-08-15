@@ -1,6 +1,6 @@
 package space.themelon.eia64.compiler.analysis
 
-import space.themelon.eia64.signatures.Signature
+import space.themelon.eia64.compiler.signatures.Signature
 
 class VariableReference(
     var index: Int,
