@@ -8,3 +8,7 @@ plugins {
 }
 rootProject.name = "Eia64"
 include("tests")
+include("executor")
+include("compiler")
+include("base_module")
+include("legacy_interpreter")

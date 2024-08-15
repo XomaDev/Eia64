@@ -1,3 +1,0 @@
-let name = "Ekita"
-println("Hello $name!")
-println(format("Hello %s!", name))

@@ -1,3 +1,0 @@
-for (var x = 0, x < 5, x++) {
-    println(format("X is %d", x))
-}

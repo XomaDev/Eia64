@@ -1,2 +1,0 @@
-println(int('A'))
-println(char(65))

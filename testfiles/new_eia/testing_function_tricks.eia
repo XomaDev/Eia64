@@ -1,7 +1,0 @@
-// meddling with function and variable names to confuse parser
-
-fn meow() {
-  println("Meow!")
-}
-
-println(meow + 1)

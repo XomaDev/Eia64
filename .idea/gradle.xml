@@ -9,6 +9,10 @@
         <option name="modules">
           <set>
             <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/base_module" />
+            <option value="$PROJECT_DIR$/compiler" />
+            <option value="$PROJECT_DIR$/executor" />
+            <option value="$PROJECT_DIR$/legacy_interpreter" />
             <option value="$PROJECT_DIR$/tests" />
           </set>
         </option>

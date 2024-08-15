@@ -1,3 +1,0 @@
-println(1 - "a")
-println(13 + "a" * "a")
-println(1 / "a")

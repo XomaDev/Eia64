@@ -1,2 +1,0 @@
-let x = 123
-(if (x == 5) println("hello world") else println("meow world"))
