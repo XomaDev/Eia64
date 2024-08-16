@@ -10,7 +10,7 @@ class BytecodeVisitor(
     private val dumper: Dumper
 ) : Expression.Visitor<Any?> {
 
-    fun visit(node: Expression) {
+    fun dump(node: ExpressionList) {
         node.accept(this)
         dumper.write(HALT)
     }
@@ -101,8 +101,8 @@ class BytecodeVisitor(
     }
 
     override fun binaryOperation(expr: BinaryOperation) {
-        visit(expr.left)
-        visit(expr.right)
+        expr.left.accept(this)
+        expr.right.accept(this)
         dumper.write(when (val operator = expr.operator) {
             Type.PLUS -> ADD
             Type.NEGATE -> SUB
@@ -113,7 +113,7 @@ class BytecodeVisitor(
     }
 
     override fun expressions(list: ExpressionList) {
-        list.expressions.forEach { visit(it) }
+        list.expressions.forEach { it.accept(this) }
     }
 
     override fun expressionBind(bind: ExpressionBind): Any? {

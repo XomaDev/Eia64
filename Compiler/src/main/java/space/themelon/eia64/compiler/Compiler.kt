@@ -26,7 +26,7 @@ class Compiler(
 
     // for now it is a one time use
     fun fromString(source: String) {
-        mainEvaluator.visit(mainParser.parse(Lexer(source).tokens))
+        mainEvaluator.dump(mainParser.parse(Lexer(source).tokens))
         dumper.close()
     }
 
