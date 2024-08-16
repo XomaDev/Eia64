@@ -120,8 +120,12 @@ class BytecodeVisitor(
         TODO("Not yet implemented")
     }
 
-    override fun nativeCall(call: NativeCall): Any? {
-        TODO("Not yet implemented")
+    override fun nativeCall(call: NativeCall) {
+        call.arguments.forEach { it.accept(this) }
+        when (val type = call.call) {
+            Type.PRINT, Type.PRINTLN -> dumper.write(PRINT);
+            else -> { }
+        }
     }
 
     override fun cast(cast: Cast): Any? {

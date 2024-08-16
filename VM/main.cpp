@@ -33,6 +33,7 @@ int main() {
     auto bytes = readBytes(path, fileSize);
     printBytes(bytes.get(), fileSize);
 
+
     auto vm = new class vm(std::move(bytes));
     vm->run();
     delete vm;

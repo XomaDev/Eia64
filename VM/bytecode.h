@@ -16,6 +16,7 @@ enum class bytecode {
     DIV,
     MUL,
 
+    PRINT,
     HALT,
 };
 

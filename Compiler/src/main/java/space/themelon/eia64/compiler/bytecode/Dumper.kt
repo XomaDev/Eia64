@@ -16,10 +16,10 @@ class Dumper(
 
     fun writeInt32(n: Int) {
         output.apply {
-            write(n shr 24)
-            write(n shr 16)
-            write(n shr 8)
             write(n)
+            write(n shr 8)
+            write(n shr 16)
+            write(n shr 24)
         }
     }
 
