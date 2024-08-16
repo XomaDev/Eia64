@@ -19,6 +19,7 @@ enum class bytecode {
 
     PRINT,
     PRINT_STR,
+    END_LINE,
     HALT,
 };
 

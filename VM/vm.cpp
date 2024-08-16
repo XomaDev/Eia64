@@ -23,29 +23,39 @@ void vm::run() {
                 memory.push(memory.pop() + memory.pop());
                 break;
             case bytecode::ADD_STR: {
-                auto* left = reinterpret_cast<std::string*>(memory.pop());
                 auto* right = reinterpret_cast<std::string*>(memory.pop());
+                auto* left = reinterpret_cast<std::string*>(memory.pop());
                 memory.push(reinterpret_cast<uint64_t>(new std::string(*left + *right)));
                 delete left;
                 delete right;
                 break;
             }
-            case bytecode::SUB:
-                memory.push(memory.pop() - memory.pop());
+            case bytecode::SUB: {
+                auto right = memory.pop();
+                auto left = memory.pop();
+                memory.push(left - right);
                 break;
+            }
             case bytecode::MUL:
                 memory.push(memory.pop() * memory.pop());
                 break;
-            case bytecode::DIV:
-                memory.push(memory.pop() / memory.pop());
+            case bytecode::DIV: {
+                auto right = memory.pop();
+                auto left = memory.pop();
+                memory.push(left / right);
                 break;
+            }
             case bytecode::PRINT:
-                printf("%d\n", static_cast<int32_t>(memory.pop()));
+                printf("%d", static_cast<int32_t>(memory.pop()));
                 break;
             case bytecode::PRINT_STR: {
                 auto* string = reinterpret_cast<std::string*>(memory.pop());
-                printf("%c\n", *string->c_str());
+                std::cout << *string;
                 delete string;
+                break;
+            }
+            case bytecode::END_LINE: {
+                std::cout << std::endl;
                 break;
             }
             case bytecode::HALT:

@@ -1,7 +1,5 @@
-int 2
- int 3
-   add
-int 4
- mul
-print
+str "meow "
+str "world"
+add_str
+print_str endl
 halt

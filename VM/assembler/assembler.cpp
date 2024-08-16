@@ -28,6 +28,18 @@ void assembler::begin() {
             writer.write(bytecode::INT);
             source >> word;
             writer.writeInt32(stoi(word));
+        } else if (word == "str") {
+            writer.write(bytecode::STRING);
+            if (source.get() != ' ') throw std::runtime_error("Expected space after 'str'");
+            if (source.get() != '\"') throw std::runtime_error("Expected colon after 'str'");
+            std::string content;
+            for (;;) {
+                char ch;
+                source.get(ch);
+                if (ch == '\"') break;
+                content += ch;
+            }
+            writer.writeString(content);
         }
         // TODO:
         //  We gotta add features to convert Numbers into Strings
@@ -39,6 +51,7 @@ void assembler::begin() {
 
         else if (word == "print") writer.write(bytecode::PRINT);
         else if (word == "print_str") writer.write(bytecode::PRINT_STR);
+        else if (word == "endl") writer.write(bytecode::END_LINE);
 
         else if (word == "halt") writer.write(bytecode::HALT);
 

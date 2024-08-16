@@ -19,6 +19,15 @@ void bytecode_writer::writeInt32(uint64_t number) {
     writeByte(number);
 }
 
+void bytecode_writer::writeString(const std::string &content) {
+    auto str_length = content.size();
+    if (str_length > 255) {
+        throw std::runtime_error("String length cannot exceed 255 characters");
+    }
+    writeByte(static_cast<uint8_t>(str_length));
+    sink.write(content.data(), str_length);
+}
+
 void bytecode_writer::close() {
     sink.close();
 }

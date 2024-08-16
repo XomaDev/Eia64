@@ -24,6 +24,7 @@ public:
     void writeByte(uint8_t value);
     void write(bytecode code);
     void writeInt32(uint64_t);
+    void writeString(const std::string &content);
     void close();
 };
 
