@@ -10,16 +10,22 @@
 #include "bytecode_writer.h"
 
 class assembler {
-    const std::string &source_path;
+    std::ifstream source;
     bytecode_writer writer;
 
     void begin();
 
 public:
     explicit assembler(const std::string &source_path, const std::string &compiled_path)
-            : source_path(source_path), writer(compiled_path) {
+            : source(source_path), writer(compiled_path) {
+        if (!source.is_open()) {
+            std::cerr << "Unable to open source path " + source_path << std::endl;
+            return;
+        }
         begin();
     }
+
+    void readScope();
 };
 
 

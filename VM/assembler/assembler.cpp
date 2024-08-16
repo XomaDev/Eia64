@@ -2,18 +2,21 @@
 // Created by kumaraswamy on 8/16/24.
 //
 
-#include <fstream>
 #include <iostream>
 #include "assembler.h"
 
 void assembler::begin() {
-    std::ifstream source(source_path);
-
-    if (!source.is_open()) {
-        std::cerr << "Unable to open source path " + source_path << std::endl;
-        return;
+    std::string scopeName;
+    while (source >> scopeName) {
+        writer.writeString(scopeName);
+        readScope();
+        writer.write(bytecode::SCOPE_END);
     }
+    source.close();
+    writer.close();
+}
 
+void assembler::readScope() {
     std::string word;
     while (source >> word) {
         if (word == "bool") {
@@ -55,8 +58,20 @@ void assembler::begin() {
 
         else if (word == "halt") writer.write(bytecode::HALT);
 
+        else if (word == "jeq") {
+            /* jump if equal */
+            writer.write(bytecode::EQUAL);
+            source >> word; // scope name
+            writer.writeString(word);
+        } else if (word == "jnq") {
+            /* jump if not equal */
+            writer.write(bytecode::NOT_EQUAL);
+            source >> word; // scope name
+            writer.writeString(word);
+        }
+
+        else if (word == "end") break; // the scope ends here
+
         else throw std::runtime_error("Unknown instruction " + word);
     }
-    source.close();
-    writer.close();
 }

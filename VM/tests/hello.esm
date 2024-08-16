@@ -1,5 +1,11 @@
-str "meow "
-str "world"
-add_str
-print_str endl
-halt
+meow
+    str "cat"
+    print_str
+end
+
+main
+    str "me"
+    str "ow"
+    jeq meow
+end
+

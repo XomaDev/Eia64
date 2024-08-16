@@ -21,6 +21,11 @@ enum class bytecode {
     PRINT_STR,
     END_LINE,
     HALT,
+
+    EQUAL,
+    NOT_EQUAL,
+
+    SCOPE_END,
 };
 
 #endif //VM_BYTECODE_H
