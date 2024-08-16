@@ -1,15 +1,3 @@
-meow
-  Str "miaw it is true"
-  Print_Str
-end
-
 main
-    Str "me"
-    Str "ow"
-    Add_Str
-    Str "meow"
-    Str_Cmp
-    Geq meow
-    Halt
+    
 end
-

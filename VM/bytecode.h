@@ -19,6 +19,10 @@ enum class bytecode {
     DIV,
     MUL,
 
+    // Unary
+    NEG,
+    NOT,
+
     // SYSTEM
     PRINT,
     PRINT_STR,

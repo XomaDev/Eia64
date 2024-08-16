@@ -60,6 +60,12 @@ bool vm::run_scope() {
                 memory.push(left / right);
                 break;
             }
+            case bytecode::NEG:
+                memory.push(-memory.pop());
+                break;
+            case bytecode::NOT:
+                memory.push(!memory.pop());
+                break;
             case bytecode::PRINT:
                 printf("%d", static_cast<int32_t>(memory.pop()));
                 break;

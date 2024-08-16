@@ -52,6 +52,9 @@ void assembler::readScope() {
         else if (word == "Mul") writer.write(bytecode::MUL);
         else if (word == "Div") writer.write(bytecode::DIV);
 
+        else if (word == "Neg") writer.write(bytecode::NEG);
+        else if (word == "Not") writer.write(bytecode::NOT);
+
         else if (word == "Print") writer.write(bytecode::PRINT);
         else if (word == "Print_Str") writer.write(bytecode::PRINT_STR);
         else if (word == "Endl") writer.write(bytecode::END_LINE);
