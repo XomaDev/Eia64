@@ -7,6 +7,7 @@ enum class Bytecode {
     NIL,
 
     ADD,
+    ADD_STR,
     SUB,
     DIV,
     MUL,

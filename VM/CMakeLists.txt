@@ -10,4 +10,6 @@ add_executable(VM main.cpp
         ememory.cpp
         ememory.h
         value.cpp
-        value.h)
+        value.h
+        assembler.cpp
+        assembler.h)

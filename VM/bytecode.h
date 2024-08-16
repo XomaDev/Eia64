@@ -12,11 +12,13 @@ enum class bytecode {
     NIL,
 
     ADD,
+    ADD_STR,
     SUB,
     DIV,
     MUL,
 
     PRINT,
+    PRINT_STR,
     HALT,
 };
 

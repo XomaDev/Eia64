@@ -14,6 +14,7 @@ class vm {
     long index = 0;
     ememory memory;
 
+    std::string* readString();
     uint8_t read();
 
     bytecode next();
