@@ -19,19 +19,19 @@ void assembler::begin() {
 void assembler::readScope() {
     std::string word;
     while (source >> word) {
-        if (word == "bool") {
+        if (word == "Bool") {
           writer.write(bytecode::BOOL);
           source >> word;
 
-          if (word == "true") writer.writeByte(1);
-          else if (word == "false") writer.writeByte(0);
+          if (word == "True") writer.writeByte(1);
+          else if (word == "False") writer.writeByte(0);
           else throw std::runtime_error("Bad bool value " + word);
 
-        } else if (word == "int") {
+        } else if (word == "Int") {
             writer.write(bytecode::INT);
             source >> word;
             writer.writeInt32(stoi(word));
-        } else if (word == "str") {
+        } else if (word == "Str") {
             writer.write(bytecode::STRING);
             if (source.get() != ' ') throw std::runtime_error("Expected space after 'str'");
             if (source.get() != '\"') throw std::runtime_error("Expected colon after 'str'");
@@ -46,26 +46,35 @@ void assembler::readScope() {
         }
         // TODO:
         //  We gotta add features to convert Numbers into Strings
-        else if (word == "add") writer.write(bytecode::ADD);
-        else if (word == "add_str") writer.write(bytecode::ADD_STR);
-        else if (word == "sub") writer.write(bytecode::SUB);
-        else if (word == "mul") writer.write(bytecode::MUL);
-        else if (word == "div") writer.write(bytecode::DIV);
+        else if (word == "Add") writer.write(bytecode::ADD);
+        else if (word == "Add_Str") writer.write(bytecode::ADD_STR);
+        else if (word == "Sub") writer.write(bytecode::SUB);
+        else if (word == "Mul") writer.write(bytecode::MUL);
+        else if (word == "Div") writer.write(bytecode::DIV);
 
-        else if (word == "print") writer.write(bytecode::PRINT);
-        else if (word == "print_str") writer.write(bytecode::PRINT_STR);
-        else if (word == "endl") writer.write(bytecode::END_LINE);
+        else if (word == "Print") writer.write(bytecode::PRINT);
+        else if (word == "Print_Str") writer.write(bytecode::PRINT_STR);
+        else if (word == "Endl") writer.write(bytecode::END_LINE);
+        else if (word == "Halt") writer.write(bytecode::HALT);
 
-        else if (word == "halt") writer.write(bytecode::HALT);
+        else if (word == "To_Str") writer.write(bytecode::TO_STR);
 
-        else if (word == "jeq") {
-            /* jump if equal */
-            writer.write(bytecode::EQUAL);
+        else if (word == "Int_Cmp") writer.write(bytecode::INT_CMP);
+        else if (word == "Str_Cmp") writer.write(bytecode::STR_CMP);
+
+        else if (word == "Go") {
+            // goes to other named scope
+            writer.write(bytecode::GO);
             source >> word; // scope name
             writer.writeString(word);
-        } else if (word == "jnq") {
-            /* jump if not equal */
-            writer.write(bytecode::NOT_EQUAL);
+        } else if (word == "Geq") {
+            /* go if equal */
+            writer.write(bytecode::GO_EQUAL);
+            source >> word; // scope name
+            writer.writeString(word);
+        } else if (word == "Gnq") {
+            /* go if not equal */
+            writer.write(bytecode::GO_UNEQUAL);
             source >> word; // scope name
             writer.writeString(word);
         }

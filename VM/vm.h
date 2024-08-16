@@ -6,12 +6,16 @@
 #define VM_VM_H
 
 #include <memory>
+#include <unordered_map>
 #include "bytecode.h"
 #include "ememory.h"
 
 class vm {
     std::unique_ptr<uint8_t[]> bytes;
+    std::unordered_map<std::string, long> scopes;
+
     long index = 0;
+    long size;
     ememory memory;
 
     std::string* readString();
@@ -19,12 +23,18 @@ class vm {
 
     bytecode next();
     int32_t readInt32();
+
+    bool hasMore();
 public:
-    vm(std::unique_ptr<uint8_t[]> bytes): bytes(std::move(bytes))  {
+    vm(std::unique_ptr<uint8_t[]> bytes, long size): bytes(std::move(bytes)), size(size)  {
         // Meow
     }
+    ~vm();
 
     void run();
+    bool run_scope();
+
+    void go_scope();
 };
 
 

@@ -6,6 +6,21 @@
 #include "vm.h"
 
 void vm::run() {
+    while (hasMore()) {
+        auto scope_name = readString();
+        scopes[*scope_name] = index;
+        if (*scope_name == "main") {
+            if (run_scope()) break;
+        } else {
+            for (;;) {
+                auto code = read();
+                if (code == static_cast<int>(bytecode::SCOPE_END)) break;
+            }
+        }
+    }
+}
+
+bool vm::run_scope() {
     for (;;) {
         auto op_code = next();
         switch (op_code) {
@@ -23,8 +38,8 @@ void vm::run() {
                 memory.push(memory.pop() + memory.pop());
                 break;
             case bytecode::ADD_STR: {
-                auto* right = reinterpret_cast<std::string*>(memory.pop());
-                auto* left = reinterpret_cast<std::string*>(memory.pop());
+                auto *right = memory.popString();
+                auto *left = memory.popString();
                 memory.push(reinterpret_cast<uint64_t>(new std::string(*left + *right)));
                 delete left;
                 delete right;
@@ -49,24 +64,66 @@ void vm::run() {
                 printf("%d", static_cast<int32_t>(memory.pop()));
                 break;
             case bytecode::PRINT_STR: {
-                auto* string = reinterpret_cast<std::string*>(memory.pop());
+                auto *string = reinterpret_cast<std::string *>(memory.pop());
                 std::cout << *string;
                 delete string;
                 break;
             }
-            case bytecode::END_LINE: {
+            case bytecode::END_LINE:
                 std::cout << std::endl;
                 break;
+            case bytecode::HALT: return true;
+            case bytecode::SCOPE_END: return false;
+
+            case bytecode::TO_STR: {
+                auto aString = new std::string(std::to_string(memory.pop()));
+                memory.push(reinterpret_cast<uint64_t>(aString));
+                break;
             }
-            case bytecode::HALT:
-                return;
+
+            case bytecode::INT_CMP:
+                memory.push(memory.pop() == memory.pop() ? 1 : 0);
+                break;
+            case bytecode::STR_CMP:
+                memory.push((*memory.popString() == *memory.popString()) ? 1 : 0);
+                break;
+
+            case bytecode::GO: {
+                go_scope();
+                break;
+            }
+
+            case bytecode::GO_EQUAL: {
+                if (memory.pop() != 1) break;
+                go_scope();
+                break;
+            }
+
+            case bytecode::GO_UNEQUAL: {
+                if (memory.pop() != 0) break;
+                go_scope();
+                break;
+            }
+
+            default:
+                throw std::runtime_error("Unknown bytecode " + std::to_string(static_cast<int>(op_code)));
         }
     }
 }
 
-std::string* vm::readString() {
+void vm::go_scope() {
+    auto scope_name = readString();
+    long current_index = index;
+    index = scopes[*scope_name];
+    delete scope_name;
+    run_scope();
+    // just run and come back
+    index = current_index;
+}
+
+std::string *vm::readString() {
     uint8_t str_len = read();
-    auto* name = new std::string(reinterpret_cast<const char *>(&bytes[index]), str_len);
+    auto *name = new std::string(reinterpret_cast<const char *>(&bytes[index]), str_len);
     index += str_len;
     return name;
 }
@@ -84,4 +141,15 @@ int32_t vm::readInt32() {
            (read() & 0xff) |
            (read() & 0xff) |
            (read() & 0xff);;
+}
+
+bool vm::hasMore() {
+    return index < size;
+}
+
+
+vm::~vm() {
+    //for (const auto &scope: scopes) {
+        //delete &scope.first;
+    //}
 }

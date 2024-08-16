@@ -9,7 +9,6 @@ add_executable(VM main.cpp
         bytecode.h
         ememory.cpp
         ememory.h
-        value.h
         assembler/assembler.cpp
         assembler/assembler.h
         assembler/bytecode_writer.cpp

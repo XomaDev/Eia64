@@ -1,11 +1,15 @@
 meow
-    str "cat"
-    print_str
+  Str "miaw it is true"
+  Print_Str
 end
 
 main
-    str "me"
-    str "ow"
-    jeq meow
+    Str "me"
+    Str "ow"
+    Add_Str
+    Str "meow"
+    Str_Cmp
+    Geq meow
+    Halt
 end
 

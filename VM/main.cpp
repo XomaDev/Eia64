@@ -34,7 +34,7 @@ void runVm() {
     auto bytes = readBytes(path, fileSize);
     printBytes(bytes.get(), fileSize);
 
-    auto vm = new class vm(std::move(bytes));
+    auto vm = new class vm(std::move(bytes), fileSize);
     vm->run();
     delete vm;
 }

@@ -14,3 +14,7 @@ uint64_t ememory::pop() {
     stack_memory.pop();
     return top;
 }
+
+std::string *ememory::popString() {
+    return reinterpret_cast<std::string*>(pop());
+}

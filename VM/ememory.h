@@ -9,14 +9,15 @@
 #include <cstdint>
 #include <stack>
 #include <string>
-#include "value.h"
 
 class ememory {
     std::stack<uint64_t> stack_memory;
 
 public:
     void push(uint64_t value);
+
     uint64_t pop();
+    std::string* popString();
 };
 
 
