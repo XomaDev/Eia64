@@ -1,5 +1,7 @@
-int 8
 int 2
-add
+ int 3
+   add
+int 4
+ mul
 print
-string "meow world"
+halt

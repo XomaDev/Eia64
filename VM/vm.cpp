@@ -6,7 +6,6 @@
 #include "vm.h"
 
 void vm::run() {
-    std::cout << "meow" << std::endl;
     for (;;) {
         auto op_code = next();
         switch (op_code) {
@@ -71,8 +70,8 @@ bytecode vm::next() {
 }
 
 int32_t vm::readInt32() {
-    return read() & 0xff |
-           (read() & 0xff) << 8 |
-           (read() & 0xff) << 16 |
-           (read() & 0xff) << 24;;
+    return (read() & 0xff << 24) |
+           (read() & 0xff) |
+           (read() & 0xff) |
+           (read() & 0xff);;
 }

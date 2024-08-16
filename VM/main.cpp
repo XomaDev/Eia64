@@ -3,7 +3,7 @@
 #include <fstream>
 
 #include "vm.h"
-#include "assembler.h"
+#include "assembler/assembler.h"
 
 std::unique_ptr<uint8_t[]> readBytes(const std::string& path, long& fileSize) {
     std::ifstream file(path, std::ios::binary | std::ios::ate);
@@ -29,7 +29,7 @@ void printBytes(unsigned char* bytes, long& size) {
 
 void runVm() {
     // this is a testing path
-    auto path = "/home/kumaraswamy/Documents/Eia64/Compiler/playground/hello.eia.e";
+    auto path = "/home/kumaraswamy/Documents/Eia64/VM/tests/hello.e";
     long fileSize;
     auto bytes = readBytes(path, fileSize);
     printBytes(bytes.get(), fileSize);
@@ -40,8 +40,10 @@ void runVm() {
 }
 
 int main() {
-    // runVM()
     auto esmPath = "/home/kumaraswamy/Documents/Eia64/VM/tests/hello.esm";
-    delete new assembler(esmPath);
+    auto compiledPath = "/home/kumaraswamy/Documents/Eia64/VM/tests/hello.e";
+    delete new assembler(esmPath, compiledPath);
+
+    runVm();
     return 0;
 }

@@ -2,6 +2,7 @@
 // Created by kumaraswamy on 8/16/24.
 //
 
+#include <iostream>
 #include "ememory.h"
 
 void ememory::push(uint64_t value) {
