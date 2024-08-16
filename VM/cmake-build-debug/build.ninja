@@ -94,7 +94,22 @@ build CMakeFiles/VM.dir/ememory.cpp.o: CXX_COMPILER__VM_scanned_Debug /home/kuma
   OBJECT_FILE_DIR = CMakeFiles/VM.dir
   dyndep = CMakeFiles/VM.dir/CXX.dd
 
-build CMakeFiles/VM.dir/CXX.dd | /home/kumaraswamy/Documents/Eia64/VM/cmake-build-debug/CMakeFiles/VM.dir/CXXModules.json CMakeFiles/VM.dir/main.cpp.o.modmap CMakeFiles/VM.dir/vm.cpp.o.modmap CMakeFiles/VM.dir/ememory.cpp.o.modmap: CXX_DYNDEP__VM_Debug CMakeFiles/VM.dir/main.cpp.o.ddi CMakeFiles/VM.dir/vm.cpp.o.ddi CMakeFiles/VM.dir/ememory.cpp.o.ddi | /home/kumaraswamy/Documents/Eia64/VM/cmake-build-debug/CMakeFiles/VM.dir/CXXDependInfo.json
+build CMakeFiles/VM.dir/value.cpp.o.ddi: CXX_SCAN__VM_Debug /home/kumaraswamy/Documents/Eia64/VM/value.cpp || cmake_object_order_depends_target_VM
+  DEP_FILE = CMakeFiles/VM.dir/value.cpp.o.ddi.d
+  DYNDEP_INTERMEDIATE_FILE = CMakeFiles/VM.dir/value.cpp.o.ddi
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  OBJ_FILE = CMakeFiles/VM.dir/value.cpp.o
+  PREPROCESSED_OUTPUT_FILE = CMakeFiles/VM.dir/value.cpp.o.ddi.i
+
+build CMakeFiles/VM.dir/value.cpp.o: CXX_COMPILER__VM_scanned_Debug /home/kumaraswamy/Documents/Eia64/VM/value.cpp | CMakeFiles/VM.dir/value.cpp.o.modmap || cmake_object_order_depends_target_VM CMakeFiles/VM.dir/CXX.dd
+  DEP_FILE = CMakeFiles/VM.dir/value.cpp.o.d
+  DYNDEP_MODULE_MAP_FILE = CMakeFiles/VM.dir/value.cpp.o.modmap
+  FLAGS = -g -std=gnu++20 -fdiagnostics-color=always
+  OBJECT_DIR = CMakeFiles/VM.dir
+  OBJECT_FILE_DIR = CMakeFiles/VM.dir
+  dyndep = CMakeFiles/VM.dir/CXX.dd
+
+build CMakeFiles/VM.dir/CXX.dd | /home/kumaraswamy/Documents/Eia64/VM/cmake-build-debug/CMakeFiles/VM.dir/CXXModules.json CMakeFiles/VM.dir/main.cpp.o.modmap CMakeFiles/VM.dir/vm.cpp.o.modmap CMakeFiles/VM.dir/ememory.cpp.o.modmap CMakeFiles/VM.dir/value.cpp.o.modmap: CXX_DYNDEP__VM_Debug CMakeFiles/VM.dir/main.cpp.o.ddi CMakeFiles/VM.dir/vm.cpp.o.ddi CMakeFiles/VM.dir/ememory.cpp.o.ddi CMakeFiles/VM.dir/value.cpp.o.ddi | /home/kumaraswamy/Documents/Eia64/VM/cmake-build-debug/CMakeFiles/VM.dir/CXXDependInfo.json
 
 
 # =============================================================================
@@ -104,7 +119,7 @@ build CMakeFiles/VM.dir/CXX.dd | /home/kumaraswamy/Documents/Eia64/VM/cmake-buil
 #############################################
 # Link the executable VM
 
-build VM: CXX_EXECUTABLE_LINKER__VM_Debug CMakeFiles/VM.dir/main.cpp.o CMakeFiles/VM.dir/vm.cpp.o CMakeFiles/VM.dir/ememory.cpp.o
+build VM: CXX_EXECUTABLE_LINKER__VM_Debug CMakeFiles/VM.dir/main.cpp.o CMakeFiles/VM.dir/vm.cpp.o CMakeFiles/VM.dir/ememory.cpp.o CMakeFiles/VM.dir/value.cpp.o
   FLAGS = -g
   OBJECT_DIR = CMakeFiles/VM.dir
   POST_BUILD = :

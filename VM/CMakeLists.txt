@@ -8,4 +8,6 @@ add_executable(VM main.cpp
         vm.h
         bytecode.h
         ememory.cpp
-        ememory.h)
+        ememory.h
+        value.cpp
+        value.h)

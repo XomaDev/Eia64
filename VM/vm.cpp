@@ -11,26 +11,25 @@ void vm::run() {
         auto op_code = next();
         switch (op_code) {
             case bytecode::INT:
-                memory.push_stack(readInt32());
+                memory.push(readInt32());
                 break;
-            case bytecode::ADD: {
-                memory.push_stack(memory.pop_stack() + memory.pop_stack());
+            case bytecode::BOOL:
+                memory.push(read() == 1);
                 break;
-            }
-            case bytecode::SUB: {
-                memory.push_stack(memory.pop_stack() - memory.pop_stack());
+            case bytecode::ADD:
+                memory.push(memory.pop_int() + memory.pop_int());
                 break;
-            }
-            case bytecode::MUL: {
-                memory.push_stack(memory.pop_stack() * memory.pop_stack());
+            case bytecode::SUB:
+                memory.push(memory.pop_int() - memory.pop_int());
                 break;
-            }
-            case bytecode::DIV: {
-                memory.push_stack(memory.pop_stack() / memory.pop_stack());
+            case bytecode::MUL:
+                memory.push(memory.pop_int() * memory.pop_int());
                 break;
-            }
+            case bytecode::DIV:
+                memory.push(memory.pop_int() / memory.pop_int());
+                break;
             case bytecode::PRINT:
-                printf("%d\n", static_cast<int32_t>(memory.pop_stack()));
+                printf("%d\n", static_cast<int32_t>(memory.pop_int()));
                 break;
             case bytecode::HALT:
                 return;

@@ -8,13 +8,17 @@
 
 #include <cstdint>
 #include <stack>
+#include "value.h"
 
 class ememory {
-    std::stack<uint64_t> stack_memory;
+    std::stack<Value> stack_memory;
 
 public:
-    void push_stack(uint64_t element);
-    uint64_t pop_stack();
+    void push(uint64_t value);
+    void push(Value element);
+
+    uint64_t pop_int();
+    Value pop();
 };
 
 

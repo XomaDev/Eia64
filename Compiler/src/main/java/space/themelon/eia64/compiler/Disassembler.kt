@@ -29,7 +29,7 @@ class Disassembler(
     private fun disassemble() {
         val instruction = Bytecode.entries[next().toInt()]
         val line = StringJoiner(" ")
-        line.add(instruction.name)
+        line.add(instruction.name.lowercase())
 
         when (instruction) {
             Bytecode.INT -> line.add(readInt32().toString())
