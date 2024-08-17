@@ -33,10 +33,12 @@ enum class bytecode {
     SLEEP,
     STR_LEN,
     TO_STR, // Int to String
+    TO_CH, // Int to Single Letter String
     POP,
     POP_STR, // remove String from Stack
     STORE,
     LOAD,
+    CHAR_AT, // element at
 
     // Logical
     INT_CMP, // compares last two Ints

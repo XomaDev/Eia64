@@ -1,14 +1,100 @@
+gen_spaces
+    Load 51
+    Str " "
+    Add_Str
+    Store 51
+
+    Str_Len
+    Load 50
+    Int_Cmp
+    Gnq gen_spaces
+end
+
+create_spaces
+    # arg {50} for n spaces
+    # {50} for resultant spaces
+    Str " "
+    Store 51
+    Visit gen_spaces
+end
+
 init_conf
-    # Loading all the configs
+    # [0, 9] range for properties
+    # Loading all the properties
     # Interval => 0
+    # Trash Can => 1
+    # Happy Right   => 2
+    # Happy Left   => 3
 
     # Set interval to 500 ms
     Int 500
     Store 0
     Pop
+
+    # Trash Symbol
+    Str "🗑"
+    Store 1
+    Pop_Str
+
+    # Happy Right
+    Str "(> ^_^)>"
+    Store 2
+    Pop_Str
+
+    # Happy Left
+    Str "<(^_^ <)"
+    Store 3
+    Pop_Str
+end
+
+iterate_char
+    Load 12
+    Print
+
+    # increment char_i
+    Load 12
+    Int 1
+    Add
+    Store 12
+
+    Go char_loop
+end
+
+char_loop
+    Load 12     # char_i
+    Load 11     # text len
+    Int_Cmp
+
+    Gnq iterate_char
+end
+
+trash
+    # [10, 19] for animation properties
+    # arg {10} => text
+
+    # {11} => text size
+    # {12} => char_i
+
+    # get and store text size
+    Load 10
+    Str_Len
+    Store 11
+    Pop
+
+    # init char loop i
+    Int 0
+    Store 12
+    Pop
+
+    Visit char_loop
 end
 
 main
-   Visit init_conf
-   Halt
+    Str "Visitng init conf"
+    Print_Str
+    Visit init_conf
+
+    Str "Mea"
+    Store 10
+    Visit trash
 end

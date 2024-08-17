@@ -1,0 +1,39 @@
+after_loop
+    Str "Thank you Gentle Men."
+    Print_Str Endl
+    Str "The Loop Ended."
+    Print_Str Endl
+    Halt
+end
+
+iterate_i
+    Str "Currently at "
+    Load 0
+    To_Str
+    Add_Str
+    Print_Str Endl
+
+    # increment i
+    Load 0
+    Int 1
+    Add
+    Store 0
+
+    Go do_loop
+end
+
+do_loop
+    # i == 10 ? iterate_i : after_loop
+    Load 0
+    Int 10
+    Int_Cmp
+    Gnq iterate_i
+    Geq after_loop
+end
+
+main
+    # `i` for loop at location 0
+    Int 0
+    Store 0
+    Go do_loop
+end

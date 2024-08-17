@@ -1,0 +1,6 @@
+main
+    Str "Meow"
+    Int 1
+    Char_At
+    Print_Str
+end

@@ -114,6 +114,11 @@ bool vm::run_scope() {
                 memory.push(reinterpret_cast<uint64_t>(aString));
                 break;
             }
+            case bytecode::TO_CH: {
+                auto single_letter = new std::string(1, static_cast<char>(memory.top()));
+                memory.push(reinterpret_cast<uint64_t>(single_letter));
+                break;
+            }
             case bytecode::STR_LEN:
                 memory.push(memory.topString()->size());
                 break;
@@ -129,6 +134,11 @@ bool vm::run_scope() {
             case bytecode::LOAD:
                 memory.push(memory.load(readInt32()));
                 break;
+            case bytecode::CHAR_AT: {
+                auto at_index = memory.pop();
+                memory.push((*memory.topString())[at_index]);
+                break;
+            }
 
             case bytecode::INT_CMP:
                 memory.push(memory.pop() == memory.pop() ? 1 : 0);
