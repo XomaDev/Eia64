@@ -50,8 +50,8 @@ It's hosted on [Nest](https://github.com/hackclub/nest) by HackClub <b><3</b>
 
 ## Links
 
-- Eia SSH server: [XomaDev/EiaAPI](https://github/XomaDev/EiaAPI)
-- Eia docs: [XomaDev/Eia-Docs](https://github/XomaDev/eia-docs)
+- Eia SSH server: [XomaDev/EiaAPI](https://github.com/XomaDev/EiaAPI)
+- Eia docs: [XomaDev/Eia-Docs](https://github.com/XomaDev/eia-docs)
 
 <hr>
 
