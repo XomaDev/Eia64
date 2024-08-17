@@ -7,4 +7,4 @@ data class UniqueVariable(
     val mutable: Boolean,
     val signature: Signature,
     val public: Boolean
-)
+)   

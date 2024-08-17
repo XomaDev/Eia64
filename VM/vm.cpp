@@ -8,8 +8,10 @@
 void vm::run() {
     while (hasMore()) {
         auto scope_name = readString();
-        scopes[*scope_name] = index;
-        if (*scope_name == "main") {
+        auto copy_name = std::string(*scope_name);
+        delete scope_name;
+        scopes[copy_name] = index;
+        if (copy_name == "main") {
             if (run_scope()) break;
         } else {
             for (;;) {
@@ -24,6 +26,7 @@ bool vm::run_scope() {
     for (;;) {
         auto op_code = next();
         switch (op_code) {
+            // Binary operations
             case bytecode::INT:
                 memory.push(readInt32());
                 break;
@@ -60,17 +63,21 @@ bool vm::run_scope() {
                 memory.push(left / right);
                 break;
             }
+
+            // Unary operations
             case bytecode::NEG:
                 memory.push(-memory.pop());
                 break;
             case bytecode::NOT:
                 memory.push(!memory.pop());
                 break;
+
+            // System calls
             case bytecode::PRINT:
                 printf("%d", static_cast<int32_t>(memory.pop()));
                 break;
             case bytecode::PRINT_STR: {
-                auto *string = reinterpret_cast<std::string *>(memory.pop());
+                auto *string = memory.popString();
                 std::cout << *string;
                 delete string;
                 break;
@@ -80,12 +87,23 @@ bool vm::run_scope() {
                 break;
             case bytecode::HALT: return true;
             case bytecode::SCOPE_END: return false;
-
             case bytecode::TO_STR: {
                 auto aString = new std::string(std::to_string(memory.pop()));
                 memory.push(reinterpret_cast<uint64_t>(aString));
                 break;
             }
+            case bytecode::STR_LEN:
+                memory.push(memory.topString()->size());
+                break;
+            case bytecode::POP_STR:
+                delete memory.popString();
+                break;
+            case bytecode::STORE:
+                memory.store(readInt32(), memory.top());
+                break;
+            case bytecode::LOAD:
+                memory.push(memory.load(readInt32()));
+                break;
 
             case bytecode::INT_CMP:
                 memory.push(memory.pop() == memory.pop() ? 1 : 0);

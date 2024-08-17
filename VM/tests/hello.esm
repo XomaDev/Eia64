@@ -1,3 +1,22 @@
 main
-    
+    Str "Meow"
+    Store 0
+
+      Int 8
+      Int 2
+    Add
+    Print Endl
+
+      Int 7
+      Int 3
+    Add
+    Store 1
+
+    Load 0
+    Load 1
+    To_Str
+    Add_Str
+
+    Print_Str
+
 end

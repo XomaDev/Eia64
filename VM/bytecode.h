@@ -28,13 +28,15 @@ enum class bytecode {
     PRINT_STR,
     END_LINE,
     HALT,
-
-    // Conversion
+    STR_LEN,
     TO_STR, // Int to String
+    POP_STR, // remove String from Stack
+    STORE,
+    LOAD,
 
     // Logical
-    INT_CMP, // compares last two ints
-    STR_CMP, // compares last two strings
+    INT_CMP, // compares last two Ints
+    STR_CMP, // compares last two Strings
 
     GO,
 
