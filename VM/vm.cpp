@@ -69,7 +69,6 @@ bool vm::run_scope() {
                 memory.push(-memory.pop());
                 break;
             case bytecode::NOT: {
-                std::cout << std::to_string(index) << std::endl;
                 memory.push(!memory.pop());
                 break;
             }
@@ -89,15 +88,16 @@ bool vm::run_scope() {
             }
             case bytecode::PRINT:
                 printf("%d", static_cast<int32_t>(memory.pop()));
+                std::cout << std::flush;
                 break;
             case bytecode::PRINT_STR: {
                 auto *string = memory.popString();
-                std::cout << *string;
+                std::cout << *string << std::flush;
                 delete string;
                 break;
             }
             case bytecode::END_LINE:
-                std::cout << std::endl;
+                std::cout << std::endl << std::flush;
                 break;
             case bytecode::HALT: {
                 running = false;
@@ -149,21 +149,36 @@ bool vm::run_scope() {
             case bytecode::GO:
                 return go_scope(readString());
             case bytecode::VISIT: {
-                // visits and comes back
                 auto scope_name = readString();
                 auto current_index = index;
                 go_scope(scope_name);
                 index = current_index;
                 break;
             }
-
+            case bytecode::VISIT_EQUAL: {
+                // visits and comes back
+                auto scope_name = readString();
+                if (memory.top() != 1) break;
+                auto current_index = index;
+                go_scope(scope_name);
+                index = current_index;
+            }
+            case bytecode::VISIT_UNEQUAL: {
+                // visits and comes back
+                auto scope_name = readString();
+                if (memory.top() != 0) break;
+                auto current_index = index;
+                go_scope(scope_name);
+                index = current_index;
+            }
             case bytecode::GO_EQUAL: {
+                // goes... but never comes bacc
                 auto scope_name = readString();
                 if (memory.top() != 1) break;
                 return go_scope(scope_name);
             }
-
             case bytecode::GO_UNEQUAL: {
+                // goes... but never comes bacc
                 auto scope_name = readString();
                 if (memory.top() != 0) break;
                 return go_scope(scope_name);
@@ -177,6 +192,7 @@ bool vm::run_scope() {
 }
 
 bool vm::go_scope(std::string* scope_name) {
+    auto name = *scope_name;
     index = scopes[*scope_name];
     delete scope_name;
     return run_scope();

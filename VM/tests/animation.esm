@@ -1,4 +1,4 @@
-gen_spaces
+make_space
     Load 51
     Str " "
     Add_Str
@@ -7,15 +7,19 @@ gen_spaces
     Str_Len
     Load 50
     Int_Cmp
-    Gnq gen_spaces
+    Gnq make_space
 end
 
 create_spaces
     # arg {50} for n spaces
-    # {50} for resultant spaces
-    Str " "
+    # {51} for resultant spaces
+
+    Str ""
     Store 51
-    Visit gen_spaces
+    Str_Len
+    Load 50
+
+    Vnq make_space
 end
 
 init_conf
@@ -34,17 +38,49 @@ init_conf
     # Trash Symbol
     Str "🗑"
     Store 1
-    Pop_Str
 
     # Happy Right
     Str "(> ^_^)>"
     Store 2
-    Pop_Str
 
     # Happy Left
     Str "<(^_^ <)"
     Store 3
-    Pop_Str
+end
+
+happy_right
+    Load 4
+    Print_Str
+end
+
+happy_left
+    Load 3
+    Print_Str
+end
+
+steal_char
+    # trash guy steals a char!
+
+    # Print Trash Can
+    Load 1
+    Print_Str
+
+    # Print Left Spaces
+    Load 15
+    Store 50
+    Visit create_spaces
+    Load 51
+    Print_Str
+
+    # Print Trash Guy Face
+    # going_right ? happy_right : happy_left
+    Load 14
+    Bool True
+    Int_Cmp
+
+    Veq happy_right
+    Vnq happy_left
+
 end
 
 iterate_char
@@ -55,7 +91,6 @@ iterate_char
     To_Ch
 
     Store 13    # store relevant char
-    Print_Str Endl
 
     # going_right = true
     Int 1
@@ -70,6 +105,7 @@ iterate_char
     Add
     Store 16    # right space (10+i)
 
+    Visit steal_char
 
     # increment char_i
     Load 12

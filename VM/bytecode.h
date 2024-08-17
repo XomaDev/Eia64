@@ -47,6 +47,9 @@ enum class bytecode {
     GO,
     VISIT,
 
+    VISIT_EQUAL,
+    VISIT_UNEQUAL,
+
     GO_EQUAL,
     GO_UNEQUAL,
 

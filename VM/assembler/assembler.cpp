@@ -118,6 +118,17 @@ void assembler::readScope() {
             writer.write(bytecode::VISIT);
             source >> word; // scope name
             writer.writeString(word);
+        }
+        else if (word == "Veq") {
+            /* go if equal */
+            writer.write(bytecode::VISIT_EQUAL);
+            source >> word; // scope name
+            writer.writeString(word);
+        } else if (word == "Vnq") {
+            /* go if not equal */
+            writer.write(bytecode::VISIT_UNEQUAL);
+            source >> word; // scope name
+            writer.writeString(word);
         } else if (word == "Geq") {
             /* go if equal */
             writer.write(bytecode::GO_EQUAL);
