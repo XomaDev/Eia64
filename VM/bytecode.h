@@ -30,8 +30,10 @@ enum class bytecode {
     PRINT_STR,
     END_LINE,
     HALT,
+    SLEEP,
     STR_LEN,
     TO_STR, // Int to String
+    POP,
     POP_STR, // remove String from Stack
     STORE,
     LOAD,
@@ -41,6 +43,7 @@ enum class bytecode {
     STR_CMP, // compares last two Strings
 
     GO,
+    VISIT,
 
     GO_EQUAL,
     GO_UNEQUAL,

@@ -1,0 +1,27 @@
+gen_spaces
+    Load 51
+    Str " "
+    Add_Str
+    Store 51
+
+    Str_Len
+    Load 50
+    Int_Cmp
+    Gnq gen_spaces
+end
+
+create_spaces
+    Str " "
+    Store 51
+    Visit gen_spaces
+end
+
+main
+    # 2 spaces
+    Int 5
+    Store 50
+
+    Visit create_spaces
+    Load 51
+    Print_Str
+end

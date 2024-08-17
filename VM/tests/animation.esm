@@ -1,0 +1,14 @@
+init_conf
+    # Loading all the configs
+    # Interval => 0
+
+    # Set interval to 500 ms
+    Int 500
+    Store 0
+    Pop
+end
+
+main
+   Visit init_conf
+   Halt
+end

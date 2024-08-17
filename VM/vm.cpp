@@ -3,6 +3,8 @@
 //
 
 #include <iostream>
+#include <chrono>
+#include <thread>
 #include "vm.h"
 
 void vm::run() {
@@ -16,6 +18,7 @@ void vm::run() {
         } else {
             for (;;) {
                 auto code = read();
+                // If any {Scope_End} occurs, it may break the program
                 if (code == static_cast<int>(bytecode::SCOPE_END)) break;
             }
         }
@@ -101,6 +104,10 @@ bool vm::run_scope() {
                 running = false;
                 return true;
             }
+            case bytecode::SLEEP:
+                std::this_thread::sleep_for(std::chrono::milliseconds(readInt32()));
+                break;
+
             case bytecode::SCOPE_END: return false;
             case bytecode::TO_STR: {
                 auto aString = new std::string(std::to_string(memory.pop()));
@@ -109,6 +116,9 @@ bool vm::run_scope() {
             }
             case bytecode::STR_LEN:
                 memory.push(memory.topString()->size());
+                break;
+            case bytecode::POP:
+                memory.pop();
                 break;
             case bytecode::POP_STR:
                 delete memory.popString();
@@ -129,6 +139,14 @@ bool vm::run_scope() {
 
             case bytecode::GO:
                 return go_scope(readString());
+            case bytecode::VISIT: {
+                // visits and comes back
+                auto scope_name = readString();
+                auto current_index = index;
+                go_scope(scope_name);
+                index = current_index;
+                break;
+            }
 
             case bytecode::GO_EQUAL: {
                 auto scope_name = readString();
@@ -172,9 +190,9 @@ bytecode vm::next() {
 
 int32_t vm::readInt32() {
     return (read() & 0xff << 24) |
-           (read() & 0xff) |
-           (read() & 0xff) |
-           (read() & 0xff);;
+           (read() & 0xff) << 16 |
+           (read() & 0xff) << 8 |
+           (read() & 0xff);
 }
 
 bool vm::hasMore() {

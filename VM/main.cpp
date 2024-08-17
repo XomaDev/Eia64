@@ -40,7 +40,7 @@ void runVm() {
 }
 
 int main() {
-    auto esmPath = "/home/kumaraswamy/Documents/Eia64/VM/tests/hello.esm";
+    auto esmPath = "/home/kumaraswamy/Documents/Eia64/VM/tests/space_gen.esm";
     auto compiledPath = "/home/kumaraswamy/Documents/Eia64/VM/tests/hello.e";
     delete new assembler(esmPath, compiledPath);
 

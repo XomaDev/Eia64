@@ -64,8 +64,14 @@ void assembler::readScope() {
         else if (word == "Print_Str") writer.write(bytecode::PRINT_STR);
         else if (word == "Endl") writer.write(bytecode::END_LINE);
         else if (word == "Halt") writer.write(bytecode::HALT);
+        else if (word == "Sleep") {
+            writer.write(bytecode::SLEEP);
+            source >> word;
+            writer.writeInt32(stoi(word));
+        }
         else if (word == "To_Str") writer.write(bytecode::TO_STR);
         else if (word == "Str_Len") writer.write(bytecode::STR_LEN);
+        else if (word == "Pop") writer.write(bytecode::POP);
         else if (word == "Pop_Str") writer.write(bytecode::POP_STR);
         else if (word == "Store") {
             writer.write(bytecode::STORE);
@@ -83,6 +89,11 @@ void assembler::readScope() {
         else if (word == "Go") {
             // goes to other named scope
             writer.write(bytecode::GO);
+            source >> word; // scope name
+            writer.writeString(word);
+        } else if (word == "Visit") {
+            // goes to other named scope
+            writer.write(bytecode::VISIT);
             source >> word; // scope name
             writer.writeString(word);
         } else if (word == "Geq") {
