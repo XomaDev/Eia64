@@ -2,6 +2,7 @@
 // Created by kumaraswamy on 8/16/24.
 //
 
+#include <limits>
 #include <iostream>
 #include "assembler.h"
 
@@ -19,7 +20,9 @@ void assembler::begin() {
 void assembler::readScope() {
     std::string word;
     while (source >> word) {
-        if (word == "Bool") {
+        if (word == "#") {
+            source.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        } else if (word == "Bool") {
           writer.write(bytecode::BOOL);
           source >> word;
 
@@ -55,6 +58,8 @@ void assembler::readScope() {
         else if (word == "Neg") writer.write(bytecode::NEG);
         else if (word == "Not") writer.write(bytecode::NOT);
 
+        else if (word == "Read") writer.write(bytecode::READ);
+        else if (word == "Read_Ln") writer.write(bytecode::READ_LN);
         else if (word == "Print") writer.write(bytecode::PRINT);
         else if (word == "Print_Str") writer.write(bytecode::PRINT_STR);
         else if (word == "Endl") writer.write(bytecode::END_LINE);

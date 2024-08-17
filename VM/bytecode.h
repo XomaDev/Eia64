@@ -24,6 +24,8 @@ enum class bytecode {
     NOT,
 
     // SYSTEM
+    READ,
+    READ_LN,
     PRINT,
     PRINT_STR,
     END_LINE,

@@ -6,7 +6,7 @@
 #include "vm.h"
 
 void vm::run() {
-    while (hasMore()) {
+    while (hasMore() && running) {
         auto scope_name = readString();
         auto copy_name = std::string(*scope_name);
         delete scope_name;
@@ -23,7 +23,7 @@ void vm::run() {
 }
 
 bool vm::run_scope() {
-    for (;;) {
+    for (;running;) {
         auto op_code = next();
         switch (op_code) {
             // Binary operations
@@ -73,6 +73,18 @@ bool vm::run_scope() {
                 break;
 
             // System calls
+            case bytecode::READ: {
+                uint64_t number;
+                std::cin >> number;
+                memory.push(number);
+                break;
+            }
+            case bytecode::READ_LN: {
+                std::string line;
+                getline(std::cin, line);
+                memory.push(reinterpret_cast<uint64_t>(new std::string(line)));
+                break;
+            }
             case bytecode::PRINT:
                 printf("%d", static_cast<int32_t>(memory.pop()));
                 break;
@@ -85,7 +97,10 @@ bool vm::run_scope() {
             case bytecode::END_LINE:
                 std::cout << std::endl;
                 break;
-            case bytecode::HALT: return true;
+            case bytecode::HALT: {
+                running = false;
+                return true;
+            }
             case bytecode::SCOPE_END: return false;
             case bytecode::TO_STR: {
                 auto aString = new std::string(std::to_string(memory.pop()));
@@ -112,37 +127,32 @@ bool vm::run_scope() {
                 memory.push((*memory.popString() == *memory.popString()) ? 1 : 0);
                 break;
 
-            case bytecode::GO: {
-                go_scope();
-                break;
-            }
+            case bytecode::GO:
+                return go_scope(readString());
 
             case bytecode::GO_EQUAL: {
-                if (memory.pop() != 1) break;
-                go_scope();
-                break;
+                auto scope_name = readString();
+                if (memory.top() != 1) break;
+                return go_scope(scope_name);
             }
 
             case bytecode::GO_UNEQUAL: {
-                if (memory.pop() != 0) break;
-                go_scope();
-                break;
+                auto scope_name = readString();
+                if (memory.top() != 0) break;
+                return go_scope(scope_name);
             }
 
             default:
                 throw std::runtime_error("Unknown bytecode " + std::to_string(static_cast<int>(op_code)));
         }
     }
+    throw std::runtime_error("Reached Unexpected End Of Loop");
 }
 
-void vm::go_scope() {
-    auto scope_name = readString();
-    long current_index = index;
+bool vm::go_scope(std::string* scope_name) {
     index = scopes[*scope_name];
     delete scope_name;
-    run_scope();
-    // just run and come back
-    index = current_index;
+    return run_scope();
 }
 
 std::string *vm::readString() {

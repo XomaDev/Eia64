@@ -1,0 +1,4 @@
+main
+    Str "meow" # this is a comment
+    Print_Str
+end

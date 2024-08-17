@@ -25,6 +25,7 @@ class vm {
     int32_t readInt32();
 
     bool hasMore();
+    bool running = true;
 public:
     vm(std::unique_ptr<uint8_t[]> bytes, long size): bytes(std::move(bytes)), size(size)  {
         // Meow
@@ -34,7 +35,7 @@ public:
     void run();
     bool run_scope();
 
-    void go_scope();
+    bool go_scope(std::string* scope_name);
 };
 
 
