@@ -40,6 +40,9 @@ enum class bytecode {
     LOAD,
     CHAR_AT, // element at
 
+    SCOPE,
+    DECIDE,
+
     // Logical
     INT_CMP, // compares last two Ints
     STR_CMP, // compares last two Strings

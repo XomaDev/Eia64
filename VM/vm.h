@@ -14,8 +14,8 @@ class vm {
     std::unique_ptr<uint8_t[]> bytes;
     std::unordered_map<std::string, long> scopes;
 
-    long index = 0;
-    long size;
+    unsigned long index = 0;
+    unsigned long size;
     ememory memory;
 
     std::string* readString();
@@ -34,8 +34,6 @@ public:
 
     void run();
     bool run_scope();
-
-    bool go_scope(std::string* scope_name);
 };
 
 

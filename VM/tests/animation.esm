@@ -7,7 +7,7 @@ make_space
     Str_Len
     Load 50
     Int_Cmp
-    Gnq make_space
+    Scope make_space Gnq
 end
 
 create_spaces
@@ -18,8 +18,9 @@ create_spaces
     Store 51
     Str_Len
     Load 50
+    Int_Cmp
 
-    Vnq make_space
+    Scope make_space Vnq
 end
 
 init_conf
@@ -33,7 +34,6 @@ init_conf
     # Set interval to 500 ms
     Int 500
     Store 0
-    Pop
 
     # Trash Symbol
     Str "🗑"
@@ -49,7 +49,7 @@ init_conf
 end
 
 happy_right
-    Load 4
+    Load 2
     Print_Str
 end
 
@@ -68,19 +68,25 @@ steal_char
     # Print Left Spaces
     Load 15
     Store 50
-    Visit create_spaces
+    Scope create_spaces Visit
     Load 51
     Print_Str
 
     # Print Trash Guy Face
-    # going_right ? happy_right : happy_left
-    Load 14
+    Scope happy_right   # for true
+    Scope happy_left    # for false
+    Load 14             # going_right variable
     Bool True
-    Int_Cmp
+    Int_Cmp             # compare
 
-    Veq happy_right
-    Vnq happy_left
+    Decide
 
+    # Print Right Spaces
+    Load 16
+    Store 50
+    Scope create_spaces Visit
+    Load 51
+    Print_Str
 end
 
 iterate_char
@@ -105,7 +111,7 @@ iterate_char
     Add
     Store 16    # right space (10+i)
 
-    Visit steal_char
+    Scope steal_char Visit
 
     # increment char_i
     Load 12
@@ -113,7 +119,7 @@ iterate_char
     Add
     Store 12
 
-    Go char_loop
+    Scope char_loop Go
 end
 
 char_loop
@@ -121,7 +127,7 @@ char_loop
     Load 11     # text len
     Int_Cmp
 
-    Gnq iterate_char
+    Scope iterate_char Gnq
 end
 
 trash
@@ -146,13 +152,13 @@ trash
     Store 12
     Pop
 
-    Visit char_loop
+    Scope char_loop Visit
 end
 
 main
-    Visit init_conf
+    Scope init_conf Visit
 
     Str "Mea"
     Store 10
-    Visit trash
+    Scope trash Visit
 end

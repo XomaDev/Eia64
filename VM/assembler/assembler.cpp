@@ -104,6 +104,13 @@ void assembler::readScope() {
             writer.writeInt32(stoi(word));
         }
         else if (word == "Char_At") writer.write(bytecode::CHAR_AT);
+        else if (word == "Scope") {
+            // goes to other named scope
+            writer.write(bytecode::SCOPE);
+            source >> word; // scope name
+            writer.writeString(word);
+        }
+        else if (word == "Decide") writer.write(bytecode::DECIDE);
 
         else if (word == "Int_Cmp") writer.write(bytecode::INT_CMP);
         else if (word == "Str_Cmp") writer.write(bytecode::STR_CMP);
@@ -111,34 +118,22 @@ void assembler::readScope() {
         else if (word == "Go") {
             // goes to other named scope
             writer.write(bytecode::GO);
-            source >> word; // scope name
-            writer.writeString(word);
         } else if (word == "Visit") {
             // goes to other named scope
             writer.write(bytecode::VISIT);
-            source >> word; // scope name
-            writer.writeString(word);
         }
         else if (word == "Veq") {
             /* go if equal */
             writer.write(bytecode::VISIT_EQUAL);
-            source >> word; // scope name
-            writer.writeString(word);
         } else if (word == "Vnq") {
             /* go if not equal */
             writer.write(bytecode::VISIT_UNEQUAL);
-            source >> word; // scope name
-            writer.writeString(word);
         } else if (word == "Geq") {
             /* go if equal */
             writer.write(bytecode::GO_EQUAL);
-            source >> word; // scope name
-            writer.writeString(word);
         } else if (word == "Gnq") {
             /* go if not equal */
             writer.write(bytecode::GO_UNEQUAL);
-            source >> word; // scope name
-            writer.writeString(word);
         }
 
         else if (word == "end") break; // the scope ends here

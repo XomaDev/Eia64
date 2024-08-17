@@ -8,6 +8,11 @@
 #include "vm.h"
 
 void vm::run() {
+    // TODO:
+    //  For Future, whenever we allocate Strings
+    //  We gotta make note of their addresses and clear them
+    //  All at the end
+    //  Or just make the user delete it? by like .txt section?
     while (hasMore() && running) {
         auto scope_name = readString();
         auto copy_name = std::string(*scope_name);
@@ -23,7 +28,7 @@ void vm::run() {
 }
 
 bool vm::run_scope() {
-    for (;running;) {
+    for (; running;) {
         auto op_code = next();
         switch (op_code) {
             // Binary operations
@@ -44,8 +49,8 @@ bool vm::run_scope() {
                 auto *right = memory.popString();
                 auto *left = memory.popString();
                 memory.push(reinterpret_cast<uint64_t>(new std::string(*left + *right)));
-                delete left;
-                delete right;
+//                delete left;
+//                delete right;
                 break;
             }
             case bytecode::SUB: {
@@ -64,7 +69,7 @@ bool vm::run_scope() {
                 break;
             }
 
-            // Unary operations
+                // Unary operations
             case bytecode::NEG:
                 memory.push(-memory.pop());
                 break;
@@ -73,7 +78,7 @@ bool vm::run_scope() {
                 break;
             }
 
-            // System calls
+                // System calls
             case bytecode::READ: {
                 uint64_t number;
                 std::cin >> number;
@@ -93,7 +98,7 @@ bool vm::run_scope() {
             case bytecode::PRINT_STR: {
                 auto *string = memory.popString();
                 std::cout << *string << std::flush;
-                delete string;
+//                delete string;
                 break;
             }
             case bytecode::END_LINE:
@@ -107,7 +112,8 @@ bool vm::run_scope() {
                 std::this_thread::sleep_for(std::chrono::milliseconds(readInt32()));
                 break;
 
-            case bytecode::SCOPE_END: return false;
+            case bytecode::SCOPE_END:
+                return false;
             case bytecode::TO_STR: {
                 auto aString = new std::string(std::to_string(memory.pop()));
                 memory.push(reinterpret_cast<uint64_t>(aString));
@@ -138,6 +144,26 @@ bool vm::run_scope() {
                 memory.push((*memory.topString())[at_index]);
                 break;
             }
+            case bytecode::SCOPE:
+                memory.push(scopes[*readString()]);
+                break;
+            case bytecode::DECIDE: {
+                bool comeBack = memory.pop();
+                // what it does?
+                // pop()s out latest element, if true, executes [stack - 2] else [stack - 1]
+                uint64_t scopeIndex = memory.pop();
+                if (memory.pop()) scopeIndex = memory.pop();
+
+                if (comeBack) {
+                    auto currentIndex = index;
+                    index = scopeIndex;
+                    run_scope();
+                    index = currentIndex;
+                } else {
+                    index = scopeIndex;
+                    return run_scope();
+                }
+            }
 
             case bytecode::INT_CMP:
                 memory.push(memory.pop() == memory.pop() ? 1 : 0);
@@ -147,55 +173,58 @@ bool vm::run_scope() {
                 break;
 
             case bytecode::GO:
-                return go_scope(readString());
+                index = memory.pop();
+                return run_scope();
+
             case bytecode::VISIT: {
-                auto scope_name = readString();
                 auto current_index = index;
-                go_scope(scope_name);
+                index = memory.pop();
+                run_scope();
                 index = current_index;
                 break;
             }
             case bytecode::VISIT_EQUAL: {
+                index = memory.pop();
+
                 // visits and comes back
-                auto scope_name = readString();
-                if (memory.top() != 1) break;
+                if (memory.pop() != 1) break;
                 auto current_index = index;
-                go_scope(scope_name);
+                run_scope();
                 index = current_index;
             }
             case bytecode::VISIT_UNEQUAL: {
+                index = memory.pop();
+
                 // visits and comes back
-                auto scope_name = readString();
-                if (memory.top() != 0) break;
+                if (memory.pop() != 0) break;
                 auto current_index = index;
-                go_scope(scope_name);
+                run_scope();
                 index = current_index;
             }
             case bytecode::GO_EQUAL: {
+                index = memory.pop();
+
                 // goes... but never comes bacc
-                auto scope_name = readString();
-                if (memory.top() != 1) break;
-                return go_scope(scope_name);
+                if (memory.pop() != 1) break;
+                return run_scope();
             }
             case bytecode::GO_UNEQUAL: {
+                index = memory.pop();
+
                 // goes... but never comes bacc
-                auto scope_name = readString();
-                if (memory.top() != 0) break;
-                return go_scope(scope_name);
+                if (memory.pop() != 0) break;
+                return run_scope();
             }
 
             default:
-                throw std::runtime_error("Unknown bytecode " + std::to_string(static_cast<int>(op_code)));
+                throw std::runtime_error("Unknown bytecode " +
+                                         std::to_string(static_cast<int>(op_code)) + ", at index " +
+                                         std::to_string(index));
+            case bytecode::NIL:
+                break;
         }
     }
     throw std::runtime_error("Reached Unexpected End Of Loop");
-}
-
-bool vm::go_scope(std::string* scope_name) {
-    auto name = *scope_name;
-    index = scopes[*scope_name];
-    delete scope_name;
-    return run_scope();
 }
 
 std::string *vm::readString() {
@@ -227,6 +256,6 @@ bool vm::hasMore() {
 
 vm::~vm() {
     //for (const auto &scope: scopes) {
-        //delete &scope.first;
+    //delete &scope.first;
     //}
 }
