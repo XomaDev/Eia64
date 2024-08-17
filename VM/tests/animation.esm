@@ -48,8 +48,28 @@ init_conf
 end
 
 iterate_char
+    # get relevant char from text
+    Load 10     # text
+    Load 12     # char_i
+    Char_At
+    To_Ch
+
+    Store 13    # store relevant char
+    Print_Str Endl
+
+    # going_right = true
+    Int 1
+    Store 14
+
+    # setup left_space and right_space =
+    Int 0
+    Store 15    # left space (0)
+
+    Int 10
     Load 12
-    Print
+    Add
+    Store 16    # right space (10+i)
+
 
     # increment char_i
     Load 12
@@ -74,6 +94,10 @@ trash
 
     # {11} => text size
     # {12} => char_i
+    # {13} => current letter
+    # {14} => going right? initially true
+    # {15} => left space, initially 0
+    # {16} => right space, initially 10 + i
 
     # get and store text size
     Load 10
@@ -90,8 +114,6 @@ trash
 end
 
 main
-    Str "Visitng init conf"
-    Print_Str
     Visit init_conf
 
     Str "Mea"

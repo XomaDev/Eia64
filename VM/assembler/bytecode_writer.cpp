@@ -5,7 +5,7 @@
 #include "bytecode_writer.h"
 
 void bytecode_writer::writeByte(uint8_t value) {
-    sink.write(reinterpret_cast<char *>(&value), 1);
+    sink.emplace_back(value);
 }
 
 void bytecode_writer::write(bytecode code) {
@@ -25,9 +25,9 @@ void bytecode_writer::writeString(const std::string &content) {
         throw std::runtime_error("String length cannot exceed 255 characters");
     }
     writeByte(static_cast<uint8_t>(str_length));
-    sink.write(content.data(), str_length);
+    for (char c: content) sink.emplace_back(c);
 }
 
-void bytecode_writer::close() {
-    sink.close();
+void bytecode_writer::clear() {
+    sink.clear();
 }

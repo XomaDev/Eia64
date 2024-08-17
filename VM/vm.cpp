@@ -16,11 +16,8 @@ void vm::run() {
         if (copy_name == "main") {
             if (run_scope()) break;
         } else {
-            for (;;) {
-                auto code = read();
-                // If any {Scope_End} occurs, it may break the program
-                if (code == static_cast<int>(bytecode::SCOPE_END)) break;
-            }
+            // skip the scope
+            index += readInt32();
         }
     }
 }
@@ -71,9 +68,11 @@ bool vm::run_scope() {
             case bytecode::NEG:
                 memory.push(-memory.pop());
                 break;
-            case bytecode::NOT:
+            case bytecode::NOT: {
+                std::cout << std::to_string(index) << std::endl;
                 memory.push(!memory.pop());
                 break;
+            }
 
             // System calls
             case bytecode::READ: {

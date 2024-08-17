@@ -11,15 +11,20 @@
 
 class assembler {
     std::ifstream source;
+    std::ofstream file_sink;
     bytecode_writer writer;
 
     void begin();
-
+    void writeByte(uint8_t b);
 public:
     explicit assembler(const std::string &source_path, const std::string &compiled_path)
-            : source(source_path), writer(compiled_path) {
+            : source(source_path), file_sink(compiled_path) {
         if (!source.is_open()) {
-            std::cerr << "Unable to open source path " + source_path << std::endl;
+            std::cerr << "Unable to open source path " << source_path << std::endl;
+            return;
+        }
+        if (!file_sink.is_open()) {
+            std::cerr << "Unable to write compiled file path " << compiled_path << std::endl;
             return;
         }
         begin();

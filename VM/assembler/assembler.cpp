@@ -9,12 +9,32 @@
 void assembler::begin() {
     std::string scopeName;
     while (source >> scopeName) {
-        writer.writeString(scopeName);
+        // Read the scope
         readScope();
         writer.write(bytecode::SCOPE_END);
+        auto scopeBytes = writer.sink;
+        writer.clear();
+
+        // Write scope name
+        auto strLength = scopeName.size();
+        if (strLength > 255) {
+            throw std::runtime_error("Scope name cannot exceed 255 characters");
+        }
+        writeByte(strLength);
+        for (char c: scopeName) writeByte(c);
+
+        // Write scope length
+        auto scopeLength = scopeBytes.size();
+        writeByte(scopeLength >> 24);
+        writeByte(scopeLength >> 16);
+        writeByte(scopeLength >> 8);
+        writeByte(scopeLength);
+
+        // Write scope itself
+        for (auto b: scopeBytes) writeByte(b);
     }
     source.close();
-    writer.close();
+    file_sink.close();
 }
 
 void assembler::readScope() {
@@ -114,4 +134,8 @@ void assembler::readScope() {
 
         else throw std::runtime_error("Unknown instruction " + word);
     }
+}
+
+void assembler::writeByte(uint8_t b) {
+    file_sink.write(reinterpret_cast<char *>(&b), 1);
 }

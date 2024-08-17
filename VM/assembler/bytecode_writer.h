@@ -9,23 +9,18 @@
 #include <fstream>
 #include <iostream>
 #include <cstdint>
+#include <vector>
 #include "../bytecode.h"
 
 class bytecode_writer {
-    std::ofstream sink;
 public:
-    explicit bytecode_writer(const std::string &output_path) {
-        sink = std::ofstream(output_path, std::ios::binary);
-        if (!sink.is_open()) {
-            std::cerr << "Unable to open file to write " + output_path << std::endl;
-        }
-    }
+    std::vector<uint8_t> sink;
 
     void writeByte(uint8_t value);
     void write(bytecode code);
     void writeInt32(uint64_t);
     void writeString(const std::string &content);
-    void close();
+    void clear();
 };
 
 
