@@ -48,6 +48,9 @@ bool vm::run_scope() {
             case bytecode::ADD_STR: {
                 auto *right = memory.popString();
                 auto *left = memory.popString();
+
+                //std::cout << "Right:" << *right << ", left:" << *left << std::endl << std::flush;
+
                 memory.push(reinterpret_cast<uint64_t>(new std::string(*left + *right)));
                 break;
             }
@@ -117,7 +120,7 @@ bool vm::run_scope() {
                 break;
             }
             case bytecode::TO_CH: {
-                auto single_letter = new std::string(1, static_cast<char>(memory.top()));
+                auto single_letter = new std::string(1, static_cast<char>(memory.pop()));
                 memory.push(reinterpret_cast<uint64_t>(single_letter));
                 break;
             }
@@ -128,7 +131,7 @@ bool vm::run_scope() {
                 memory.pop();
                 break;
             case bytecode::POP_STR:
-                delete memory.popString();
+                memory.popString();
                 break;
             case bytecode::STORE:
                 memory.store(readInt32(), memory.top());
@@ -138,7 +141,9 @@ bool vm::run_scope() {
                 break;
             case bytecode::CHAR_AT: {
                 auto at_index = memory.pop();
-                memory.push((*memory.topString())[at_index]);
+                auto string = *memory.topString();
+                std::cout << "String: " << string << std::endl << std::flush;
+                memory.push((string)[at_index]);
                 break;
             }
             case bytecode::SCOPE: {

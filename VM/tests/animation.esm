@@ -87,7 +87,13 @@ steal_char
     Store 50
     Scope create_spaces Visit
     Load 51
-    Print_Str Endl
+    Print_Str
+
+    # Print Text
+    Load 10
+    Print_Str
+
+    Endl
 end
 
 iterate_char
