@@ -49,8 +49,6 @@ bool vm::run_scope() {
                 auto *right = memory.popString();
                 auto *left = memory.popString();
                 memory.push(reinterpret_cast<uint64_t>(new std::string(*left + *right)));
-//                delete left;
-//                delete right;
                 break;
             }
             case bytecode::SUB: {
@@ -98,7 +96,6 @@ bool vm::run_scope() {
             case bytecode::PRINT_STR: {
                 auto *string = memory.popString();
                 std::cout << *string << std::flush;
-//                delete string;
                 break;
             }
             case bytecode::END_LINE:
@@ -144,15 +141,28 @@ bool vm::run_scope() {
                 memory.push((*memory.topString())[at_index]);
                 break;
             }
-            case bytecode::SCOPE:
-                memory.push(scopes[*readString()]);
+            case bytecode::SCOPE: {
+                auto scopeName = *readString();
+                //std::cout << "Scope name " << scopeName << std::endl << std::flush;
+                memory.push(scopes[scopeName]);
                 break;
+            }
             case bytecode::DECIDE: {
+                // OK_SCOPE
+                // NO_SCOPE
+                // INT CMP
+                // BOOL COME_BACK
                 bool comeBack = memory.pop();
                 // what it does?
                 // pop()s out latest element, if true, executes [stack - 2] else [stack - 1]
-                uint64_t scopeIndex = memory.pop();
-                if (memory.pop()) scopeIndex = memory.pop();
+                uint64_t scopeIndex;
+                if (memory.pop()) {
+                    //std::cout << "Truth decide" << std::endl << std::flush;
+                    memory.pop();
+                    scopeIndex = memory.pop();
+                } else {
+                    scopeIndex = memory.pop();
+                }
 
                 if (comeBack) {
                     auto currentIndex = index;
@@ -184,35 +194,40 @@ bool vm::run_scope() {
                 break;
             }
             case bytecode::VISIT_EQUAL: {
-                index = memory.pop();
+                auto scopeIndex = memory.pop();
 
                 // visits and comes back
                 if (memory.pop() != 1) break;
                 auto current_index = index;
+                index = scopeIndex;
                 run_scope();
                 index = current_index;
             }
             case bytecode::VISIT_UNEQUAL: {
-                index = memory.pop();
+                auto scopeIndex = memory.pop();
 
                 // visits and comes back
                 if (memory.pop() != 0) break;
                 auto current_index = index;
+                index = scopeIndex;
                 run_scope();
                 index = current_index;
             }
             case bytecode::GO_EQUAL: {
-                index = memory.pop();
+                auto scopeIndex = memory.pop();
 
                 // goes... but never comes bacc
                 if (memory.pop() != 1) break;
+                index = scopeIndex;
                 return run_scope();
             }
             case bytecode::GO_UNEQUAL: {
-                index = memory.pop();
+                auto scopeIndex = memory.pop();
 
                 // goes... but never comes bacc
-                if (memory.pop() != 0) break;
+                auto cmp = memory.pop();
+                if (cmp != 0) break;
+                index = scopeIndex;
                 return run_scope();
             }
 

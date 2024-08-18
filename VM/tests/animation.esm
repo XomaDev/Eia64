@@ -79,6 +79,7 @@ steal_char
     Bool True
     Int_Cmp             # compare
 
+    Bool True           # tells to come back
     Decide
 
     # Print Right Spaces
@@ -86,7 +87,7 @@ steal_char
     Store 50
     Scope create_spaces Visit
     Load 51
-    Print_Str
+    Print_Str Endl
 end
 
 iterate_char
