@@ -91,7 +91,11 @@ void assembler::readScope() {
         }
         else if (word == "To_Str") writer.write(bytecode::TO_STR);
         else if (word == "To_Ch") writer.write(bytecode::TO_CH);
-        else if (word == "Str_Len") writer.write(bytecode::STR_LEN);
+        else if (word == "Str_Len") {
+            writer.write(bytecode::STR_LEN);
+            source >> word;
+            writer.writeInt32(stoi(word));
+        }
         else if (word == "Pop") writer.write(bytecode::POP);
         else if (word == "Pop_Str") writer.write(bytecode::POP_STR);
         else if (word == "Store") {

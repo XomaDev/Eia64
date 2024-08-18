@@ -1,26 +1,19 @@
-make_space
-    Load 51
-    Str " "
-    Add_Str
-    Store 51
+append_rest
+    Load 10
 
-    Str_Len
-    Load 50
-    Int_Cmp
-    Scope make_space Gnq
 end
 
-create_spaces
-    # arg {50} for n spaces
-    # {51} for resultant spaces
+trim_first_char
+    # arg{10} => text
+    Load 10
+    Str_Len 0
+    Int 1
+    Sub
+    Store 17
 
     Str ""
-    Store 51
-    Str_Len
-    Load 50
-    Int_Cmp
-
-    Scope make_space Vnq
+    Store 18
+    Scope append_rest Visit
 end
 
 init_conf
@@ -46,6 +39,31 @@ init_conf
     # Happy Left
     Str "<(^_^ <)"
     Store 3
+end
+
+make_space
+    Load 51
+    Str " "
+    Add_Str
+    Store 51
+
+    Str_Len 0
+    Load 50
+    Int_Cmp
+    Scope make_space Gnq
+end
+
+create_spaces
+    # arg {50} for n spaces
+    # {51} for resultant spaces
+
+    Str ""
+    Store 51
+    Str_Len 0
+    Load 50
+    Int_Cmp
+
+    Scope make_space Vnq
 end
 
 happy_right
@@ -138,7 +156,7 @@ char_loop
 end
 
 trash
-    # [10, 19] for animation properties
+    # [from 10] for animation properties
     # arg {10} => text
 
     # {11} => text size
@@ -148,9 +166,14 @@ trash
     # {15} => left space, initially 0
     # {16} => right space, initially 10 + i
 
+    # for removing first letter (remove_first_letter)
+    # {17} => new text length
+    # {18} => trimmed off text
+    # {19} => temp char
+
     # get and store text size
     Load 10
-    Str_Len
+    Str_Len 0
     Store 11
     Pop
 

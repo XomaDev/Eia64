@@ -50,8 +50,9 @@ bool vm::run_scope() {
                 auto *left = memory.popString();
 
                 //std::cout << "Right:" << *right << ", left:" << *left << std::endl << std::flush;
-
-                memory.push(reinterpret_cast<uint64_t>(new std::string(*left + *right)));
+                auto newString = new std::string(*left + *right);
+                //std::cout << "New String " << *newString << std::endl << std::flush;
+                memory.push(reinterpret_cast<uint64_t>(newString));
                 break;
             }
             case bytecode::SUB: {
@@ -121,12 +122,15 @@ bool vm::run_scope() {
             }
             case bytecode::TO_CH: {
                 auto single_letter = new std::string(1, static_cast<char>(memory.pop()));
+                //std::cout << "To Ch " << *single_letter << std::endl << std::flush;
                 memory.push(reinterpret_cast<uint64_t>(single_letter));
                 break;
             }
-            case bytecode::STR_LEN:
-                memory.push(memory.topString()->size());
+            case bytecode::STR_LEN: {
+                auto strLen = (readInt32() ? memory.popString() : memory.topString())->size();
+                memory.push(strLen);
                 break;
+            }
             case bytecode::POP:
                 memory.pop();
                 break;
@@ -142,7 +146,7 @@ bool vm::run_scope() {
             case bytecode::CHAR_AT: {
                 auto at_index = memory.pop();
                 auto string = *memory.topString();
-                std::cout << "String: " << string << std::endl << std::flush;
+                //  std::cout << "String: " << string << " index " << std::to_string(at_index) << std::endl << std::flush;
                 memory.push((string)[at_index]);
                 break;
             }
