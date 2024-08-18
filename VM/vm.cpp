@@ -152,8 +152,10 @@ bool vm::run_scope() {
             }
             case bytecode::SCOPE: {
                 auto scopeName = *readString();
-                //std::cout << "Scope name " << scopeName << std::endl << std::flush;
+
+                std::cout << "Request scope " << scopeName << " Index " << std::to_string(scopes[scopeName]) << std::endl << std::flush;
                 memory.push(scopes[scopeName]);
+                std::cout << "meow " << std::to_string(memory.top()) << std::endl << std::flush;
                 break;
             }
             case bytecode::DECIDE: {
@@ -182,6 +184,7 @@ bool vm::run_scope() {
                     index = scopeIndex;
                     return run_scope();
                 }
+                break;
             }
 
             case bytecode::INT_CMP:
@@ -247,8 +250,10 @@ bool vm::run_scope() {
                 index = scopeIndex;
                 run_scope();
                 index = current_index;
+                break;
             }
             case bytecode::VISIT_UNEQUAL: {
+                std::cout << "Visit unequal called" << std::endl << std::flush;
                 auto scopeIndex = memory.pop();
 
                 // visits and comes back
@@ -257,6 +262,7 @@ bool vm::run_scope() {
                 index = scopeIndex;
                 run_scope();
                 index = current_index;
+                break;
             }
             case bytecode::GO_EQUAL: {
                 auto scopeIndex = memory.pop();

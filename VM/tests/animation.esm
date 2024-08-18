@@ -23,6 +23,48 @@ init_conf
     Store 3
 end
 
+
+append_rest
+    # Retrieve relevant char
+    Load 10
+    Load 18
+    Str_Len 1
+    Int 1
+    Add
+    Char_At
+    To_Ch
+    Store 19
+
+    # update and save
+    Load 18
+    Load 19
+    Add_Str
+    Store 18
+
+    # append all others
+    Str_Len 0
+    Load 17
+    Int_Cmp
+    Scope append_rest Gnq
+end
+
+trim_first_char
+    # arg{10} => text
+    Load 10
+    Str_Len 0
+    Int 1
+    Sub
+    Store 17
+
+    Str ""
+    Store 18
+    Scope append_rest Visit
+
+    # save as new 10
+    Load 18
+    Store 10
+end
+
 make_space
     Load 51
     Str " "
@@ -58,6 +100,12 @@ happy_left
     Print_Str
 end
 
+happy_left_letter
+    Load 13
+    Print_Str
+    Scope happy_left Visit
+end
+
 print_guy
     # trash guy steals a char!
 
@@ -74,7 +122,7 @@ print_guy
 
     # Print Trash Guy Face
     Scope happy_right   # for true
-    Scope happy_left    # for false
+    Scope happy_left_letter    # for false
     Load 14             # going_right variable
     Bool True
     Int_Cmp             # compare
@@ -111,9 +159,7 @@ right_ends
     Int 0
     Store 16
 
-    # TODO:
-    #  then we got to call trim_first_char (currently in retest_eater)
-    # text = text.substring(1)
+    Scope trim_first_char Visit
 end
 
 left_ends
@@ -147,12 +193,7 @@ left_ends
     Store 20
 end
 
-steal_char
-    # Later we gotta make this while true loop
-
-    Scope print_guy Visit
-    # HERE we gotta add a sleep
-
+check_extreme
     # left_space >= 10 + i
     Load 15     # left_space
     Int 10
@@ -162,7 +203,6 @@ steal_char
 
     Load 14     # going_right
     And
-    Print
 
     Scope right_ends Geq
 
@@ -182,6 +222,55 @@ steal_char
     And         # &&
 
     Scope left_ends Geq
+end
+
+goes_right
+    # left_space++
+    Load 15     # left_space
+    Int 1
+    Add
+    Store 15
+
+    # right_space--
+    Load 16     # right_space
+    Int 1
+    Sub
+    Store 16
+end
+
+goes_left
+    # left_space--
+    Load 15     # left_space
+    Int 1
+    Sub
+    Store 15
+
+    # right_space++
+    Load 16     # right_space
+    Int 1
+    Add
+    Store 16
+end
+
+prepare_next
+    Scope goes_right
+    Scope goes_left
+    Load 14     # going_right?
+    Bool True  # come back
+    Decide
+
+    Scope steal_char Visit
+end
+
+steal_char
+    # Later we gotta make this while true loop
+
+    Scope print_guy Visit
+    # todo: need a sleep here
+    Scope check_extreme Visit
+
+    Load 20     # loop running
+    Scope prepare_next Veq
 end
 
 iterate_char
