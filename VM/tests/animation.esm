@@ -1,21 +1,3 @@
-append_rest
-    Load 10
-
-end
-
-trim_first_char
-    # arg{10} => text
-    Load 10
-    Str_Len 0
-    Int 1
-    Sub
-    Store 17
-
-    Str ""
-    Store 18
-    Scope append_rest Visit
-end
-
 init_conf
     # [0, 9] range for properties
     # Loading all the properties
@@ -76,7 +58,7 @@ happy_left
     Print_Str
 end
 
-steal_char
+print_guy
     # trash guy steals a char!
 
     # Print Trash Can
@@ -109,9 +91,97 @@ steal_char
 
     # Print Text
     Load 10
+    Print_Str Endl
+end
+
+right_ends
+    # when guy reaches far right
+
+    # going_right = false
+    Bool False
+    Store 14
+
+    # left_space = 10 + i
+    Int 10
+    Load 12     # char_i
+    Add
+    Store 15    # left_space
+
+    # right_space = 0
+    Int 0
+    Store 16
+
+    # TODO:
+    #  then we got to call trim_first_char (currently in retest_eater)
+    # text = text.substring(1)
+end
+
+left_ends
+    # when guy reaches far left (home)
+    # Print Home Guy
+
+    # Print Trash Can
+    Load 1
     Print_Str
 
-    Endl
+    # Print Happy Left
+    Scope happy_left Visit
+
+    # Print n = (11 + i) spaces
+    Int 11
+    Load 12     # char_i
+    Add
+    Store 50    # arg for create_spaces
+    Scope create_spaces Visit
+    Load 51     # resultant spaces
+    Print_Str
+
+    # Print Text
+    Load 10
+    Print_Str Endl
+
+    # TODO: here we need to SLEEP
+
+    # do break
+    Bool False
+    Store 20
+end
+
+steal_char
+    # Later we gotta make this while true loop
+
+    Scope print_guy Visit
+    # HERE we gotta add a sleep
+
+    # left_space >= 10 + i
+    Load 15     # left_space
+    Int 10
+    Load 12     # char_i
+    Add
+    Great_Eq
+
+    Load 14     # going_right
+    And
+    Print
+
+    Scope right_ends Geq
+
+    # right_space >= 10 + i && !going_right
+
+    # right_space >= 10 + i
+    Load 16     # right_space
+    Int 10
+    Load 12     # char_i
+    Add
+    Great_Eq
+
+    # !going_right
+    Load 14     # going_right
+    Not
+
+    And         # &&
+
+    Scope left_ends Geq
 end
 
 iterate_char
@@ -124,7 +194,7 @@ iterate_char
     Store 13    # store relevant char
 
     # going_right = true
-    Int 1
+    Bool True
     Store 14
 
     # setup left_space and right_space =
@@ -171,6 +241,9 @@ trash
     # {18} => trimmed off text
     # {19} => temp char
 
+    # for while true loop
+    # {20} => loop running?
+
     # get and store text size
     Load 10
     Str_Len 0
@@ -181,6 +254,10 @@ trash
     Int 0
     Store 12
     Pop
+
+    # loop_running = true
+    Bool True
+    Store 20
 
     Scope char_loop Visit
 end

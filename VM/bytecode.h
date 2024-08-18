@@ -47,6 +47,13 @@ enum class bytecode {
     INT_CMP, // compares last two Ints
     STR_CMP, // compares last two Strings
 
+    GREATER_THAN,
+    LESSER_THAN,
+    GREATER_EQ,
+    LESSER_EQ,
+    AND,
+    OR,
+
     GO,
     VISIT,
 

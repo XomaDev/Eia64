@@ -1,0 +1,51 @@
+# We are gonna use this code later when it's required
+# for now we need to keep things simple in animation.esm file
+
+append_rest
+    # Retrieve relevant char
+    Load 10
+    Load 18
+    Str_Len 1
+    Int 1
+    Add
+    Char_At
+    To_Ch
+    Store 19
+
+    # update and save
+    Load 18
+    Load 19
+    Add_Str
+    Store 18
+
+    # append all others
+    Str_Len 0
+    Load 17
+    Int_Cmp
+    Scope append_rest Gnq
+end
+
+trim_first_char
+    # arg{10} => text
+    Load 10
+    Str_Len 0
+    Int 1
+    Sub
+    Store 17
+
+    Str ""
+    Store 18
+    Scope append_rest Visit
+
+    # save as new 10
+    Load 18
+    Store 10
+end
+
+main
+    Str "Meow"
+    Store 10
+    Scope trim_first_char Visit
+    Load 10
+    Print_Str
+end

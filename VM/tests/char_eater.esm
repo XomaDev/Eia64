@@ -1,7 +1,7 @@
 # 10 => 10
-# 11 => 17
-# 12 => 18
-# 13 => 19
+# 11 => 17 (new text length)
+# 12 => 18 (trimmed off text)
+# 13 => 19 (temp char)
 
 append_rest
     Load 10

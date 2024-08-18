@@ -119,6 +119,13 @@ void assembler::readScope() {
         else if (word == "Int_Cmp") writer.write(bytecode::INT_CMP);
         else if (word == "Str_Cmp") writer.write(bytecode::STR_CMP);
 
+        else if (word == "Great_Than") writer.write(bytecode::GREATER_THAN);
+        else if (word == "Less_Than") writer.write(bytecode::LESSER_THAN);
+        else if (word == "Great_Eq") writer.write(bytecode::GREATER_EQ);
+        else if (word == "Less_Eq") writer.write(bytecode::LESSER_EQ);
+        else if (word == "And") writer.write(bytecode::AND);
+        else if (word == "Or") writer.write(bytecode::OR);
+
         else if (word == "Go") {
             // goes to other named scope
             writer.write(bytecode::GO);

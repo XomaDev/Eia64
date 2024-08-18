@@ -191,6 +191,42 @@ bool vm::run_scope() {
                 memory.push((*memory.popString() == *memory.popString()) ? 1 : 0);
                 break;
 
+            case bytecode::GREATER_THAN: {
+                auto right = memory.pop();
+                auto left = memory.pop();
+                memory.push(left > right);
+                break;
+            }
+
+            case bytecode::LESSER_THAN: {
+                auto right = memory.pop();
+                auto left = memory.pop();
+                memory.push(left < right);
+                break;
+            }
+
+            case bytecode::GREATER_EQ: {
+                auto right = memory.pop();
+                auto left = memory.pop();
+                memory.push(left >= right);
+                break;
+            }
+
+            case bytecode::LESSER_EQ: {
+                auto right = memory.pop();
+                auto left = memory.pop();
+                memory.push(left <= right);
+                break;
+            }
+
+            case bytecode::AND:
+                memory.push(memory.pop() && memory.pop());
+                break;
+
+            case bytecode::OR:
+                memory.push(memory.pop() || memory.pop());
+                break;
+
             case bytecode::GO:
                 index = memory.pop();
                 return run_scope();
