@@ -15,14 +15,13 @@ init_conf
     Store 1
 
     # Happy Right
-    Str "(> ^_^)>"
+    Str "[0;31m[1m(> ^_^)>[0m"
     Store 2
 
     # Happy Left
-    Str "<(^_^ <)"
+    Str "[0;35m[1m<(^_^ <)[0m"
     Store 3
 end
-
 
 append_rest
     # Retrieve relevant char
@@ -58,7 +57,11 @@ trim_first_char
 
     Str ""
     Store 18
-    Scope append_rest Visit
+
+    Load 17
+    Int 0
+    Int_Cmp
+    Scope append_rest Vnq
 
     # save as new 10
     Load 18
@@ -101,9 +104,23 @@ happy_left
 end
 
 happy_left_letter
+    Str "[1m"
+    Print_Str
     Load 13
     Print_Str
+    Str "[0m"
+    Print_Str
     Scope happy_left Visit
+end
+
+print_text
+    Str "[1m[0;34m"
+    Print_Str
+    Load 10
+    Print_Str
+    Str "[0m"
+    Print_Str
+    Endl
 end
 
 print_guy
@@ -138,8 +155,7 @@ print_guy
     Print_Str
 
     # Print Text
-    Load 10
-    Print_Str Endl
+    Scope print_text Visit
 end
 
 right_ends
@@ -182,11 +198,10 @@ left_ends
     Load 51     # resultant spaces
     Print_Str
 
-    # Print Text
-    Load 10
-    Print_Str Endl
+    Scope print_text Visit
 
-    # TODO: here we need to SLEEP
+    Load 0
+    Sleep
 
     # do break
     Bool False
@@ -266,17 +281,20 @@ steal_char
     # Later we gotta make this while true loop
 
     Scope print_guy Visit
-    # todo: need a sleep here
+
+    Load 0
+    Sleep
+
     Scope check_extreme Visit
 
     Load 20     # loop running
-    Scope prepare_next Veq
+    Scope prepare_next Geq
 end
 
 iterate_char
     # get relevant char from text
     Load 10     # text
-    Load 12     # char_i
+    Int 0
     Char_At
     To_Ch
 
@@ -294,6 +312,10 @@ iterate_char
     Load 12
     Add
     Store 16    # right space (10+i)
+
+    # loop_running = true
+    Bool True
+    Store 20
 
     Scope steal_char Visit
 
@@ -344,17 +366,19 @@ trash
     Store 12
     Pop
 
-    # loop_running = true
-    Bool True
-    Store 20
-
     Scope char_loop Visit
 end
 
 main
+    Str "[1m[0;34mTrashGuy Animation[0m [1m[0;33mESM[0m"
+    Print_Str
+    Endl
+
     Scope init_conf Visit
 
-    Str "Mea"
+    Str "Enter a word: "
+    Print_Str
+    Read_Ln
     Store 10
     Scope trash Visit
 end

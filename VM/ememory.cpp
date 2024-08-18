@@ -24,7 +24,6 @@ uint64_t ememory::top() {
 uint64_t ememory::pop() {
     auto top = stack_memory.top();
     stack_memory.pop();
-    std::cout << "Pop(): " << std::to_string(top) << std::endl << std::flush;
     return top;
 }
 

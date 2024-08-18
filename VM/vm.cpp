@@ -110,7 +110,7 @@ bool vm::run_scope() {
                 return true;
             }
             case bytecode::SLEEP:
-                std::this_thread::sleep_for(std::chrono::milliseconds(readInt32()));
+                std::this_thread::sleep_for(std::chrono::milliseconds(memory.pop()));
                 break;
 
             case bytecode::SCOPE_END:
@@ -152,10 +152,7 @@ bool vm::run_scope() {
             }
             case bytecode::SCOPE: {
                 auto scopeName = *readString();
-
-                std::cout << "Request scope " << scopeName << " Index " << std::to_string(scopes[scopeName]) << std::endl << std::flush;
                 memory.push(scopes[scopeName]);
-                std::cout << "meow " << std::to_string(memory.top()) << std::endl << std::flush;
                 break;
             }
             case bytecode::DECIDE: {
@@ -253,7 +250,6 @@ bool vm::run_scope() {
                 break;
             }
             case bytecode::VISIT_UNEQUAL: {
-                std::cout << "Visit unequal called" << std::endl << std::flush;
                 auto scopeIndex = memory.pop();
 
                 // visits and comes back

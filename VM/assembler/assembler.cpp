@@ -84,11 +84,7 @@ void assembler::readScope() {
         else if (word == "Print_Str") writer.write(bytecode::PRINT_STR);
         else if (word == "Endl") writer.write(bytecode::END_LINE);
         else if (word == "Halt") writer.write(bytecode::HALT);
-        else if (word == "Sleep") {
-            writer.write(bytecode::SLEEP);
-            source >> word;
-            writer.writeInt32(stoi(word));
-        }
+        else if (word == "Sleep") writer.write(bytecode::SLEEP);
         else if (word == "To_Str") writer.write(bytecode::TO_STR);
         else if (word == "To_Ch") writer.write(bytecode::TO_CH);
         else if (word == "Str_Len") {

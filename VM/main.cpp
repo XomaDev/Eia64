@@ -32,7 +32,7 @@ void runVm() {
     auto path = "/home/kumaraswamy/Documents/Eia64/VM/tests/hello.e";
     long fileSize;
     auto bytes = readBytes(path, fileSize);
-    printBytes(bytes.get(), fileSize);
+    //printBytes(bytes.get(), fileSize);
 
     auto vm = new class vm(std::move(bytes), fileSize);
     vm->run();
