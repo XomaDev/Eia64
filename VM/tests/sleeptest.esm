@@ -1,0 +1,8 @@
+main
+    Str "Hello, "
+    Print_Str
+    Sleep 500
+    Str "World!"
+    Print_Str
+    Halt
+end

@@ -1,0 +1,9 @@
+main
+    Str "Hello, "
+    Int 3
+    To_Str
+    Add_Str
+    Print_Str
+    Sleep 500
+    Halt
+end

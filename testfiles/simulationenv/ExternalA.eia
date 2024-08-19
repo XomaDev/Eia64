@@ -1,9 +1,0 @@
-var name = ""
-
-fn init(_name: String) {
-  name = _name
-}
-
-fn string(): String {
-  return "ExternalA(" + name + ")"
-}

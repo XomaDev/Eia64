@@ -1,3 +1,0 @@
-fn string(): String {
-  return "This is Null A"
-}

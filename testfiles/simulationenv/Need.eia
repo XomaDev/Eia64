@@ -1,8 +1,0 @@
-include(
-  "simulationenv/DependencyA"
-)
-
-; this should not be actually allowed
-; this happens because Dependency A -> depends on Module A
-let module = new Module("Meow")
-println(module)

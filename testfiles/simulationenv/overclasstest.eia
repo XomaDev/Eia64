@@ -1,6 +1,0 @@
-include(
-  "simulationenv/ExampleClass"
-)
-
-let anInstance = new ExampleClass(7 + 3)
-println(anInstance)

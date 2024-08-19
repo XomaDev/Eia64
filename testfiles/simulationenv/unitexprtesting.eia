@@ -1,2 +1,0 @@
-let x = { println(1) }
-x()

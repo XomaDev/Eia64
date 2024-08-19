@@ -1,5 +1,0 @@
-let a: Int = if (true) {
-  println("meow")
-  7 + 3
-}
-println("a is " + a)

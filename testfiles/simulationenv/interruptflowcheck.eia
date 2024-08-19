@@ -1,5 +1,0 @@
-if (true) {
-  println("meow world")
-  return 2
-}
-return 7 + 3

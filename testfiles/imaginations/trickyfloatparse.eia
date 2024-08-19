@@ -1,3 +1,0 @@
-; testing the lexer
-
-println(.5)

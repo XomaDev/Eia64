@@ -1,9 +1,0 @@
-var aValue = 0
-
-fn init(value: Int) {
- aValue = value
-}
-
-fn string(): String {
-  return "Obj(" + aValue + ")"
-}
