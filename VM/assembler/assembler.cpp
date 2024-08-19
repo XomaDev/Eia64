@@ -9,19 +9,23 @@
 void assembler::begin() {
     std::string scopeName;
     while (source >> scopeName) {
-        // Read the scope
-        readScope();
-        writer.write(bytecode::SCOPE_END);
-        auto scopeBytes = writer.sink;
-        writer.clear();
+        // Scope Name, Scope Length, Scope
 
-        // Write scope name
+        // Write scope name, for debugging while opening hex editors, lmao
         auto strLength = scopeName.size();
         if (strLength > 255) {
             throw std::runtime_error("Scope name cannot exceed 255 characters");
         }
         writeByte(strLength);
         for (char c: scopeName) writeByte(c);
+
+        // Read the scope
+        scopes[scopeName] = bytesWritten + 4; // +4 for scope length
+
+        readScope();
+        writer.write(bytecode::SCOPE_END);
+        auto scopeBytes = writer.sink;
+        writer.clear();
 
         // Write scope length
         auto scopeLength = scopeBytes.size();
@@ -108,7 +112,8 @@ void assembler::readScope() {
             // goes to other named scope
             writer.write(bytecode::SCOPE);
             source >> word; // scope name
-            writer.writeString(word);
+            writer.writeInt32(scopes[word]); // write location of the scope
+            writer.writeString(word); // useful for debugging
         }
         else if (word == "Decide") writer.write(bytecode::DECIDE);
         else if (word == "Enter_Frame") {
@@ -132,6 +137,7 @@ void assembler::readScope() {
         else if (word == "And") writer.write(bytecode::AND);
         else if (word == "Or") writer.write(bytecode::OR);
 
+        else if (word == "Ret") writer.write(bytecode::RET);
         else if (word == "Go") {
             // goes to other named scope
             writer.write(bytecode::GO);
@@ -160,5 +166,6 @@ void assembler::readScope() {
 }
 
 void assembler::writeByte(uint8_t b) {
+    bytesWritten++;
     file_sink.write(reinterpret_cast<char *>(&b), 1);
 }

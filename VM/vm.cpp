@@ -16,15 +16,17 @@ void vm::run() {
     auto start = std::chrono::high_resolution_clock::now();
 
     while (hasMore() && running) {
-        auto scope_name = readString();
-        auto copy_name = std::string(*scope_name);
-        delete scope_name;
-        scopes[copy_name] = index;
-        if (copy_name == "main") {
+        // Scope Name, Scope Length
+        auto scopeName = readString();
+        auto copyName = std::string(*scopeName);
+        delete scopeName;
+        auto scopeSize = readInt32();
+        //scopes[copy_name] = index;
+        if (copyName == "main") {
             if (run_scope()) break;
         } else {
             // skip the scope
-            index += readInt32();
+            index += scopeSize;
         }
     }
     auto stop = std::chrono::high_resolution_clock::now();
@@ -156,8 +158,8 @@ bool vm::run_scope() {
                 break;
             }
             case bytecode::SCOPE: {
-                auto scopeName = *readString();
-                frame->push(scopes[scopeName]);
+                frame->push(readInt32());
+                delete readString();
                 break;
             }
             case bytecode::DECIDE: {
@@ -248,6 +250,10 @@ bool vm::run_scope() {
                 frame->push(frame->pop() || frame->pop());
                 break;
 
+            case bytecode::RET: {
+                if (frame->pop()) return false;
+                break;
+            }
             case bytecode::GO:
                 index = frame->pop();
                 return run_scope();

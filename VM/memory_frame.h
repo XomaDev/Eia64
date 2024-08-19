@@ -15,7 +15,7 @@ class memory_frame {
     std::vector<uint64_t> memory_table;
     std::stack<uint64_t> stack_memory;
 public:
-    memory_frame(): memory_table(100) {
+    memory_frame(): memory_table(50) {
         // Meow
     }
     // for named memory

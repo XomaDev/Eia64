@@ -7,6 +7,7 @@
 
 
 #include <string>
+#include <unordered_map>
 #include "bytecode_writer.h"
 
 class assembler {
@@ -15,7 +16,11 @@ class assembler {
     bytecode_writer writer;
 
     void begin();
+
+    unsigned long bytesWritten = 0;
     void writeByte(uint8_t b);
+
+    std::unordered_map<std::string, uint32_t> scopes;
 public:
     explicit assembler(const std::string &source_path, const std::string &compiled_path)
             : source(source_path), file_sink(compiled_path) {

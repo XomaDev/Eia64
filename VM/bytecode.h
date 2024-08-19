@@ -56,6 +56,7 @@ enum class bytecode {
     AND,
     OR,
 
+    RET,
     GO,
     VISIT,
 

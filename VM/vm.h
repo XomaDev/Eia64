@@ -12,7 +12,6 @@
 
 class vm {
     std::unique_ptr<uint8_t[]> bytes;
-    std::unordered_map<std::string, long> scopes;
 
     unsigned long index = 0;
     unsigned long size;

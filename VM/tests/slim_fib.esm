@@ -1,3 +1,5 @@
+# trying to write a super optimized version of fib
+
 fib
     # arg 0, return arg 0
     Load 0
