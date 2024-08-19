@@ -13,6 +13,8 @@ void vm::run() {
     //  We gotta make note of their addresses and clear them
     //  All at the end
     //  Or just make the user delete it? by like .txt section?
+    auto start = std::chrono::high_resolution_clock::now();
+
     while (hasMore() && running) {
         auto scope_name = readString();
         auto copy_name = std::string(*scope_name);
@@ -25,6 +27,9 @@ void vm::run() {
             index += readInt32();
         }
     }
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+    std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
 }
 
 bool vm::run_scope() {
@@ -33,50 +38,50 @@ bool vm::run_scope() {
         switch (op_code) {
             // Binary operations
             case bytecode::INT:
-                memory.push(readInt32());
+                frame->push(readInt32());
                 break;
             case bytecode::BOOL:
-                memory.push(read() == 1);
+                frame->push(read() == 1);
                 break;
             case bytecode::STRING:
                 // store the string's memory address
-                memory.push(reinterpret_cast<uint64_t>(readString()));
+                frame->push(reinterpret_cast<uint64_t>(readString()));
                 break;
             case bytecode::ADD:
-                memory.push(memory.pop() + memory.pop());
+                frame->push(frame->pop() + frame->pop());
                 break;
             case bytecode::ADD_STR: {
-                auto *right = memory.popString();
-                auto *left = memory.popString();
+                auto *right = frame->popString();
+                auto *left = frame->popString();
 
                 //std::cout << "Right:" << *right << ", left:" << *left << std::endl << std::flush;
                 auto newString = new std::string(*left + *right);
                 //std::cout << "New String " << *newString << std::endl << std::flush;
-                memory.push(reinterpret_cast<uint64_t>(newString));
+                frame->push(reinterpret_cast<uint64_t>(newString));
                 break;
             }
             case bytecode::SUB: {
-                auto right = memory.pop();
-                auto left = memory.pop();
-                memory.push(left - right);
+                auto right = frame->pop();
+                auto left = frame->pop();
+                frame->push(left - right);
                 break;
             }
             case bytecode::MUL:
-                memory.push(memory.pop() * memory.pop());
+                frame->push(frame->pop() * frame->pop());
                 break;
             case bytecode::DIV: {
-                auto right = memory.pop();
-                auto left = memory.pop();
-                memory.push(left / right);
+                auto right = frame->pop();
+                auto left = frame->pop();
+                frame->push(left / right);
                 break;
             }
 
                 // Unary operations
             case bytecode::NEG:
-                memory.push(-memory.pop());
+                frame->push(-frame->pop());
                 break;
             case bytecode::NOT: {
-                memory.push(!memory.pop());
+                frame->push(!frame->pop());
                 break;
             }
 
@@ -84,21 +89,21 @@ bool vm::run_scope() {
             case bytecode::READ: {
                 uint64_t number;
                 std::cin >> number;
-                memory.push(number);
+                frame->push(number);
                 break;
             }
             case bytecode::READ_LN: {
                 std::string line;
                 getline(std::cin, line);
-                memory.push(reinterpret_cast<uint64_t>(new std::string(line)));
+                frame->push(reinterpret_cast<uint64_t>(new std::string(line)));
                 break;
             }
             case bytecode::PRINT:
-                printf("%d", static_cast<int32_t>(memory.pop()));
+                printf("%d", static_cast<int32_t>(frame->pop()));
                 std::cout << std::flush;
                 break;
             case bytecode::PRINT_STR: {
-                auto *string = memory.popString();
+                auto *string = frame->popString();
                 std::cout << *string << std::flush;
                 break;
             }
@@ -110,49 +115,49 @@ bool vm::run_scope() {
                 return true;
             }
             case bytecode::SLEEP:
-                std::this_thread::sleep_for(std::chrono::milliseconds(memory.pop()));
+                std::this_thread::sleep_for(std::chrono::milliseconds(frame->pop()));
                 break;
 
             case bytecode::SCOPE_END:
                 return false;
             case bytecode::TO_STR: {
-                auto aString = new std::string(std::to_string(memory.pop()));
-                memory.push(reinterpret_cast<uint64_t>(aString));
+                auto aString = new std::string(std::to_string(frame->pop()));
+                frame->push(reinterpret_cast<uint64_t>(aString));
                 break;
             }
             case bytecode::TO_CH: {
-                auto single_letter = new std::string(1, static_cast<char>(memory.pop()));
+                auto single_letter = new std::string(1, static_cast<char>(frame->pop()));
                 //std::cout << "To Ch " << *single_letter << std::endl << std::flush;
-                memory.push(reinterpret_cast<uint64_t>(single_letter));
+                frame->push(reinterpret_cast<uint64_t>(single_letter));
                 break;
             }
             case bytecode::STR_LEN: {
-                auto strLen = (readInt32() ? memory.popString() : memory.topString())->size();
-                memory.push(strLen);
+                auto strLen = (readInt32() ? frame->popString() : frame->topString())->size();
+                frame->push(strLen);
                 break;
             }
             case bytecode::POP:
-                memory.pop();
+                frame->pop();
                 break;
             case bytecode::POP_STR:
-                memory.popString();
+                frame->popString();
                 break;
             case bytecode::STORE:
-                memory.store(readInt32(), memory.top());
+                frame->store(readInt32(), frame->top());
                 break;
             case bytecode::LOAD:
-                memory.push(memory.load(readInt32()));
+                frame->push(frame->load(readInt32()));
                 break;
             case bytecode::CHAR_AT: {
-                auto at_index = memory.pop();
-                auto string = *memory.topString();
+                auto at_index = frame->pop();
+                auto string = *frame->topString();
                 //  std::cout << "String: " << string << " index " << std::to_string(at_index) << std::endl << std::flush;
-                memory.push((string)[at_index]);
+                frame->push((string)[at_index]);
                 break;
             }
             case bytecode::SCOPE: {
                 auto scopeName = *readString();
-                memory.push(scopes[scopeName]);
+                frame->push(scopes[scopeName]);
                 break;
             }
             case bytecode::DECIDE: {
@@ -160,16 +165,16 @@ bool vm::run_scope() {
                 // NO_SCOPE
                 // INT CMP
                 // BOOL COME_BACK
-                bool comeBack = memory.pop();
+                bool comeBack = frame->pop();
                 // what it does?
                 // pop()s out latest element, if true, executes [stack - 2] else [stack - 1]
                 uint64_t scopeIndex;
-                if (memory.pop()) {
+                if (frame->pop()) {
                     //std::cout << "Truth decide" << std::endl << std::flush;
-                    memory.pop();
-                    scopeIndex = memory.pop();
+                    frame->pop();
+                    scopeIndex = frame->pop();
                 } else {
-                    scopeIndex = memory.pop();
+                    scopeIndex = frame->pop();
                 }
 
                 if (comeBack) {
@@ -183,66 +188,82 @@ bool vm::run_scope() {
                 }
                 break;
             }
+            case bytecode::ENTER_FRAME: {
+                // number of args to copy from current frame to newer frame
+                auto argsCopy = readInt32();
+                auto stackElements = popElements(argsCopy);
+                frame = memory.enterFrame();
+                pushElements(argsCopy, stackElements);
+                break;
+            }
+            case bytecode::EXIT_FRAME: {
+                // number of args to copy from current frame to older frame
+                auto argsCopy = readInt32();
+                auto stackElements = popElements(argsCopy);
+                frame = memory.exitFrame();
+                pushElements(argsCopy, stackElements);
+                break;
+            }
 
             case bytecode::INT_CMP:
-                memory.push(memory.pop() == memory.pop() ? 1 : 0);
+                frame->push(frame->pop() == frame->pop() ? 1 : 0);
                 break;
             case bytecode::STR_CMP:
-                memory.push((*memory.popString() == *memory.popString()) ? 1 : 0);
+                frame->push((*frame->popString() == *frame->popString()) ? 1 : 0);
                 break;
 
             case bytecode::GREATER_THAN: {
-                auto right = memory.pop();
-                auto left = memory.pop();
-                memory.push(left > right);
+                auto right = frame->pop();
+                auto left = frame->pop();
+                frame->push(left > right);
                 break;
             }
 
             case bytecode::LESSER_THAN: {
-                auto right = memory.pop();
-                auto left = memory.pop();
-                memory.push(left < right);
+                auto right = frame->pop();
+                auto left = frame->pop();
+                frame->push(left < right);
                 break;
             }
 
             case bytecode::GREATER_EQ: {
-                auto right = memory.pop();
-                auto left = memory.pop();
-                memory.push(left >= right);
+                auto right = frame->pop();
+                auto left = frame->pop();
+                frame->push(left >= right);
                 break;
             }
 
             case bytecode::LESSER_EQ: {
-                auto right = memory.pop();
-                auto left = memory.pop();
-                memory.push(left <= right);
+                auto right = frame->pop();
+                auto left = frame->pop();
+                frame->push(left <= right);
                 break;
             }
 
             case bytecode::AND:
-                memory.push(memory.pop() && memory.pop());
+                frame->push(frame->pop() && frame->pop());
                 break;
 
             case bytecode::OR:
-                memory.push(memory.pop() || memory.pop());
+                frame->push(frame->pop() || frame->pop());
                 break;
 
             case bytecode::GO:
-                index = memory.pop();
+                index = frame->pop();
                 return run_scope();
 
             case bytecode::VISIT: {
                 auto current_index = index;
-                index = memory.pop();
+                index = frame->pop();
                 run_scope();
                 index = current_index;
                 break;
             }
             case bytecode::VISIT_EQUAL: {
-                auto scopeIndex = memory.pop();
+                auto scopeIndex = frame->pop();
 
                 // visits and comes back
-                if (memory.pop() != 1) break;
+                if (frame->pop() != 1) break;
                 auto current_index = index;
                 index = scopeIndex;
                 run_scope();
@@ -250,10 +271,10 @@ bool vm::run_scope() {
                 break;
             }
             case bytecode::VISIT_UNEQUAL: {
-                auto scopeIndex = memory.pop();
+                auto scopeIndex = frame->pop();
 
                 // visits and comes back
-                if (memory.pop() != 0) break;
+                if (frame->pop() != 0) break;
                 auto current_index = index;
                 index = scopeIndex;
                 run_scope();
@@ -261,18 +282,18 @@ bool vm::run_scope() {
                 break;
             }
             case bytecode::GO_EQUAL: {
-                auto scopeIndex = memory.pop();
+                auto scopeIndex = frame->pop();
 
                 // goes... but never comes bacc
-                if (memory.pop() != 1) break;
+                if (frame->pop() != 1) break;
                 index = scopeIndex;
                 return run_scope();
             }
             case bytecode::GO_UNEQUAL: {
-                auto scopeIndex = memory.pop();
+                auto scopeIndex = frame->pop();
 
                 // goes... but never comes bacc
-                auto cmp = memory.pop();
+                auto cmp = frame->pop();
                 if (cmp != 0) break;
                 index = scopeIndex;
                 return run_scope();
@@ -287,6 +308,21 @@ bool vm::run_scope() {
         }
     }
     throw std::runtime_error("Reached Unexpected End Of Loop");
+}
+
+void vm::pushElements(int32_t argsCopy, const uint64_t *stackElements) {
+    for (int i = 0; i < argsCopy; ++i) {
+        frame->push(stackElements[i]);
+    }
+    delete[] stackElements;
+}
+
+uint64_t *vm::popElements(int32_t argsCopy) {
+    auto stackElements = new uint64_t[argsCopy];
+    for (int i = 0; i < argsCopy; ++i) {
+        stackElements[i] = frame->pop();
+    }
+    return stackElements;
 }
 
 std::string *vm::readString() {
@@ -317,6 +353,7 @@ bool vm::hasMore() {
 
 
 vm::~vm() {
+    memory.close();
     //for (const auto &scope: scopes) {
     //delete &scope.first;
     //}

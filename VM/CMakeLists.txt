@@ -12,4 +12,6 @@ add_executable(VM main.cpp
         assembler/assembler.cpp
         assembler/assembler.h
         assembler/bytecode_writer.cpp
-        assembler/bytecode_writer.h)
+        assembler/bytecode_writer.h
+        memory_frame.cpp
+        memory_frame.h)

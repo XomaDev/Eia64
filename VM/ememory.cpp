@@ -2,35 +2,21 @@
 // Created by kumaraswamy on 8/16/24.
 //
 
-#include <iostream>
 #include "ememory.h"
 
-void ememory::store(size_t index, uint64_t value) {
-    memory_table[index] = value;
+memory_frame *ememory::enterFrame() {
+    auto frame = new memory_frame();
+    frames.push(frame);
+    return frame;
 }
 
-uint64_t ememory::load(size_t index) {
-    return memory_table[index];
+memory_frame *ememory::exitFrame() {
+    delete frames.top();
+    frames.pop();
+    return frames.top();
 }
 
-void ememory::push(uint64_t value) {
-    stack_memory.push(value);
-}
-
-uint64_t ememory::top() {
-    return stack_memory.top();
-}
-
-uint64_t ememory::pop() {
-    auto top = stack_memory.top();
-    stack_memory.pop();
-    return top;
-}
-
-std::string *ememory::topString() {
-    return reinterpret_cast<std::string*>(top());
-}
-
-std::string *ememory::popString() {
-    return reinterpret_cast<std::string*>(pop());
+void ememory::close() {
+    delete frames.top();
+    frames.pop();
 }

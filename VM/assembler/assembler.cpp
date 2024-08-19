@@ -111,6 +111,16 @@ void assembler::readScope() {
             writer.writeString(word);
         }
         else if (word == "Decide") writer.write(bytecode::DECIDE);
+        else if (word == "Enter_Frame") {
+            writer.write(bytecode::ENTER_FRAME);
+            source >> word;
+            writer.writeInt32(stoi(word));
+        }
+        else if (word == "Exit_Frame") {
+            writer.write(bytecode::EXIT_FRAME);
+            source >> word;
+            writer.writeInt32(stoi(word));
+        }
 
         else if (word == "Int_Cmp") writer.write(bytecode::INT_CMP);
         else if (word == "Str_Cmp") writer.write(bytecode::STR_CMP);

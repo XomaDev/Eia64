@@ -1,23 +1,21 @@
-# I think we did it!?
-
 non_base
     Load 0
     Int 1
     Sub
-    Enter_Frame
-        Copy
+    Enter_Frame 1   # brings last n stack to new stack
+        Store 0     # store as new arg for fib
         Scope fib Visit
-    Exit_Frame
-    Load 1  # return of fib(n - 1)
+        Load 1
+    Exit_Frame 1
 
     Load 0
     Int 2
     Sub
-    Enter_Frame
-        Copy
+    Enter_Frame 1   # brings last n stack to new stack
+        Store 0     # store as new arg for fib
         Scope fib Visit
-    Exit_Frame
-    Load 1  # return of fib(n - 2)
+        Load 1
+    Exit_Frame 1
 
     # store return result
     Add
@@ -29,10 +27,18 @@ fib
     # return 1
     Load 0
     Int 2
-    Lesser_Than
+    Less_Than
     Scope non_base Gnq
 
     # return=n
     Load 0
     Store 1
+end
+
+main
+    Int 30
+    Store 0
+    Scope fib Visit
+    Load 1
+    Print Endl
 end

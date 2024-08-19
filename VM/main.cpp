@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <fstream>
+#include <chrono>
 
 #include "vm.h"
 #include "assembler/assembler.h"
@@ -27,7 +28,23 @@ void printBytes(unsigned char* bytes, long& size) {
     std::cout << std::endl;
 }
 
+long long fibonacci(int n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+void doFibTest() {
+    auto start = std::chrono::high_resolution_clock::now();
+    long long result = fibonacci(30);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start);
+    std::cout << "Fibonacci(30) = " << result << std::endl;
+    std::cout << "Time taken: " << duration.count() << " milliseconds" << std::endl;
+}
+
 void runVm() {
+    doFibTest();
+
     // this is a testing path
     auto path = "/home/kumaraswamy/Documents/Eia64/VM/tests/hello.e";
     long fileSize;
@@ -40,7 +57,7 @@ void runVm() {
 }
 
 int main() {
-    auto esmPath = "/home/kumaraswamy/Documents/Eia64/VM/tests/fib.esm";
+    auto esmPath = "/home/kumaraswamy/Documents/Eia64/VM/tests/simple_fib.esm";
     auto compiledPath = "/home/kumaraswamy/Documents/Eia64/VM/tests/hello.e";
     delete new assembler(esmPath, compiledPath);
 

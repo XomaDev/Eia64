@@ -17,6 +17,9 @@ class vm {
     unsigned long index = 0;
     unsigned long size;
     ememory memory;
+    memory_frame* frame;
+
+    uint64_t *popElements(int32_t argsCopy);
 
     std::string* readString();
     uint8_t read();
@@ -28,12 +31,14 @@ class vm {
     bool running = true;
 public:
     vm(std::unique_ptr<uint8_t[]> bytes, long size): bytes(std::move(bytes)), size(size)  {
-        // Meow
+        frame = memory.enterFrame();
     }
     ~vm();
 
     void run();
     bool run_scope();
+
+    void pushElements(int32_t argsCopy, const uint64_t *stackElements);
 };
 
 

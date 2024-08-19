@@ -42,6 +42,8 @@ enum class bytecode {
 
     SCOPE,
     DECIDE,
+    ENTER_FRAME,
+    EXIT_FRAME,
 
     // Logical
     INT_CMP, // compares last two Ints
