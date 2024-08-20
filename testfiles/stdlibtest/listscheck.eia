@@ -1,8 +1,0 @@
-include(std:list)
-
-let names = new list(3)
-names.add("Hack")
-names.add("Club")
-
-println(names)
-println(names.toArray())

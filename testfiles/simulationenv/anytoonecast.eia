@@ -1,7 +1,0 @@
-include(
-  "simulationenv/One"
-)
-
-let one: Object = new One()
-let oneAgain: One = one::One
-println(one)

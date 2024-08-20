@@ -1,0 +1,33 @@
+# memory locations
+# 0 for arg n
+# 1 was it a base case? Bool
+# 2 for simple result
+# 4 for fib(n - 1) result
+# 5 for fib(n + 1) result
+
+fib_non_base
+    # let know non-base case
+    Bool False
+    Store 1
+
+    Load 0
+    Int 1
+    Sub
+    Store 0
+    Scope fib Visit
+end
+
+fib
+    Load 0
+    Int 2
+    Lesser_Than
+    Scope fib_non_base Gnq
+
+    # let know base case
+    Bool True
+    Store 1
+
+    # store simple result
+    Load 0
+    Store 1
+end

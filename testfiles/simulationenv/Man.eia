@@ -1,9 +1,0 @@
-let manName = ""
-
-fn init(name: String) {
-  manName = name
-}
-
-fn getName() = manName
-
-fn string() = "Man(" + manName + ")"

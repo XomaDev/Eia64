@@ -1,0 +1,9 @@
+main
+    Str "2 + 8 is "
+    Int 2
+    Int 8
+    Add
+    To_Str
+    Add_Str
+    Print_Str
+end

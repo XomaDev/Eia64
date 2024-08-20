@@ -1,2 +1,0 @@
-include(static:"simulationenv/Person")
-println(Person.getName())

@@ -1,0 +1,384 @@
+init_conf
+    # [0, 9] range for properties
+    # Loading all the properties
+    # Interval => 0
+    # Trash Can => 1
+    # Happy Right   => 2
+    # Happy Left   => 3
+
+    # Set interval to 500 ms
+    Int 500
+    Store 0
+
+    # Trash Symbol
+    Str "🗑"
+    Store 1
+
+    # Happy Right
+    Str "[0;31m[1m(> ^_^)>[0m"
+    Store 2
+
+    # Happy Left
+    Str "[0;35m[1m<(^_^ <)[0m"
+    Store 3
+end
+
+append_rest
+    # Retrieve relevant char
+    Load 10
+    Load 18
+    Str_Len 1
+    Int 1
+    Add
+    Char_At
+    To_Ch
+    Store 19
+
+    # update and save
+    Load 18
+    Load 19
+    Add_Str
+    Store 18
+
+    # append all others
+    Str_Len 0
+    Load 17
+    Int_Cmp
+    Scope append_rest Gnq
+end
+
+trim_first_char
+    # arg{10} => text
+    Load 10
+    Str_Len 0
+    Int 1
+    Sub
+    Store 17
+
+    Str ""
+    Store 18
+
+    Load 17
+    Int 0
+    Int_Cmp
+    Scope append_rest Vnq
+
+    # save as new 10
+    Load 18
+    Store 10
+end
+
+make_space
+    Load 51
+    Str " "
+    Add_Str
+    Store 51
+
+    Str_Len 0
+    Load 50
+    Int_Cmp
+    Scope make_space Gnq
+end
+
+create_spaces
+    # arg {50} for n spaces
+    # {51} for resultant spaces
+
+    Str ""
+    Store 51
+    Str_Len 0
+    Load 50
+    Int_Cmp
+
+    Scope make_space Vnq
+end
+
+happy_right
+    Load 2
+    Print_Str
+end
+
+happy_left
+    Load 3
+    Print_Str
+end
+
+happy_left_letter
+    Str "[1m"
+    Print_Str
+    Load 13
+    Print_Str
+    Str "[0m"
+    Print_Str
+    Scope happy_left Visit
+end
+
+print_text
+    Str "[1m[0;34m"
+    Print_Str
+    Load 10
+    Print_Str
+    Str "[0m"
+    Print_Str
+    Endl
+end
+
+print_guy
+    # trash guy steals a char!
+
+    # Print Trash Can
+    Load 1
+    Print_Str
+
+    # Print Left Spaces
+    Load 15
+    Store 50
+    Scope create_spaces Visit
+    Load 51
+    Print_Str
+
+    # Print Trash Guy Face
+    Scope happy_right   # for true
+    Scope happy_left_letter    # for false
+    Load 14             # going_right variable
+    Bool True
+    Int_Cmp             # compare
+
+    Bool True           # tells to come back
+    Decide
+
+    # Print Right Spaces
+    Load 16
+    Store 50
+    Scope create_spaces Visit
+    Load 51
+    Print_Str
+
+    # Print Text
+    Scope print_text Visit
+end
+
+right_ends
+    # when guy reaches far right
+
+    # going_right = false
+    Bool False
+    Store 14
+
+    # left_space = 10 + i
+    Int 10
+    Load 12     # char_i
+    Add
+    Store 15    # left_space
+
+    # right_space = 0
+    Int 0
+    Store 16
+
+    Scope trim_first_char Visit
+end
+
+left_ends
+    # when guy reaches far left (home)
+    # Print Home Guy
+
+    # Print Trash Can
+    Load 1
+    Print_Str
+
+    # Print Happy Left
+    Scope happy_left Visit
+
+    # Print n = (11 + i) spaces
+    Int 11
+    Load 12     # char_i
+    Add
+    Store 50    # arg for create_spaces
+    Scope create_spaces Visit
+    Load 51     # resultant spaces
+    Print_Str
+
+    Scope print_text Visit
+
+    Load 0
+    Sleep
+
+    # do break
+    Bool False
+    Store 20
+end
+
+check_extreme
+    # left_space >= 10 + i
+    Load 15     # left_space
+    Int 10
+    Load 12     # char_i
+    Add
+    Great_Eq
+
+    Load 14     # going_right
+    And
+
+    Scope right_ends Geq
+
+    # right_space >= 10 + i && !going_right
+
+    # right_space >= 10 + i
+    Load 16     # right_space
+    Int 10
+    Load 12     # char_i
+    Add
+    Great_Eq
+
+    # !going_right
+    Load 14     # going_right
+    Not
+
+    And         # &&
+
+    Scope left_ends Geq
+end
+
+goes_right
+    # left_space++
+    Load 15     # left_space
+    Int 1
+    Add
+    Store 15
+
+    # right_space--
+    Load 16     # right_space
+    Int 1
+    Sub
+    Store 16
+end
+
+goes_left
+    # left_space--
+    Load 15     # left_space
+    Int 1
+    Sub
+    Store 15
+
+    # right_space++
+    Load 16     # right_space
+    Int 1
+    Add
+    Store 16
+end
+
+prepare_next
+    Scope goes_right
+    Scope goes_left
+    Load 14     # going_right?
+    Bool True  # come back
+    Decide
+
+    Scope steal_char Visit
+end
+
+steal_char
+    # Later we gotta make this while true loop
+
+    Scope print_guy Visit
+
+    Load 0
+    Sleep
+
+    Scope check_extreme Visit
+
+    Load 20     # loop running
+    Scope prepare_next Geq
+end
+
+iterate_char
+    # get relevant char from text
+    Load 10     # text
+    Int 0
+    Char_At
+    To_Ch
+
+    Store 13    # store relevant char
+
+    # going_right = true
+    Bool True
+    Store 14
+
+    # setup left_space and right_space =
+    Int 0
+    Store 15    # left space (0)
+
+    Int 10
+    Load 12
+    Add
+    Store 16    # right space (10+i)
+
+    # loop_running = true
+    Bool True
+    Store 20
+
+    Scope steal_char Visit
+
+    # increment char_i
+    Load 12
+    Int 1
+    Add
+    Store 12
+
+    Scope char_loop Go
+end
+
+char_loop
+    Load 12     # char_i
+    Load 11     # text len
+    Int_Cmp
+
+    Scope iterate_char Gnq
+end
+
+trash
+    # [from 10] for animation properties
+    # arg {10} => text
+
+    # {11} => text size
+    # {12} => char_i
+    # {13} => current letter
+    # {14} => going right? initially true
+    # {15} => left space, initially 0
+    # {16} => right space, initially 10 + i
+
+    # for removing first letter (remove_first_letter)
+    # {17} => new text length
+    # {18} => trimmed off text
+    # {19} => temp char
+
+    # for while true loop
+    # {20} => loop running?
+
+    # get and store text size
+    Load 10
+    Str_Len 0
+    Store 11
+    Pop
+
+    # init char loop i
+    Int 0
+    Store 12
+    Pop
+
+    Scope char_loop Visit
+end
+
+main
+    Str "[1m[0;34mTrashGuy Animation[0m [1m[0;33mESM[0m"
+    Print_Str
+    Endl
+
+    Scope init_conf Visit
+
+    Str "Enter a word: "
+    Print_Str
+    Read_Ln
+    Store 10
+    Scope trash Visit
+end

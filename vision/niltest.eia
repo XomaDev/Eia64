@@ -1,2 +1,0 @@
-let name: String = nil
-println(name)

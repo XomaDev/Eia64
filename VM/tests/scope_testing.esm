@@ -1,0 +1,8 @@
+meow
+    Str "Meow"
+    Print_Str Endl
+end
+
+main
+    Scope meow Visit
+end

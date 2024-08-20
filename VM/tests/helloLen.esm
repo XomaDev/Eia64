@@ -1,0 +1,6 @@
+main
+    Str "Hello, World"
+      Str_Len
+      Print
+    Pop_Str
+end

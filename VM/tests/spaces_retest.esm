@@ -1,0 +1,44 @@
+make_space
+    Load 51
+    Str " "
+    Add_Str
+    Store 51
+
+    Str "Current length: "
+    Print_Str
+    Load 51
+    Str_Len
+    Load 50
+    Int_Cmp
+    Print Endl
+
+    Load 51
+    Str_Len
+    Load 50
+    Int_Cmp
+    Scope make_space Gnq
+end
+
+create_spaces
+    # arg {50} for n spaces
+    # {51} for resultant spaces
+
+    Load 50
+    Print Endl
+
+    Str ""
+    Store 51
+    Str_Len
+    Load 50
+    Int_Cmp
+
+    Scope make_space Vnq
+end
+
+main
+        Int 10
+        Store 50
+        Scope create_spaces Visit
+        Load 51
+        Print_Str Endl
+end

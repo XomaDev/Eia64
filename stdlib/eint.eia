@@ -3,7 +3,7 @@ visible fn pow(self: Int, power: Int): Int {
   self = copy(self)
 
   var result = self
-  for (var i = 0, i < power, i++) {
+  for (var i = 0; i < power; i++) {
     result *= self
   }
   return result

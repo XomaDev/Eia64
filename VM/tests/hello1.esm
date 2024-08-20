@@ -1,0 +1,8 @@
+main
+    Int 8
+    Neg
+    Int 8
+    Int_Cmp
+    Not
+    Print
+end

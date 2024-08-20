@@ -1,0 +1,8 @@
+main
+    Str "Hello "
+    Read_Ln
+    Add_Str
+    Str "! How are you doing today?"
+    Add_Str
+    Print_Str
+end

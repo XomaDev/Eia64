@@ -1,0 +1,37 @@
+fib
+    # arg 0, return arg 0
+    Load 0
+    Int 2
+    Less_Than
+    Ret
+
+    Load 0
+    Int 1
+    Sub
+    Enter_Frame 1   # brings last n stack to new stack
+        Store 0     # store as new arg for fib
+        Scope fib Visit
+        Load 0
+    Exit_Frame 1
+
+    Load 0
+    Int 2
+    Sub
+    Enter_Frame 1   # brings last n stack to new stack
+        Store 0     # store as new arg for fib
+        Scope fib Visit
+        Load 0
+    Exit_Frame 1
+
+    # add and store result
+    Add
+    Store 0
+end
+
+main
+    Int 30
+    Store 0
+    Scope fib Visit
+    Load 0
+    Print Endl
+end

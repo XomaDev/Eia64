@@ -1,0 +1,39 @@
+# Okay, here we simply DO NOT worry about stack, each scope has it's own space
+
+non_base
+    Load 0
+    Int 1
+    Sub
+    Open_Frame
+        Copy    # copies from last frame
+        Store 0
+        Scope fib Visit
+        Load 0
+        Store 1
+    Close_Frame
+
+    # result of fib(n - 1)
+    Load 1
+
+    Load 0
+    Int 2
+    Sub
+    Open_Frame
+       Copy     # copies from last frame
+       Store 0
+       Scope fib Visit
+       Load 0
+       Store 1
+    Close_Frame
+
+    # result of fib(n - 2)
+    Load 1
+end
+
+fib
+    # mem 0 for arg n
+    Load 0
+    Int 2
+    Lesser_Than
+    Scope non_base Gnq
+end

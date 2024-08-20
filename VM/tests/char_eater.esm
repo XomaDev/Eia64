@@ -1,0 +1,48 @@
+# 10 => 10
+# 11 => 17 (new text length)
+# 12 => 18 (trimmed off text)
+# 13 => 19 (temp char)
+
+append_rest
+    Load 10
+    Load 12
+    Str_Len 1
+    Int 1
+    Add
+    Char_At
+    To_Ch
+    Store 13
+
+    Load 12
+    Load 13
+    Add_Str
+    Store 12
+
+    Str_Len 0
+    Load 11
+    Int_Cmp
+    Scope append_rest Gnq
+end
+
+remove_first
+    # original_size - 1
+    Load 10
+    Str_Len 0
+    Int 1
+    Sub
+    Store 11
+
+    Str ""
+    Store 12
+    Scope append_rest Visit
+end
+
+main
+    Str "Miaa"
+    Store 10
+    Print_Str Endl
+    Scope remove_first Visit
+
+    Load 12
+    Print_Str Endl
+end
