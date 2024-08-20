@@ -38,6 +38,7 @@ enum class bytecode {
     POP_STR, // remove String from Stack
     STORE,
     LOAD,
+    COPY,
     CHAR_AT, // element at
 
     SCOPE,

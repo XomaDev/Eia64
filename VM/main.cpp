@@ -57,7 +57,7 @@ void runVm() {
 }
 
 int main() {
-    auto esmPath = "/home/kumaraswamy/Documents/Eia64/VM/tests/simple_fib.esm";
+    auto esmPath = "/home/kumaraswamy/Documents/Eia64/VM/tests/slim_fib.esm";
     auto compiledPath = "/home/kumaraswamy/Documents/Eia64/VM/tests/hello.e";
     delete new assembler(esmPath, compiledPath);
 

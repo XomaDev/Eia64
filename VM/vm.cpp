@@ -150,6 +150,9 @@ bool vm::run_scope() {
             case bytecode::LOAD:
                 frame->push(frame->load(readInt32()));
                 break;
+            case bytecode::COPY:
+                frame->push(frame->top());
+                break;
             case bytecode::CHAR_AT: {
                 auto at_index = frame->pop();
                 auto string = *frame->topString();

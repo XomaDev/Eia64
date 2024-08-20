@@ -107,6 +107,7 @@ void assembler::readScope() {
             source >> word;
             writer.writeInt32(stoi(word));
         }
+        else if (word == "Copy") writer.write(bytecode::COPY);
         else if (word == "Char_At") writer.write(bytecode::CHAR_AT);
         else if (word == "Scope") {
             // goes to other named scope
