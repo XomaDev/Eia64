@@ -99,6 +99,10 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
+    override fun expressionBind(bind: ExpressionBind): Any {
+        throw ShutdownException()
+    }
+
     override fun nativeCall(call: NativeCall): Any {
         throw ShutdownException()
     }

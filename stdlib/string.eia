@@ -5,7 +5,7 @@ include(
 visible fn indexOfChar(self: String, letter: Char): Int {
   let size = len(self)
   if (size == 0) return -1
-  for (var i = 0, i < size, i++)
+  for (var i = 0; i < size; i++)
     if (self[i] == letter) return i
   return -1
 }
@@ -16,7 +16,7 @@ visible fn indexOfFrom(self: String, piece: String, from: Int): Int {
 
   if (pieceSize > selfSize) return -1
 
-  for (var i = copy(from), i < selfSize, i++) {
+  for (var i = copy(from); i < selfSize; i++) {
     if (self[i] != piece[0]) continue
 
     var matched = false
@@ -47,7 +47,7 @@ visible fn startsWith(self: String, prefix: String): Bool {
 
   if (prefixSize > selfSize) return false
 
-  for (var i = 0, i < prefixSize, i++)
+  for (var i = 0; i < prefixSize; i++)
     if (self[i] != prefix[i])
       return false
   return true
@@ -63,7 +63,7 @@ visible fn endsWith(self: String, suffix: String): Bool {
   let selfLastIndex = selfSize - 1
   let suffixLastIndex = suffixSize - 1
 
-  for (var i = suffixLastIndex, i >= 0, i--)
+  for (var i = suffixLastIndex; i >= 0; i--)
     if (suffix[i] != self[selfLastIndex--])
       return false
   return true
@@ -77,7 +77,7 @@ let LOWER_CASE = arrayOf( 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k',
 
 fn invert(self: String, target: Array, replacement: Array<Char>): String {
   let size = len(self)
-  for (var i = 0, i < size, i++) {
+  for (var i = 0; i < size; i++) {
     if ((let index = target.indexOf(self[i])) != -1)
       self[i] = replacement[index]
   }
@@ -92,7 +92,7 @@ visible fn part(self: String, from: Int, till: Int): String {
   var result = ""
   let stringSize = len(self)
 
-  for (var i = copy(from), i < copy(till), i++)
+  for (var i = copy(from); i < copy(till); i++)
     result += self[i]
   return result
 }
@@ -116,7 +116,7 @@ visible fn trim(self: String): String {
 
 visible fn reverse(self: String): String {
   var reversed = ""
-  for (var i = len(self) - 1, i >= 0, i--) {
+  for (var i = len(self) - 1; i >= 0; i--) {
     reversed += self[i]
   }
   return reversed
@@ -165,7 +165,7 @@ visible fn isNumeric(self: String): Bool {
   var hasDigits = false
   var hasDecimalPoint = false
 
-  for (var i = 0, i < size, i++) {
+  for (var i = 0; i < size; i++) {
     let c = trimmed[i]
 
     if (c == '-' || c == '+' && i == 0) {
@@ -183,9 +183,9 @@ visible fn isNumeric(self: String): Bool {
 
 visible fn toCharArray(self: String): Array<Char> {
   let charCount = len(self)
-  ; Allocate a char array
+  // Allocate a char array
   let chars = makeArray<Char>(charCount, ' ')
-  for (var i = 0, i < charCount, i++)
+  for (var i = 0; i < charCount; i++)
     chars[i] = self[i]
   return chars
 }
@@ -193,7 +193,7 @@ visible fn toCharArray(self: String): Array<Char> {
 visible fn repeat(self: String, n: Int): String {
   var result = ""
   let times = copy(n)
-  for (var i = 0, i < times, i++)
+  for (var i = 0; i < times; i++)
     result += self
   return result
 }
@@ -247,9 +247,9 @@ visible fn toIntRadix(self: String, radix: Int): Int {
   }
   var result = 0
   until (i < size) {
-    ; workaround, we first convert char -> string -> int
-    ; or doing directly char -> int will give us codepoint of char
-    ; rather than actually converting it into a int digit
+    // workaround, we first convert char -> string -> int
+    // or doing directly char -> int will give us codepoint of char
+    // rather than actually converting it into a int digit
     let digit = int(str(self[i++]))
     result *= radix
     result -= digit
@@ -257,5 +257,5 @@ visible fn toIntRadix(self: String, radix: Int): Int {
   return if (negative) result else -result
 }
 
-; opps, the problem still exists!
+// opps, the problem still exists!
 visible fn toInt(self: String): Int = toIntRadix(self, 10)

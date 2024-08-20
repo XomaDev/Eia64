@@ -34,6 +34,7 @@ abstract class Expression(
         fun unaryOperation(expr: UnaryOperation): R
         fun binaryOperation(expr: BinaryOperation): R
         fun expressions(list: ExpressionList): R
+        fun expressionBind(bind: ExpressionBind): R
         fun nativeCall(call: NativeCall): R
         fun cast(cast: Cast): R
         fun scope(scope: Scope): R

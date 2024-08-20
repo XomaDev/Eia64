@@ -25,7 +25,8 @@ class Lexer(private val source: String) {
             return
         }
         if (char == ' ' || char == ' ') return
-        if (char == ';') {
+        if (char == '/' && consumeNext('/')) {
+            // a comment!
             while (!isEOF() && peek() != '\n') index++
             return
         }
@@ -62,6 +63,7 @@ class Lexer(private val source: String) {
             ':' -> if (consumeNext('=')) createOp(":=")
                    else if (consumeNext(':')) createOp("::")
                    else createOp(":")
+            ';' -> createOp(";")
             ',' -> createOp(",")
             '(' -> createOp("(")
             ')' -> createOp(")")

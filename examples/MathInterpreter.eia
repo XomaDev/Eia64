@@ -1,8 +1,8 @@
-; a simple math interpreter that takes in basic expressions and evaluates them in order
-; supports +, -, * and /.
-; * and / are evaluated first, then + and -
-; does not yet support brackets
-; * and / are prioritized over + and -
+// a simple math interpreter that takes in basic expressions and evaluates them in order
+// supports +, -, * and /.
+// * and / are evaluated first, then + and -
+// does not yet support brackets
+// * and / are prioritized over + and -
 
 include(
   static:std:string,
@@ -72,10 +72,10 @@ private fn parse(): Any {
     left = arrayOf(left, op, right)
   }
 
-  ; here we need parser time verification
-  ; we need to verify the return values over here
-  ; Case when only one single number is typed in, a non-array is returned
-  ; which crashes the executor
+  // here we need parser time verification
+  // we need to verify the return values over here
+  // Case when only one single number is typed in, a non-array is returned
+  // which crashes the executor
   return left
 }
 
