@@ -1,6 +1,5 @@
 package space.themelon.eia64.analysis
 
-import space.themelon.eia64.EiaTrace
 import space.themelon.eia64.runtime.Executor
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
@@ -8,8 +7,6 @@ import java.io.FileOutputStream
 import java.io.PrintStream
 
 class ScopeManager {
-
-    private val trace = if (Executor.DEBUG) EiaTrace(PrintStream(FileOutputStream(Executor.LOGS_PIPE_PATH))) else null
 
     val classes = ArrayList<String>()
     val staticClasses = ArrayList<String>()
@@ -47,7 +44,6 @@ class ScopeManager {
     fun enterScope() {
         val newScope = ResolutionScope(currentScope)
         currentScope = newScope
-        trace?.enterScope()
     }
 
     fun leaveScope(): Boolean {
@@ -56,7 +52,6 @@ class ScopeManager {
         // let x = 5
         // if (x) { println("Hello, "World") }
         // here you don't require creating a new scope to evaluate it
-        trace?.leaveScope()
         // Calls awaiting hooks that must be called before scope ends
         currentScope.dispatchHooks()
 
@@ -86,7 +81,6 @@ class ScopeManager {
             sequentialFunctions += reference
             uniqueFunctionNames += name
         }
-        trace?.declareFn(name, reference.parameters)
     }
 
     fun readFnOutline(): FunctionReference = currentScope.sequentialFunctions.pop()
@@ -99,7 +93,6 @@ class ScopeManager {
         if (name in currentScope.variables)
             throw RuntimeException("Variable $name is already defined in the current scope")
         currentScope.defineVr(name, mutable, signature, public)
-        trace?.declareVariable(mutable, name, signature)
     }
 
     fun hasFunctionNamed(name: String) = currentScope.resolveFnName(name)

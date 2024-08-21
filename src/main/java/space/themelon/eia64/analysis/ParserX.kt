@@ -25,14 +25,18 @@ class ParserX(
     lateinit var parsed: ExpressionList
 
     fun parse(tokens: List<Token>): ExpressionList {
+        println("Parsing $tokens")
         index = 0
         size = tokens.size
         this.tokens = tokens
 
         val expressions = ArrayList<Expression>()
-        parseScopeOutline()
+        println("done")
+//        parseScopeOutline()
+        println("done!")
         while (!isEOF()) expressions.add(parseStatement())
-        if (Executor.DEBUG) expressions.forEach { println(it) }
+        println("done2")
+        println(expressions)
         parsed = ExpressionList(expressions)
         parsed.sig() // necessary
         return parsed
@@ -122,10 +126,14 @@ class ParserX(
             // Predefine all the outlines!
             manager.defineSemiFn(reference.name, reference)
         }
+        println("outline parse 0")
 
         while (!isEOF()) {
+            println("outline parse lloping")
             val token = next()
-            when (val type = token.type) {
+            println("outline parse $token")
+            val type = token.type;
+            when (type) {
                 Type.OPEN_CURLY -> curlyBracesCount++
                 Type.CLOSE_CURLY -> {
                     if (curlyBracesCount == 0) break
@@ -138,9 +146,13 @@ class ParserX(
                         handleFn(type == Type.VISIBLE)
                     }
                 }
-                else -> { }
+                else -> {
+                    println("else: $type")
+                }
             }
         }
+        println("outline parse 1")
+
 
         index = originalIndex
     }
@@ -242,7 +254,7 @@ class ParserX(
 
     private fun getModulePath(path: String) =
         if (path.startsWith('/')) File(path)
-        else File("${Executor.EXECUTION_DIRECTORY}/$path")
+        else File("NONE/$path")
 
     private fun newStatement(token: Token): NewObj {
         val module = readAlpha()
@@ -1141,7 +1153,7 @@ class ParserX(
 }
 
 private fun List<Expression>.toSignString(): String {
-    val string = StringJoiner(", ")
-    for (expression in this) string.add(expression.sig().logName())
+    val string = StringBuilder()
+    for (expression in this) string.append(expression.sig().logName()).append(" ")
     return string.toString()
 }

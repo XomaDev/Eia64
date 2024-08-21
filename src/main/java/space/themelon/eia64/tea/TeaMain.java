@@ -1,26 +1,34 @@
 package space.themelon.eia64.tea;
 
-import org.teavm.jso.JSBody;
-import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
+import space.themelon.eia64.runtime.Executor;
+
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
 public class TeaMain {
+
+  private static final Executor executor = new Executor();
+  private static final ByteArrayOutputStream output = new ByteArrayOutputStream();
+
   public static void main(String[] args) {
-    System.out.println("TeaMain initialized");
-    exportFoo((TeaMain::executeEia));
+    executor.setInputSupported(false);
+    executor.setStandardOutput(new PrintStream(output));
+//    exportFoo((TeaMain::executeEia));
   }
 
   private static String executeEia(String source) {
-    System.out.println(source);
-    return "<meow_eia>";
+    output.reset();
+    executor.loadMainSource(source);
+    return output.toString();
   }
 
-  @JSBody(params = "eia", script = "main.eia = eia;")
-  private static native void exportFoo(ExportedEia eia);
+//  @JSBody(params = "eia", script = "main.eia = eia;")
+//  private static native void exportFoo(ExportedEia eia);
 }
 
-@SuppressWarnings("unused")
-@JSFunctor
+//@SuppressWarnings("unused")
+//@JSFunctor
 interface ExportedEia extends JSObject {
   String executeEia(String source);
 }

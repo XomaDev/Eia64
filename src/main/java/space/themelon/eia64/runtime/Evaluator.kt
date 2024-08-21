@@ -1,6 +1,5 @@
 package space.themelon.eia64.runtime
 
-import space.themelon.eia64.EiaTrace
 import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.FunctionExpr
@@ -13,9 +12,6 @@ import space.themelon.eia64.signatures.ObjectExtension
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type.*
-import java.io.FileOutputStream
-import java.io.PrintStream
-import java.util.Scanner
 import kotlin.collections.ArrayList
 import kotlin.math.pow
 import kotlin.random.Random
@@ -28,10 +24,6 @@ class Evaluator(
     private val startupTime = System.currentTimeMillis()
 
     private var evaluator: Expression.Visitor<Any> = this
-
-    // in the future, we need to give options to enable/ disable:
-    //  how about enabling it through eia code?
-    private val tracer = if (Executor.DEBUG) EiaTrace(PrintStream(FileOutputStream(Executor.LOGS_PIPE_PATH))) else null
 
     fun shutdown() {
         // Reroute all the traffic to Void, which would raise ShutdownException.
@@ -71,7 +63,7 @@ class Evaluator(
 
     // Supply tracer to memory, so that it calls enterScope() and leaveScope()
     // on tracer on behalf of us
-    private val memory = Memory(tracer)
+    private val memory = Memory()
 
     fun clearMemory() {
         memory.clearMemory()
@@ -115,7 +107,6 @@ class Evaluator(
                        name: String,
                        value: Any) {
         (memory.getVar(index, name) as Entity).update(value)
-        tracer?.updateVariableRuntime(name, getSignature(value), value)
     }
 
     private fun update(aMemory: Memory,
@@ -123,7 +114,6 @@ class Evaluator(
                        name: String,
                        value: Any) {
         (aMemory.getVar(index, name) as Entity).update(value)
-        tracer?.updateVariableRuntime(name, getSignature(value), value)
     }
 
     override fun variable(variable: ExplicitVariable): Any {
@@ -133,11 +123,6 @@ class Evaluator(
         val mutable = variable.mutable
 
         memory.declareVar(name, Entity(name, mutable, value, signature))
-        tracer?.declareVariableRuntime(
-            mutable,
-            name,
-            signature,
-            value)
         return value
     }
 
@@ -154,11 +139,6 @@ class Evaluator(
                 signature
             )
         )
-        tracer?.declareVariableRuntime(
-            true,
-            autoVariable.name,
-            signature,
-            value)
         return value
     }
 
@@ -344,7 +324,6 @@ class Evaluator(
     override fun new(new: NewObj): Evaluator {
         val evaluator = executor.newEvaluator(new.name)
         fnInvoke(new.reference.fnExpression!!, evaluateArgs(new.arguments))
-        tracer?.runtimeObjectCreation(new.name, evaluator)
         return evaluator
     }
 
@@ -417,7 +396,7 @@ class Evaluator(
             }
 
             READ, READLN -> {
-                return EString(Scanner(executor.standardInput).let { if (type == READ) it.next() else it.nextLine() })
+                throw EiaRuntimeException("Input is not supported in this mode")
             }
 
             SLEEP -> {
@@ -536,8 +515,7 @@ class Evaluator(
             // don't do a direct exitProcess(n), Eia could be running in a server
             // you don't need the entire server to shut down
             EXIT -> {
-                Executor.EIA_SHUTDOWN(intExpr(call.arguments[0]).get())
-                return EBool(true) // never reached (hopefully?)
+                return EBool(false)
             }
 
             MEM_CLEAR -> {
@@ -686,7 +664,6 @@ class Evaluator(
             callValues += Pair(definedParameter, callValue)
             argValues += Pair(definedParameter.first, callValue)
         }
-        tracer?.runtimeFnCall(fnName, argValues)
         memory.enterScope()
         callValues.forEach {
             val definedParameter = it.first
@@ -748,7 +725,6 @@ class Evaluator(
         var numIterations = 0
         while (booleanExpr(until.expression).get()) {
             numIterations++
-            tracer?.runtimeUntil(numIterations)
             val result = eval(until.body)
             if (result is Entity) {
                 when (result.interruption) {
@@ -794,7 +770,6 @@ class Evaluator(
             memory.enterScope()
             val element = getNext()
             memory.declareVar(named, Entity(named, false, element, getSignature(element)))
-            tracer?.runtimeForEach(numIterations, iterable, element)
             val result = eval(body)
             memory.leaveScope()
             if (result is Entity) {
@@ -856,7 +831,6 @@ class Evaluator(
         while (if (conditional == null) true else booleanExpr(conditional).get()) {
             numIterations++
             // Auto Scopped
-            tracer?.runtimeFor(numIterations)
             val result = eval(forLoop.body)
             // Scope -> Memory -> Array
             if (result is Entity) {
@@ -930,7 +904,6 @@ class Evaluator(
 
     override fun function(function: FunctionExpr): Any {
         memory.declareFn(function.name, function)
-        tracer?.declareFn(function.name, function.arguments)
         return EBool(true)
     }
 

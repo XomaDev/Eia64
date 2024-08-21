@@ -1,6 +1,5 @@
 package space.themelon.eia64.syntax
 
-import space.themelon.eia64.runtime.Executor
 import space.themelon.eia64.syntax.Type.*
 import space.themelon.eia64.syntax.Type.Companion.KEYWORDS
 
@@ -13,9 +12,6 @@ class Lexer(private val source: String) {
 
     init {
         while (!isEOF()) parseNext()
-        if (Executor.DEBUG) {
-            tokens.forEach { println(it) }
-        }
     }
 
     private fun parseNext() {

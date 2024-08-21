@@ -14,22 +14,24 @@ class Executor {
         var LOGS_PIPE_PATH = "/tmp/pipe1"
 
         var STD_LIB = "" // will be set
-        var EXECUTION_DIRECTORY: String = File(System.getProperty("user.dir")).absolutePath
 
         // This unit could be overridden to replace default exitProcess() behaviour
         // When you are demonstrating Eia for e.g., in a server, you shouldn't to allow a random
         // dude to shut down your whole server by doing exit(n) in Eia
-        var EIA_SHUTDOWN: (Int) -> Unit = { exitCode -> exitProcess(exitCode) }
+        //var EIA_SHUTDOWN: (Int) -> Unit = { exitCode -> exitProcess(exitCode) }
     }
 
     init {
-        if (STD_LIB.isBlank()) throw RuntimeException("STD_LIB is not set")
+//        if (STD_LIB.isBlank()) throw RuntimeException("STD_LIB is not set")
     }
 
 
     // why do we do this? sometimes while we are developing demonstrable
     // APIs for Eia64, we would want the output to be captured in memory and
     // sent somewhere else
+
+    var inputSupported = true
+
     var standardOutput = System.out
     var standardInput = System.`in`
 
@@ -49,8 +51,10 @@ class Executor {
 
     fun loadMainSource(source: String): Any {
         try {
-            val tokens = mainParser.parse(Lexer(source).tokens)
-            return mainEvaluator.eval(tokens)
+            val tokens = Lexer(source).tokens
+            val parsed = mainParser.parse(tokens)
+            println(parsed)
+            return mainEvaluator.eval(parsed)
         } catch (e: ShutdownException) {
             throw RuntimeException("Executor was shutdown")
         }

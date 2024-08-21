@@ -47,17 +47,24 @@ kotlin {
     jvmToolchain(11)
 }
 
-teavm.js {
+//teavm.js {
+//    debugInformation = true
+//    addedToWebApp = true
+//    mainClass = "space.themelon.eia64.tea.TeaMain"
+//    targetFileName = "eia.js"
+//}
+
+teavm.wasm {
     addedToWebApp = true
     mainClass = "space.themelon.eia64.tea.TeaMain"
-    targetFileName = "eia.js"
+
 }
 
 tasks.register<Copy>("unzipWar") {
     group = "build"
     val buildDirectory = layout.buildDirectory.asFile.get().absolutePath
     from(zipTree("$buildDirectory/libs/${project.name}-${project.version}.war"))
-    into("$buildDirectory/eia-war")
+    into("$buildDirectory/pub")
     dependsOn("build")
 }
 
