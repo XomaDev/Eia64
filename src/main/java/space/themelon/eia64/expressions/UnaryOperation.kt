@@ -18,19 +18,21 @@ data class UnaryOperation(
     override fun sig(): Signature {
         val exprSign = expr.sig()
         if (towardsLeft) {
-            when (operator) {
-                Type.NEGATE -> if (!exprSign.isNumeric()) applyError("Numeric", "- Negate")
-                Type.INCREMENT -> if (!exprSign.isNumeric()) applyError("Numeric", "++ Increment")
-                Type.DECREMENT -> if (!exprSign.isNumeric()) applyError("Numeric", "-- Decrement")
-                Type.EXCLAMATION -> if (exprSign != Sign.BOOL) applyError("Bool", "! Not")
-                else -> where.error<String>("Unknown unary operator towards left")
-            }
+            if (operator == Type.NEGATE) {
+                if (!exprSign.isNumeric()) applyError("Numeric", "- Negate")
+            } else if (operator == Type.INCREMENT) {
+                if (!exprSign.isNumeric()) applyError("Numeric", "++ Increment")
+            } else if (operator == Type.DECREMENT) {
+                if (!exprSign.isNumeric()) applyError("Numeric", "-- Decrement")
+            } else if (operator == Type.EXCLAMATION) {
+                if (exprSign != Sign.BOOL) applyError("Bool", "! Not")
+            } else where.error<String>("Unknown unary operator towards left")
         } else {
-            when (operator) {
-                Type.INCREMENT -> if (!exprSign.isNumeric()) applyError("Numeric", "++ Increment")
-                Type.DECREMENT -> if (!exprSign.isNumeric()) applyError("Numeric", "-- Decrement")
-                else -> where.error<String>("Unknown unary operator towards left")
-            }
+            if (operator == Type.INCREMENT) {
+                if (!exprSign.isNumeric()) applyError("Numeric", "++ Increment")
+            } else if (operator == Type.DECREMENT) {
+                if (!exprSign.isNumeric()) applyError("Numeric", "-- Decrement")
+            } else where.error<String>("Unknown unary operator towards left")
         }
         return exprSign
     }

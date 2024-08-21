@@ -628,7 +628,7 @@ class Evaluator(
             if (type == PRINTLN) executor.standardOutput.print('\n')
             return Nothing.INSTANCE
         } else if (type == READ || type == READLN) {
-            throw EiaRuntimeException("Input is not supported in this mode")
+            return EString(executor.standardInput.pop())
         } else if (type == SLEEP) {
             Thread.sleep(intExpr(call.arguments[0]).get().toLong())
             return Nothing.INSTANCE

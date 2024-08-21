@@ -4,9 +4,10 @@ import space.themelon.eia64.analysis.ParserX
 import space.themelon.eia64.syntax.Lexer
 import space.themelon.eia64.syntax.Token
 import java.io.File
+import java.util.Stack
 import kotlin.system.exitProcess
 
-class Executor {
+open class Executor {
 
     companion object {
         var DEBUG = true
@@ -33,7 +34,11 @@ class Executor {
     var inputSupported = true
 
     var standardOutput = System.out
-    var standardInput = System.`in`
+    val standardInput = Stack<String>()
+
+    fun pushUserInput(input: String) {
+        standardInput.push(input)
+    }
 
     private val externalExecutors = HashMap<String, Evaluator>()
     private val mainEvaluator = Evaluator("Main", this)

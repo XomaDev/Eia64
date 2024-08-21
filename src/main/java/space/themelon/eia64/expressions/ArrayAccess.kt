@@ -16,12 +16,11 @@ data class ArrayAccess(
 
     // Verify -> child
     override fun sig(): Signature {
-        when (val exprSig = expr.sig()) {
-            Sign.STRING -> return Sign.CHAR
-            is ArrayExtension -> return exprSig.elementSignature
-            Sign.ARRAY -> return Sign.ANY
-            else -> where.error<String>("Unknown element to perform array operation")
-        }
+        val exprSig = expr.sig()
+        if (exprSig == Sign.STRING) return Sign.CHAR
+        else if (exprSig is ArrayExtension) return exprSig.elementSignature
+        else if (exprSig == Sign.ARRAY) return Sign.ANY
+        else where.error<String>("Unknown element to perform array operation")
         throw RuntimeException()
     }
 }
