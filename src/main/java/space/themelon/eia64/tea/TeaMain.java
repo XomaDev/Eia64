@@ -1,6 +1,5 @@
 package space.themelon.eia64.tea;
 
-import org.teavm.jso.JSObject;
 import space.themelon.eia64.runtime.Executor;
 
 import java.io.ByteArrayOutputStream;
@@ -14,21 +13,7 @@ public class TeaMain {
   public static void main(String[] args) {
     executor.setInputSupported(false);
     executor.setStandardOutput(new PrintStream(output));
-//    exportFoo((TeaMain::executeEia));
+    executor.loadMainSource("println(2+2)");
+    System.out.println(output);
   }
-
-  private static String executeEia(String source) {
-    output.reset();
-    executor.loadMainSource(source);
-    return output.toString();
-  }
-
-//  @JSBody(params = "eia", script = "main.eia = eia;")
-//  private static native void exportFoo(ExportedEia eia);
-}
-
-//@SuppressWarnings("unused")
-//@JSFunctor
-interface ExportedEia extends JSObject {
-  String executeEia(String source);
 }

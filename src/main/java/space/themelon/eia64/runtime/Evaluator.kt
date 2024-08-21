@@ -47,18 +47,20 @@ class Evaluator(
 
     private fun booleanExpr(expr: Expression) = unboxEval(expr) as EBool
 
-    private fun intExpr(expr: Expression) = when (val result = unboxEval(expr)) {
-        is EChar -> EInt(result.get().code)
-        else -> result as EInt
+    private fun intExpr(expr: Expression): EInt {
+        val result = unboxEval(expr)
+        return if (result is EChar) EInt(result.get().code)
+        else result as EInt
     }
 
     // Plan future: My opinion would be that this should NOT happen, these types of
     // Runtime Checks Hinder performance. There should be a common wrapper to all
     //  the numeric applicable types. Runtime checking should be avoided
-    private fun numericExpr(expr: Expression): Numeric = when (val result = unboxEval(expr)) {
-        is EChar -> EInt(result.get().code)
-        is EInt -> result
-        else -> result as EFloat
+    private fun numericExpr(expr: Expression): Numeric {
+        val result = unboxEval(expr)
+        return if (result is EChar) EInt(result.get().code)
+        else if (result is EInt) result
+        else result as EFloat
     }
 
     // Supply tracer to memory, so that it calls enterScope() and leaveScope()
@@ -142,16 +144,17 @@ class Evaluator(
         return value
     }
 
-    override fun unaryOperation(expr: UnaryOperation): Any = when (val type = expr.operator) {
-        EXCLAMATION -> EBool(!(booleanExpr(expr.expr).get()))
-        NEGATE -> {
+    override fun unaryOperation(expr: UnaryOperation): Any {
+        val type = expr.operator
+        if (type == EXCLAMATION) {
+            return EBool(!(booleanExpr(expr.expr).get()))
+        } else if (type == NEGATE) {
             // first, we need to check the type to ensure we negate Float
             // and Int separately and properly
             val value = numericExpr(expr.expr).get()
-            if (expr.sig().isFloat()) EFloat(value.toFloat() * -1)
+            return if (expr.sig().isFloat()) EFloat(value.toFloat() * -1)
             else EInt(value.toInt() * -1)
-        }
-        INCREMENT, DECREMENT -> {
+        } else if (type == INCREMENT || type == DECREMENT) {
             val numeric = numericExpr(expr.expr)
             val value = if (expr.towardsLeft) {
                 if (type == INCREMENT) numeric.incrementAndGet()
@@ -160,94 +163,185 @@ class Evaluator(
                 if (type == INCREMENT) numeric.getAndIncrement()
                 else numeric.getAndDecrement()
             }
-            if (value is Int) EInt(value)
+            return if (value is Int) EInt(value)
             else EFloat(value as Float)
+        } else {
+            throw RuntimeException("Unknown unary operator $type")
         }
-        else -> throw RuntimeException("Unknown unary operator $type")
     }
 
-    private fun valueEquals(left: Any, right: Any) = when (left) {
-        is Numeric,
-        is EString,
-        is EChar,
-        is EBool,
-        is ENil,
-        is EType,
-        is EArray -> left == right
-        else -> false
+    private fun valueEquals(left: Any, right: Any): Boolean {
+        return (left is Numeric ||
+                left is EString ||
+                left is EChar ||
+                left is EBool ||
+                left is ENil ||
+                left is EType ||
+                left is EArray) && left == right;
     }
 
-    override fun binaryOperation(expr: BinaryOperation) = when (val type = expr.operator) {
-        PLUS -> {
+    override fun binaryOperation(expr: BinaryOperation): Any {
+//        when (val type = expr.operator) {
+//            PLUS -> {
+//                val left = unboxEval(expr.left)
+//                val right = unboxEval(expr.right)
+//
+//                return if (left is Numeric && right is Numeric) left + right
+//                else EString(left.toString() + right.toString())
+//            }
+//
+//            NEGATE -> return numericExpr(expr.left) - numericExpr(expr.right)
+//            TIMES -> return numericExpr(expr.left) * numericExpr(expr.right)
+//            SLASH -> return numericExpr(expr.left) / numericExpr(expr.right)
+//            REMAINDER -> return numericExpr(expr.left) % numericExpr(expr.right)
+//            EQUALS, NOT_EQUALS -> {
+//                val left = unboxEval(expr.left)
+//                val right = unboxEval(expr.right)
+//                return EBool(if (type == EQUALS) valueEquals(left, right) else !valueEquals(left, right))
+//            }
+//
+//            LOGICAL_AND -> return EBool(booleanExpr(expr.left).get() && (booleanExpr(expr.right).get()))
+//            LOGICAL_OR -> return EBool(booleanExpr(expr.left).get() || booleanExpr(expr.right).get())
+//            RIGHT_DIAMOND -> return EBool(numericExpr(expr.left) > numericExpr(expr.right))
+//            LEFT_DIAMOND -> return EBool(numericExpr(expr.left) < numericExpr(expr.right))
+//            GREATER_THAN_EQUALS -> return EBool(intExpr(expr.left) >= intExpr(expr.right))
+//            LESSER_THAN_EQUALS -> return EBool(intExpr(expr.left) <= intExpr(expr.right))
+//            ASSIGNMENT -> {
+//                val toUpdate = expr.left
+//                val value = unboxEval(expr.right)
+//                when (toUpdate) {
+//                    is Alpha -> update(toUpdate.index, toUpdate.value, value)
+//                    is ArrayAccess -> updateArrayElement(toUpdate, value)
+//                    is ForeignField -> updateForeignField(toUpdate, value)
+//                    else -> throw RuntimeException("Unknown left operand for [= Assignment]: $toUpdate")
+//                }
+//                return value
+//            }
+//
+//            ADDITIVE_ASSIGNMENT -> {
+//                val element = unboxEval(expr.left)
+//                when (element) {
+//                    is EString -> element.append(unboxEval(expr.right))
+//                    is Numeric -> element.plusAssign(numericExpr(expr.right))
+//                    else -> throw RuntimeException("Cannot apply += operator on element $element")
+//                }
+//                return element
+//            }
+//
+//            DEDUCTIVE_ASSIGNMENT -> {
+//                val variable = numericExpr(expr.left)
+//                variable /= (numericExpr(expr.right))
+//                return variable
+//            }
+//
+//            MULTIPLICATIVE_ASSIGNMENT -> {
+//                val variable = numericExpr(expr.left)
+//                variable *= (numericExpr(expr.right))
+//                return variable
+//            }
+//
+//            DIVIDIVE_ASSIGNMENT -> {
+//                val variable = numericExpr(expr.left)
+//                variable /= (numericExpr(expr.right))
+//                return variable
+//            }
+//
+//            REMAINDER_ASSIGNMENT -> {
+//                val variable = numericExpr(expr.left)
+//                variable %= (numericExpr(expr.right))
+//                return variable
+//            }
+//
+//            POWER -> {
+//                val left = numericExpr(expr.left)
+//                val right = numericExpr(expr.right)
+//                return EString(left.get().toDouble().pow(right.get().toDouble()).toString())
+//            }
+//            BITWISE_AND -> return numericExpr(expr.left).and(numericExpr(expr.right))
+//            BITWISE_OR -> return numericExpr(expr.left).or(numericExpr(expr.right))
+//            else -> throw RuntimeException("Unknown binary operator $type")
+//        }
+        val type = expr.operator
+        if (type == PLUS) {
             val left = unboxEval(expr.left)
             val right = unboxEval(expr.right)
 
-            if (left is Numeric && right is Numeric) left + right
+            return if (left is Numeric && right is Numeric) left + right
             else EString(left.toString() + right.toString())
-        }
-        NEGATE -> numericExpr(expr.left) - numericExpr(expr.right)
-        TIMES -> numericExpr(expr.left) * numericExpr(expr.right)
-        SLASH -> numericExpr(expr.left) / numericExpr(expr.right)
-        REMAINDER -> numericExpr(expr.left) % numericExpr(expr.right)
-        EQUALS, NOT_EQUALS -> {
+        } else if (type == NEGATE) {
+            return numericExpr(expr.left) - numericExpr(expr.right)
+        } else if (type == TIMES) {
+            return numericExpr(expr.left) * numericExpr(expr.right)
+        } else if (type == SLASH) {
+            return numericExpr(expr.left) / numericExpr(expr.right)
+        } else if (type == REMAINDER) {
+            return numericExpr(expr.left) % numericExpr(expr.right)
+        } else if (type == EQUALS || type == NOT_EQUALS) {
             val left = unboxEval(expr.left)
             val right = unboxEval(expr.right)
-            EBool(if (type == EQUALS) valueEquals(left, right) else !valueEquals(left, right))
-        }
-        LOGICAL_AND -> EBool(booleanExpr(expr.left).get() && (booleanExpr(expr.right).get()))
-        LOGICAL_OR -> EBool(booleanExpr(expr.left).get() || booleanExpr(expr.right).get())
-        RIGHT_DIAMOND -> EBool(numericExpr(expr.left) > numericExpr(expr.right))
-        LEFT_DIAMOND -> EBool(numericExpr(expr.left) < numericExpr(expr.right))
-        GREATER_THAN_EQUALS -> EBool(intExpr(expr.left) >= intExpr(expr.right))
-        LESSER_THAN_EQUALS -> EBool(intExpr(expr.left) <= intExpr(expr.right))
-        ASSIGNMENT -> {
+            return EBool(if (type == EQUALS) valueEquals(left, right) else !valueEquals(left, right))
+        } else if (type == LOGICAL_AND) {
+            return EBool(booleanExpr(expr.left).get() && (booleanExpr(expr.right).get()))
+        } else if (type == LOGICAL_OR) {
+            return EBool(booleanExpr(expr.left).get() || booleanExpr(expr.right).get())
+        } else if (type == RIGHT_DIAMOND) {
+            return EBool(numericExpr(expr.left) > numericExpr(expr.right))
+        } else if (type == LEFT_DIAMOND) {
+            return EBool(numericExpr(expr.left) < numericExpr(expr.right))
+        } else if (type == GREATER_THAN_EQUALS) {
+            return EBool(intExpr(expr.left) >= intExpr(expr.right))
+        } else if (type == LESSER_THAN_EQUALS) {
+            return EBool(intExpr(expr.left) <= intExpr(expr.right))
+        } else if (type == ASSIGNMENT) {
             val toUpdate = expr.left
             val value = unboxEval(expr.right)
-            when (toUpdate) {
-                is Alpha -> update(toUpdate.index, toUpdate.value, value)
-                is ArrayAccess -> updateArrayElement(toUpdate, value)
-                is ForeignField -> updateForeignField(toUpdate, value)
-                else -> throw RuntimeException("Unknown left operand for [= Assignment]: $toUpdate")
+            if (toUpdate is Alpha) {
+                update(toUpdate.index, toUpdate.value, value)
+            } else if (toUpdate is ArrayAccess) {
+                updateArrayElement(toUpdate, value)
+            } else if (toUpdate is ForeignField) {
+                updateForeignField(toUpdate, value)
+            } else {
+                throw RuntimeException("Unknown left operand for [= Assignment]: $toUpdate")
             }
-            value
-        }
-        ADDITIVE_ASSIGNMENT -> {
+            return value
+        } else if (type == ADDITIVE_ASSIGNMENT) {
             val element = unboxEval(expr.left)
-            when (element) {
-                is EString -> element.append(unboxEval(expr.right))
-                is Numeric -> element.plusAssign(numericExpr(expr.right))
-                else -> throw RuntimeException("Cannot apply += operator on element $element")
+            if (element is EString) {
+                element.append(unboxEval(expr.right))
+            } else if (element is Numeric) {
+                element.plusAssign(numericExpr(expr.right))
+            } else {
+                throw RuntimeException("Cannot apply += operator on element $element")
             }
-            element
-        }
-        DEDUCTIVE_ASSIGNMENT -> {
+            return element
+        } else if (type == DEDUCTIVE_ASSIGNMENT) {
             val variable = numericExpr(expr.left)
-            variable /= (numericExpr(expr.right))
-            variable
-        }
-        MULTIPLICATIVE_ASSIGNMENT -> {
+            variable -= (numericExpr(expr.right))
+            return variable
+        } else if (type == MULTIPLICATIVE_ASSIGNMENT) {
             val variable = numericExpr(expr.left)
             variable *= (numericExpr(expr.right))
-            variable
-        }
-        DIVIDIVE_ASSIGNMENT -> {
+            return variable
+        } else if (type == DIVIDIVE_ASSIGNMENT) {
             val variable = numericExpr(expr.left)
             variable /= (numericExpr(expr.right))
-            variable
-        }
-        REMAINDER_ASSIGNMENT -> {
+            return variable
+        } else if (type == REMAINDER_ASSIGNMENT) {
             val variable = numericExpr(expr.left)
             variable %= (numericExpr(expr.right))
-            variable
-        }
-        POWER -> {
+            return variable
+        } else if (type == POWER) {
             val left = numericExpr(expr.left)
             val right = numericExpr(expr.right)
-            EString(left.get().toDouble().pow(right.get().toDouble()).toString())
+            return EString(left.get().toDouble().pow(right.get().toDouble()).toString())
+        } else if (type == BITWISE_AND) {
+            return numericExpr(expr.left).and(numericExpr(expr.right))
+        } else if (type == BITWISE_OR) {
+            return numericExpr(expr.left).or(numericExpr(expr.right))
+        } else {
+            throw RuntimeException("Unknown binary operator $type")
         }
-        BITWISE_AND -> numericExpr(expr.left).and(numericExpr(expr.right))
-        BITWISE_OR -> numericExpr(expr.left).or(numericExpr(expr.right))
-        else -> throw RuntimeException("Unknown binary operator $type")
     }
 
     private fun updateArrayElement(access: ArrayAccess, value: Any) {
@@ -255,17 +349,16 @@ class Evaluator(
         val index = intExpr(access.index).get()
 
         @Suppress("UNCHECKED_CAST")
-        when (getSignature(array)) {
+        (if (getSignature(array)
             // TODO:
             //  we need to look here later, it could also be an array extension
-            Sign.ARRAY, is ArrayExtension -> (array as ArrayOperable<Any>).setAt(index, value)
-            Sign.STRING -> {
-                if (value !is EChar) throw RuntimeException("string[index] requires a Char")
-                (array as EString).setAt(index, value)
-            }
-
-            else -> throw RuntimeException("Unknown element access of {$array}")
+            == Sign.ARRAY || getSignature(array) is ArrayExtension
+        ) (array as ArrayOperable<Any>).setAt(index, value)
+        else if (getSignature(array) == Sign.STRING) {
+            if (value !is EChar) throw RuntimeException("string[index] requires a Char")
+            (array as EString).setAt(index, value)
         }
+        else throw RuntimeException("Unknown element access of {$array}"))
     }
 
     override fun isStatement(isStatement: IsStatement) =
@@ -299,13 +392,10 @@ class Evaluator(
                     //RETURN, BREAK, CONTINUE, USE -> return result
                     //else -> { }
                 //}
-                when (result.interruption) {
-                    InterruptionType.RETURN,
-                    InterruptionType.BREAK,
-                    InterruptionType.CONTINUE,
-                    InterruptionType.USE -> return result
-                    else -> { }
-                }
+                if (result.interruption == InterruptionType.RETURN
+                    || result.interruption == InterruptionType.BREAK
+                    || result.interruption == InterruptionType.CONTINUE
+                    || result.interruption == InterruptionType.USE) return result
             }
         }
         return result!!
@@ -381,149 +471,258 @@ class Evaluator(
     }
 
     override fun nativeCall(call: NativeCall): Any {
-        when (val type = call.call) {
-            PRINT, PRINTLN -> {
-                var printCount = 0
-                call.arguments.forEach {
-                    var printable = unboxEval(it)
-                    printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
+//        when (val type = call.call) {
+//            PRINT, PRINTLN -> {
+//                var printCount = 0
+//                call.arguments.forEach {
+//                    var printable = unboxEval(it)
+//                    printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
+//
+//                    printCount += printable.length
+//                    executor.standardOutput.print(printable)
+//                }
+//                if (type == PRINTLN) executor.standardOutput.print('\n')
+//                return Nothing.INSTANCE
+//            }
+//
+//            READ, READLN -> {
+//                throw EiaRuntimeException("Input is not supported in this mode")
+//            }
+//
+//            SLEEP -> {
+//                Thread.sleep(intExpr(call.arguments[0]).get().toLong())
+//                return Nothing.INSTANCE
+//            }
+//
+//            LEN -> {
+//                return EInt(when (val data = unboxEval(call.arguments[0])) {
+//                    is EString -> data.length
+//                    is EArray -> data.size
+//                    is ExpressionList -> data.size
+//                    is ENil -> 0
+//                    else -> throw RuntimeException("Unknown measurable data type $data")
+//                })
+//            }
+//
+//            FORMAT -> {
+//                val exprs = call.arguments
+//                val string = unboxEval(exprs[0])
+//                if (getSignature(string) != Sign.STRING)
+//                    throw RuntimeException("format() requires a string argument")
+//                string as EString
+//                if (exprs.size > 1) {
+//                    val values = arrayOfNulls<Any>(exprs.size - 1)
+//                    for (i in 1 until exprs.size) {
+//                        val value = unboxEval(exprs[i])
+//                        values[i - 1] = if (value is Primitive<*>) value.get() else value
+//                    }
+//                    return EString(String.format(string.get(), *values))
+//                }
+//                return string
+//            }
+//
+//            INT_CAST -> {
+//                val obj = unboxEval(call.arguments[0])
+//
+//                return when (val objType = getSignature(obj)) {
+//                    Sign.INT -> obj
+//                    Sign.CHAR -> EInt((obj as EChar).get().code)
+//                    Sign.STRING -> EInt(obj.toString().toInt())
+//                    Sign.FLOAT -> EInt((obj as EFloat).get().toInt())
+//                    else -> throw RuntimeException("Unknown type for int() cast $objType")
+//                }
+//            }
+//
+//            FLOAT_CAST -> {
+//                val obj = unboxEval(call.arguments[0])
+//
+//                return when (val objType = getSignature(obj)) {
+//                    Sign.INT -> (obj as EInt).get().toFloat()
+//                    Sign.FLOAT -> obj
+//                    Sign.CHAR -> EFloat((obj as EChar).get().code.toFloat())
+//                    Sign.STRING -> EFloat(obj.toString().toFloat())
+//                    else -> throw RuntimeException("Unknown type for int() cast $objType")
+//                }
+//            }
+//
+//            CHAR_CAST -> {
+//                val obj = unboxEval(call.arguments[0])
+//                return when (val objType = getSignature(obj)) {
+//                    Sign.CHAR -> objType
+//                    Sign.INT -> EChar((obj as EInt).get().toChar())
+//                    else -> throw RuntimeException("Unknown type for char() cast $objType")
+//                }
+//            }
+//
+//            STRING_CAST -> {
+//                val obj = unboxEval(call.arguments[0])
+//                if (getSignature(obj) == Sign.STRING) return obj
+//                return EString(obj.toString())
+//            }
+//
+//            BOOL_CAST -> {
+//                val obj = unboxEval(call.arguments[0])
+//                if (getSignature(obj) == Sign.BOOL) return obj
+//                return EBool(when (obj) {
+//                    "true" -> true
+//                    "false" -> false
+//                    else -> throw RuntimeException("Cannot parse boolean value: $obj")
+//                })
+//            }
+//
+//            TYPE_OF -> return EType(getSignature(unboxEval(call.arguments[0])))
+//
+//            INCLUDE -> {
+//                val obj = unboxEval(call.arguments[0])
+//                if (obj !is EString)
+//                    throw RuntimeException("Expected a string argument for include() but got $obj")
+//                val parts = obj.get().split(":")
+//                if (parts.size != 2)
+//                    throw RuntimeException("include() received invalid argument: $obj")
+//                var group = parts[0]
+//                if (group.isEmpty()) group = Executor.STD_LIB
+//
+//                val name = parts[1]
+//                executor.addModule("$group/$name.eia", name)
+//                return Nothing.INSTANCE
+//            }
+//
+//            COPY -> {
+//                val obj = unboxEval(call.arguments[0])
+//                if (obj !is Primitive<*> || !obj.isCopyable())
+//                    throw RuntimeException("Cannot apply copy() on object type ${getSignature(obj)} = $obj")
+//                return obj.copy()!!
+//            }
+//
+//            TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())
+//
+//            RAND -> {
+//                val from = intExpr(call.arguments[0])
+//                val to = intExpr(call.arguments[1])
+//                return EInt(Random.nextInt(from.get(), to.get()))
+//            }
+//
+//            // don't do a direct exitProcess(n), Eia could be running in a server
+//            // you don't need the entire server to shut down
+//            EXIT -> {
+//                return EBool(false)
+//            }
+//
+//            MEM_CLEAR -> {
+//                // for clearing memory of the current class
+//                memory.clearMemory()
+//                return Nothing.INSTANCE
+//            }
+//            else -> throw RuntimeException("Unknown native call operation: '$type'")
+//        }
+        val type = call.call
+        if (type == PRINT || type == PRINTLN) {
+            var printCount = 0
+            call.arguments.forEach {
+                var printable = unboxEval(it)
+                printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
 
-                    printCount += printable.length
-                    executor.standardOutput.print(printable)
+                printCount += printable.length
+                executor.standardOutput.print(printable)
+            }
+            if (type == PRINTLN) executor.standardOutput.print('\n')
+            return Nothing.INSTANCE
+        } else if (type == READ || type == READLN) {
+            throw EiaRuntimeException("Input is not supported in this mode")
+        } else if (type == SLEEP) {
+            Thread.sleep(intExpr(call.arguments[0]).get().toLong())
+            return Nothing.INSTANCE
+        } else if (type == LEN) {
+            val data = unboxEval(call.arguments[0])
+            return EInt(
+                if (data is EString) data.length
+                else if (data is EArray) data.size
+                else if (data is ExpressionList) data.size
+                else if (data is ENil) 0
+                else throw RuntimeException("Unknown measurable data type $data")
+            )
+        } else if (type == FORMAT) {
+            val exprs = call.arguments
+            val string = unboxEval(exprs[0])
+            if (getSignature(string) != Sign.STRING)
+                throw RuntimeException("format() requires a string argument")
+            string as EString
+            if (exprs.size > 1) {
+                val values = arrayOfNulls<Any>(exprs.size - 1)
+                for (i in 1 until exprs.size) {
+                    val value = unboxEval(exprs[i])
+                    values[i - 1] = if (value is Primitive<*>) value.get() else value
                 }
-                if (type == PRINTLN) executor.standardOutput.print('\n')
-                return Nothing.INSTANCE
+                return EString(String.format(string.get(), *values))
             }
+            return string
+        } else if (type == INT_CAST) {
+            val obj = unboxEval(call.arguments[0])
+            val objType = getSignature(obj)
+            return if (objType == Sign.INT) obj
+            else if (objType == Sign.CHAR) EInt((obj as EChar).get().code)
+            else if (objType == Sign.STRING) EInt(obj.toString().toInt())
+            else if (objType == Sign.FLOAT) EInt((obj as EFloat).get().toInt())
+            else throw RuntimeException("Unknown type for int() cast $objType")
+        } else if (type == FLOAT_CAST) {
+            val obj = unboxEval(call.arguments[0])
+            val objType = getSignature(obj)
+            return if (objType == Sign.INT) (obj as EInt).get().toFloat()
+            else if (objType == Sign.FLOAT) obj
+            else if (objType == Sign.CHAR) EFloat((obj as EChar).get().code.toFloat())
+            else if (objType == Sign.STRING) EFloat(obj.toString().toFloat())
+            else throw RuntimeException("Unknown type for int() cast $objType")
+        } else if (type == CHAR_CAST) {
+            val obj = unboxEval(call.arguments[0])
+            val objType = getSignature(obj)
+            return if (objType == Sign.CHAR) objType
+            else if (objType == Sign.INT) EChar((obj as EInt).get().toChar())
+            else throw RuntimeException("Unknown type for char() cast $objType")
+        } else if (type == STRING_CAST) {
+            val obj = unboxEval(call.arguments[0])
+            if (getSignature(obj) == Sign.STRING) return obj
+            return EString(obj.toString())
+        } else if (type == BOOL_CAST) {
+            val obj = unboxEval(call.arguments[0])
+            if (getSignature(obj) == Sign.BOOL) return obj
+            return EBool(
+                if (obj == "true") true
+                else if (obj == "false") false
+                else throw RuntimeException("Cannot parse boolean value: $obj")
+            )
+        } else if (type == TYPE_OF) {
+            return EType(getSignature(unboxEval(call.arguments[0])))
+        } else if (type == INCLUDE) {
+            val obj = unboxEval(call.arguments[0])
+            if (obj !is EString)
+                throw RuntimeException("Expected a string argument for include() but got $obj")
+            val parts = obj.get().split(":")
+            if (parts.size != 2)
+                throw RuntimeException("include() received invalid argument: $obj")
+            var group = parts[0]
+            if (group.isEmpty()) group = Executor.STD_LIB
 
-            READ, READLN -> {
-                throw EiaRuntimeException("Input is not supported in this mode")
-            }
-
-            SLEEP -> {
-                Thread.sleep(intExpr(call.arguments[0]).get().toLong())
-                return Nothing.INSTANCE
-            }
-
-            LEN -> {
-                return EInt(when (val data = unboxEval(call.arguments[0])) {
-                    is EString -> data.length
-                    is EArray -> data.size
-                    is ExpressionList -> data.size
-                    is ENil -> 0
-                    else -> throw RuntimeException("Unknown measurable data type $data")
-                })
-            }
-
-            FORMAT -> {
-                val exprs = call.arguments
-                val string = unboxEval(exprs[0])
-                if (getSignature(string) != Sign.STRING)
-                    throw RuntimeException("format() requires a string argument")
-                string as EString
-                if (exprs.size > 1) {
-                    val values = arrayOfNulls<Any>(exprs.size - 1)
-                    for (i in 1 until exprs.size) {
-                        val value = unboxEval(exprs[i])
-                        values[i - 1] = if (value is Primitive<*>) value.get() else value
-                    }
-                    return EString(String.format(string.get(), *values))
-                }
-                return string
-            }
-
-            INT_CAST -> {
-                val obj = unboxEval(call.arguments[0])
-
-                return when (val objType = getSignature(obj)) {
-                    Sign.INT -> obj
-                    Sign.CHAR -> EInt((obj as EChar).get().code)
-                    Sign.STRING -> EInt(obj.toString().toInt())
-                    Sign.FLOAT -> EInt((obj as EFloat).get().toInt())
-                    else -> throw RuntimeException("Unknown type for int() cast $objType")
-                }
-            }
-
-            FLOAT_CAST -> {
-                val obj = unboxEval(call.arguments[0])
-
-                return when (val objType = getSignature(obj)) {
-                    Sign.INT -> (obj as EInt).get().toFloat()
-                    Sign.FLOAT -> obj
-                    Sign.CHAR -> EFloat((obj as EChar).get().code.toFloat())
-                    Sign.STRING -> EFloat(obj.toString().toFloat())
-                    else -> throw RuntimeException("Unknown type for int() cast $objType")
-                }
-            }
-
-            CHAR_CAST -> {
-                val obj = unboxEval(call.arguments[0])
-                return when (val objType = getSignature(obj)) {
-                    Sign.CHAR -> objType
-                    Sign.INT -> EChar((obj as EInt).get().toChar())
-                    else -> throw RuntimeException("Unknown type for char() cast $objType")
-                }
-            }
-
-            STRING_CAST -> {
-                val obj = unboxEval(call.arguments[0])
-                if (getSignature(obj) == Sign.STRING) return obj
-                return EString(obj.toString())
-            }
-
-            BOOL_CAST -> {
-                val obj = unboxEval(call.arguments[0])
-                if (getSignature(obj) == Sign.BOOL) return obj
-                return EBool(when (obj) {
-                    "true" -> true
-                    "false" -> false
-                    else -> throw RuntimeException("Cannot parse boolean value: $obj")
-                })
-            }
-
-            TYPE_OF -> return EType(getSignature(unboxEval(call.arguments[0])))
-
-            INCLUDE -> {
-                val obj = unboxEval(call.arguments[0])
-                if (obj !is EString)
-                    throw RuntimeException("Expected a string argument for include() but got $obj")
-                val parts = obj.get().split(":")
-                if (parts.size != 2)
-                    throw RuntimeException("include() received invalid argument: $obj")
-                var group = parts[0]
-                if (group.isEmpty()) group = Executor.STD_LIB
-
-                val name = parts[1]
-                executor.addModule("$group/$name.eia", name)
-                return Nothing.INSTANCE
-            }
-
-            COPY -> {
-                val obj = unboxEval(call.arguments[0])
-                if (obj !is Primitive<*> || !obj.isCopyable())
-                    throw RuntimeException("Cannot apply copy() on object type ${getSignature(obj)} = $obj")
-                return obj.copy()!!
-            }
-
-            TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())
-
-            RAND -> {
-                val from = intExpr(call.arguments[0])
-                val to = intExpr(call.arguments[1])
-                return EInt(Random.nextInt(from.get(), to.get()))
-            }
-
-            // don't do a direct exitProcess(n), Eia could be running in a server
-            // you don't need the entire server to shut down
-            EXIT -> {
-                return EBool(false)
-            }
-
-            MEM_CLEAR -> {
-                // for clearing memory of the current class
-                memory.clearMemory()
-                return Nothing.INSTANCE
-            }
-            else -> throw RuntimeException("Unknown native call operation: '$type'")
+            val name = parts[1]
+            executor.addModule("$group/$name.eia", name)
+            return Nothing.INSTANCE
+        } else if (type == COPY) {
+            val obj = unboxEval(call.arguments[0])
+            if (obj !is Primitive<*> || !obj.isCopyable())
+                throw RuntimeException("Cannot apply copy() on object type ${getSignature(obj)} = $obj")
+            return obj.copy()!!
+        } else if (type == TIME) {
+            return EInt((System.currentTimeMillis() - startupTime).toInt())
+        } else if (type == RAND) {
+            val from = intExpr(call.arguments[0])
+            val to = intExpr(call.arguments[1])
+            return EInt(Random.nextInt(from.get(), to.get()))
+        } else if (type == EXIT) {
+            return EBool(false)
+        } else if (type == MEM_CLEAR) {
+            memory.clearMemory()
+            return Nothing.INSTANCE
+        } else {
+            throw RuntimeException("Unknown native call operation: '$type'")
         }
     }
 
@@ -572,11 +771,10 @@ class Evaluator(
         if (propertyAccess.static) {
             evaluator = executor.getEvaluator(moduleName)
         } else {
-            when (val evaluatedObject = unboxEval(propertyAccess.objectExpression)) {
-                is Evaluator -> evaluator = evaluatedObject
-                is Primitive<*> -> executor.getEvaluator(moduleName)
-                else -> throw RuntimeException("Could not find property $property of object $evaluatedObject")
-            }
+            val evaluatedObject = unboxEval(propertyAccess.objectExpression)
+            if (evaluatedObject is Evaluator) evaluator = evaluatedObject
+            else if (evaluatedObject is Primitive<*>) executor.getEvaluator(moduleName)
+            else throw RuntimeException("Could not find property $property of object $evaluatedObject")
         }
         return evaluator ?: throw RuntimeException("Could not find module $moduleName")
     }
@@ -597,23 +795,21 @@ class Evaluator(
         } else {
             val evaluatedObj = unboxEval(obj)
             call.arguments as ArrayList
-            args = when (evaluatedObj) {
-                is Primitive<*> -> {
-                    val evaluatedArgs = arrayOfNulls<Any>(call.arguments.size + 1)
-                    for ((index, expression) in call.arguments.withIndex())
-                        evaluatedArgs[index + 1] = unboxEval(expression)
-                    // NOTE: we never should directly modify the original expression list
-                    evaluatedArgs[0] = evaluatedObj
-                    @Suppress("UNCHECKED_CAST")
-                    evaluatedArgs as Array<Any>
-                    evaluatedArgs
-                }
-                is Evaluator -> {
-                    evaluator = evaluatedObj
-                    evaluateArgs(call.arguments)
-                }
-                else -> throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
+            args = if (evaluatedObj is Primitive<*>) {
+                val evaluatedArgs = arrayOfNulls<Any>(call.arguments.size + 1)
+                for ((index, expression) in call.arguments.withIndex())
+                    evaluatedArgs[index + 1] = unboxEval(expression)
+                // NOTE: we never should directly modify the original expression list
+                evaluatedArgs[0] = evaluatedObj
+                @Suppress("UNCHECKED_CAST")
+                evaluatedArgs as Array<Any>
+                evaluatedArgs
             }
+            else if (evaluatedObj is Evaluator) {
+                evaluator = evaluatedObj
+                evaluateArgs(call.arguments)
+            }
+            else throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
         }
         val moduleName = call.moduleInfo.name
         val finalEvaluator = evaluator ?: executor.getEvaluator(moduleName)
@@ -707,11 +903,8 @@ class Evaluator(
         memory.leaveScope()
 
         if (result is Entity) {
-            when (result.interruption) {
-                InterruptionType.RETURN,
-                InterruptionType.USE -> return result
-                else -> { }
-            }
+            if (result.interruption == InterruptionType.RETURN || result.interruption == InterruptionType.USE) return result
+            else { }
         }
         return result
     }
@@ -727,13 +920,11 @@ class Evaluator(
             numIterations++
             val result = eval(until.body)
             if (result is Entity) {
-                when (result.interruption) {
-                    InterruptionType.BREAK -> break
-                    InterruptionType.CONTINUE -> continue
-                    InterruptionType.RETURN -> return result
-                    InterruptionType.USE -> result.value
-                    else -> { }
-                }
+                if (result.interruption == InterruptionType.BREAK) break
+                else if (result.interruption == InterruptionType.CONTINUE) continue
+                else if (result.interruption == InterruptionType.RETURN) return result
+                else if (result.interruption == InterruptionType.USE) result.value
+                else { }
             }
         }
         return EInt(numIterations)
@@ -746,19 +937,15 @@ class Evaluator(
         val size:Int
 
         val getNext: () -> Any
-        when (iterable) {
-            is EString -> {
-                size = iterable.length
-                getNext = { iterable.getAt(index++) }
-            }
-
-            is EArray -> {
-                size = iterable.size
-                getNext = { iterable.getAt(index++) }
-            }
-
-            else -> throw RuntimeException("Unknown non-iterable element $iterable")
+        if (iterable is EString) {
+            size = iterable.length
+            getNext = { iterable.getAt(index++) }
         }
+        else if (iterable is EArray) {
+            size = iterable.size
+            getNext = { iterable.getAt(index++) }
+        }
+        else throw RuntimeException("Unknown non-iterable element $iterable")
 
         val named = forEach.name
         val body = forEach.body
@@ -773,13 +960,11 @@ class Evaluator(
             val result = eval(body)
             memory.leaveScope()
             if (result is Entity) {
-                when (result.interruption) {
-                    InterruptionType.BREAK -> break
-                    InterruptionType.CONTINUE -> continue
-                    InterruptionType.RETURN -> return result
-                    InterruptionType.USE -> result.value
-                    else -> { }
-                }
+                if (result.interruption == InterruptionType.BREAK) break
+                else if (result.interruption == InterruptionType.CONTINUE) continue
+                else if (result.interruption == InterruptionType.RETURN) return result
+                else if (result.interruption == InterruptionType.USE) result.value
+                else { }
             }
         }
         return EInt(numIterations)
@@ -803,16 +988,14 @@ class Evaluator(
             val result = eval(itr.body)
             memory.leaveScope()
             if (result is Entity) {
-                when (result.interruption) {
-                    InterruptionType.BREAK -> break
-                    InterruptionType.CONTINUE -> {
-                        from = from + by
-                        continue
-                    }
-                    InterruptionType.RETURN -> return result
-                    InterruptionType.USE -> return result.value
-                    else -> { }
+                if (result.interruption == InterruptionType.BREAK) break
+                else if (result.interruption == InterruptionType.CONTINUE) {
+                    from = from + by
+                    continue
                 }
+                else if (result.interruption == InterruptionType.RETURN) return result
+                else if (result.interruption == InterruptionType.USE) return result.value
+                else { }
             }
             from = from + by
         }
@@ -834,22 +1017,20 @@ class Evaluator(
             val result = eval(forLoop.body)
             // Scope -> Memory -> Array
             if (result is Entity) {
-                when (result.interruption) {
-                    InterruptionType.BREAK -> break
-                    InterruptionType.CONTINUE -> {
-                        evalOperational()
-                        continue
-                    }
-                    InterruptionType.RETURN -> {
-                        memory.leaveScope()
-                        return result
-                    }
-                    InterruptionType.USE -> {
-                        memory.leaveScope()
-                        return result.value
-                    }
-                    else -> { }
+                if (result.interruption == InterruptionType.BREAK) break
+                else if (result.interruption == InterruptionType.CONTINUE) {
+                    evalOperational()
+                    continue
                 }
+                else if (result.interruption == InterruptionType.RETURN) {
+                    memory.leaveScope()
+                    return result
+                }
+                else if (result.interruption == InterruptionType.USE) {
+                    memory.leaveScope()
+                    return result.value
+                }
+                else { }
             }
             evalOperational()
         }
@@ -857,33 +1038,43 @@ class Evaluator(
         return EInt(numIterations)
     }
 
-    override fun interruption(interruption: Interruption) = when (val type = interruption.operator) {
-        // wrap it as a normal entity, this will be naturally unboxed when called unbox()
-        RETURN -> {
+    override fun interruption(interruption: Interruption): Entity {
+        val type = interruption.operator
+        return if (type
+            // wrap it as a normal entity, this will be naturally unboxed when called unbox()
+            == RETURN
+        ) {
             // could be of a void type, so it could be null
             val expr = if (interruption.expr == null) 0 else unboxEval(interruption.expr)
-            Entity("FlowReturn",
+            Entity(
+                "FlowReturn",
                 false,
                 expr,
                 Sign.NONE,
-                InterruptionType.RETURN)
+                InterruptionType.RETURN
+            )
         }
-        USE -> Entity("FlowUse",
+        else if (type == USE) Entity(
+            "FlowUse",
             false,
             unboxEval(interruption.expr!!),
             Sign.NONE,
-            InterruptionType.USE)
-        BREAK -> Entity("FlowBreak",
+            InterruptionType.USE
+        )
+        else if (type == BREAK) Entity(
+            "FlowBreak",
             false,
             0,
             Sign.NONE,
-            InterruptionType.BREAK)
-        CONTINUE -> Entity("FlowContinue",
+            InterruptionType.BREAK
+        )
+        else if (type == CONTINUE) Entity(
+            "FlowContinue",
             false,
             0,
             Sign.NONE,
             InterruptionType.CONTINUE)
-        else -> throw RuntimeException("Unknown interruption type $type")
+        else throw RuntimeException("Unknown interruption type $type")
     }
 
     override fun whenExpr(whenExpr: When): Any {

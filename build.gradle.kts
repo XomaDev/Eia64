@@ -1,3 +1,5 @@
+import org.teavm.gradle.api.OptimizationLevel
+
 plugins {
     id("java")
     kotlin("jvm")
@@ -47,17 +49,16 @@ kotlin {
     jvmToolchain(11)
 }
 
-//teavm.js {
-//    debugInformation = true
-//    addedToWebApp = true
-//    mainClass = "space.themelon.eia64.tea.TeaMain"
-//    targetFileName = "eia.js"
-//}
-
-teavm.wasm {
-    addedToWebApp = true
-    mainClass = "space.themelon.eia64.tea.TeaMain"
-
+teavm {
+    js {
+        sourceMap = true
+        obfuscated = false
+        addedToWebApp = true
+        optimization.value(OptimizationLevel.NONE)
+    }
+    all {
+        mainClass = "space.themelon.eia64.tea.TeaMain"
+    }
 }
 
 tasks.register<Copy>("unzipWar") {
