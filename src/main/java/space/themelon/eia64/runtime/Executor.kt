@@ -3,11 +3,13 @@ package space.themelon.eia64.runtime
 import space.themelon.eia64.analysis.ParserX
 import space.themelon.eia64.syntax.Lexer
 import space.themelon.eia64.syntax.Token
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.PrintStream
 import java.util.Stack
 import kotlin.system.exitProcess
 
-open class Executor {
+class Executor {
 
     companion object {
         var DEBUG = true
@@ -22,23 +24,15 @@ open class Executor {
         //var EIA_SHUTDOWN: (Int) -> Unit = { exitCode -> exitProcess(exitCode) }
     }
 
-    init {
-//        if (STD_LIB.isBlank()) throw RuntimeException("STD_LIB is not set")
-    }
+    val displayStream = ByteArrayOutputStream()
 
+    var awaitingInput = false
+    val standardOutput = PrintStream(displayStream)
+    //val standardInput = Stack<String>()
 
-    // why do we do this? sometimes while we are developing demonstrable
-    // APIs for Eia64, we would want the output to be captured in memory and
-    // sent somewhere else
-
-    var inputSupported = true
-
-    var standardOutput = System.out
-    val standardInput = Stack<String>()
-
-    fun pushUserInput(input: String) {
-        standardInput.push(input)
-    }
+    //fun pushUserInput(input: String) {
+        //standardInput.push(input)
+    //}
 
     private val externalExecutors = HashMap<String, Evaluator>()
     private val mainEvaluator = Evaluator("Main", this)

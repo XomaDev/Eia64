@@ -12,6 +12,7 @@ import space.themelon.eia64.signatures.ObjectExtension
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type.*
+import space.themelon.eia64.tea.TeaMain
 import kotlin.collections.ArrayList
 import kotlin.math.pow
 import kotlin.random.Random
@@ -471,150 +472,6 @@ class Evaluator(
     }
 
     override fun nativeCall(call: NativeCall): Any {
-//        when (val type = call.call) {
-//            PRINT, PRINTLN -> {
-//                var printCount = 0
-//                call.arguments.forEach {
-//                    var printable = unboxEval(it)
-//                    printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
-//
-//                    printCount += printable.length
-//                    executor.standardOutput.print(printable)
-//                }
-//                if (type == PRINTLN) executor.standardOutput.print('\n')
-//                return Nothing.INSTANCE
-//            }
-//
-//            READ, READLN -> {
-//                throw EiaRuntimeException("Input is not supported in this mode")
-//            }
-//
-//            SLEEP -> {
-//                Thread.sleep(intExpr(call.arguments[0]).get().toLong())
-//                return Nothing.INSTANCE
-//            }
-//
-//            LEN -> {
-//                return EInt(when (val data = unboxEval(call.arguments[0])) {
-//                    is EString -> data.length
-//                    is EArray -> data.size
-//                    is ExpressionList -> data.size
-//                    is ENil -> 0
-//                    else -> throw RuntimeException("Unknown measurable data type $data")
-//                })
-//            }
-//
-//            FORMAT -> {
-//                val exprs = call.arguments
-//                val string = unboxEval(exprs[0])
-//                if (getSignature(string) != Sign.STRING)
-//                    throw RuntimeException("format() requires a string argument")
-//                string as EString
-//                if (exprs.size > 1) {
-//                    val values = arrayOfNulls<Any>(exprs.size - 1)
-//                    for (i in 1 until exprs.size) {
-//                        val value = unboxEval(exprs[i])
-//                        values[i - 1] = if (value is Primitive<*>) value.get() else value
-//                    }
-//                    return EString(String.format(string.get(), *values))
-//                }
-//                return string
-//            }
-//
-//            INT_CAST -> {
-//                val obj = unboxEval(call.arguments[0])
-//
-//                return when (val objType = getSignature(obj)) {
-//                    Sign.INT -> obj
-//                    Sign.CHAR -> EInt((obj as EChar).get().code)
-//                    Sign.STRING -> EInt(obj.toString().toInt())
-//                    Sign.FLOAT -> EInt((obj as EFloat).get().toInt())
-//                    else -> throw RuntimeException("Unknown type for int() cast $objType")
-//                }
-//            }
-//
-//            FLOAT_CAST -> {
-//                val obj = unboxEval(call.arguments[0])
-//
-//                return when (val objType = getSignature(obj)) {
-//                    Sign.INT -> (obj as EInt).get().toFloat()
-//                    Sign.FLOAT -> obj
-//                    Sign.CHAR -> EFloat((obj as EChar).get().code.toFloat())
-//                    Sign.STRING -> EFloat(obj.toString().toFloat())
-//                    else -> throw RuntimeException("Unknown type for int() cast $objType")
-//                }
-//            }
-//
-//            CHAR_CAST -> {
-//                val obj = unboxEval(call.arguments[0])
-//                return when (val objType = getSignature(obj)) {
-//                    Sign.CHAR -> objType
-//                    Sign.INT -> EChar((obj as EInt).get().toChar())
-//                    else -> throw RuntimeException("Unknown type for char() cast $objType")
-//                }
-//            }
-//
-//            STRING_CAST -> {
-//                val obj = unboxEval(call.arguments[0])
-//                if (getSignature(obj) == Sign.STRING) return obj
-//                return EString(obj.toString())
-//            }
-//
-//            BOOL_CAST -> {
-//                val obj = unboxEval(call.arguments[0])
-//                if (getSignature(obj) == Sign.BOOL) return obj
-//                return EBool(when (obj) {
-//                    "true" -> true
-//                    "false" -> false
-//                    else -> throw RuntimeException("Cannot parse boolean value: $obj")
-//                })
-//            }
-//
-//            TYPE_OF -> return EType(getSignature(unboxEval(call.arguments[0])))
-//
-//            INCLUDE -> {
-//                val obj = unboxEval(call.arguments[0])
-//                if (obj !is EString)
-//                    throw RuntimeException("Expected a string argument for include() but got $obj")
-//                val parts = obj.get().split(":")
-//                if (parts.size != 2)
-//                    throw RuntimeException("include() received invalid argument: $obj")
-//                var group = parts[0]
-//                if (group.isEmpty()) group = Executor.STD_LIB
-//
-//                val name = parts[1]
-//                executor.addModule("$group/$name.eia", name)
-//                return Nothing.INSTANCE
-//            }
-//
-//            COPY -> {
-//                val obj = unboxEval(call.arguments[0])
-//                if (obj !is Primitive<*> || !obj.isCopyable())
-//                    throw RuntimeException("Cannot apply copy() on object type ${getSignature(obj)} = $obj")
-//                return obj.copy()!!
-//            }
-//
-//            TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())
-//
-//            RAND -> {
-//                val from = intExpr(call.arguments[0])
-//                val to = intExpr(call.arguments[1])
-//                return EInt(Random.nextInt(from.get(), to.get()))
-//            }
-//
-//            // don't do a direct exitProcess(n), Eia could be running in a server
-//            // you don't need the entire server to shut down
-//            EXIT -> {
-//                return EBool(false)
-//            }
-//
-//            MEM_CLEAR -> {
-//                // for clearing memory of the current class
-//                memory.clearMemory()
-//                return Nothing.INSTANCE
-//            }
-//            else -> throw RuntimeException("Unknown native call operation: '$type'")
-//        }
         val type = call.call
         if (type == PRINT || type == PRINTLN) {
             var printCount = 0
@@ -628,8 +485,15 @@ class Evaluator(
             if (type == PRINTLN) executor.standardOutput.print('\n')
             return Nothing.INSTANCE
         } else if (type == READ || type == READLN) {
-            return EString(executor.standardInput.pop())
+            // wait until notified about input availability
+            executor.awaitingInput = true
+            val userInput = TeaMain.readUserInput()
+            println("UserInput: $userInput")
+            executor.awaitingInput = false
+            return EString(userInput)
         } else if (type == SLEEP) {
+            // TODO:
+            //  look into this!
             Thread.sleep(intExpr(call.arguments[0]).get().toLong())
             return Nothing.INSTANCE
         } else if (type == LEN) {
