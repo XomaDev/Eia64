@@ -1,6 +1,5 @@
 package space.themelon.eia64.tea;
 
-import org.teavm.interop.Async;
 import org.teavm.jso.JSBody;
 import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
@@ -18,37 +17,41 @@ public class TeaMain {
     provideUserInput((TeaMain::provideInput));
   }
 
-  @Async
-  @JSBody(script = "return stdInput();")
-  public static native String readUserInput();
+  // We tell the JS to provide user input
+  @JSBody(script = "inputRequired();")
+  public static native void flagInputRequired();
 
-  private static String[] executeEia(String source) {
+  // We post execution result
+  @JSBody(params = { "result" }, script = "execResult(result);")
+  public static native void flagExecResult(String result);
+
+  private static void executeEia(String source) {
     displayStream.reset();
-    executor.loadMainSource(source);
-    return new String[] {String.valueOf(executor.getAwaitingInput()), displayStream.toString()};
+    new Thread(() -> {
+      executor.loadMainSource(source);
+      flagExecResult(displayStream.toString());
+    }).start();
   }
 
   private static void provideInput(String input) {
-    // means the user enters text through the UI
-    //executor.pushUserInput(input);
+    executor.pushUserInput(input);
   }
 
-  @Async
   @JSBody(params = "eia", script = "main.eia = eia;")
   private static native void exportExecCall(ExecuteEia eia);
 
-  @JSBody(params = "input", script = "main.input = input;")
-  private static native void provideUserInput(UserInputEia input);
+  @JSBody(params = "stdInput", script = "main.stdInput = stdInput;")
+  private static native void provideUserInput(PushUserInput input);
 }
 
 @SuppressWarnings("unused")
 @JSFunctor
 interface ExecuteEia extends JSObject {
-  String[] executeEia(String source);
+  void executeEia(String source);
 }
 
 @SuppressWarnings("unused")
 @JSFunctor
-interface UserInputEia extends JSObject {
-  void executeEia(String userInput);
+interface PushUserInput extends JSObject {
+  void provideInput(String userInput);
 }

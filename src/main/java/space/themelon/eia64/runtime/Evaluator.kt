@@ -486,11 +486,13 @@ class Evaluator(
             return Nothing.INSTANCE
         } else if (type == READ || type == READLN) {
             // wait until notified about input availability
-            executor.awaitingInput = true
-            val userInput = TeaMain.readUserInput()
-            println("UserInput: $userInput")
-            executor.awaitingInput = false
-            return EString(userInput)
+            TeaMain.flagInputRequired()
+            while (true) {
+                if (executor.standardInput.isNotEmpty()) {
+                    return EString(executor.standardInput.pop())
+                }
+                Thread.sleep(50)
+            }
         } else if (type == SLEEP) {
             // TODO:
             //  look into this!

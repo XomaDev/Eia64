@@ -28,11 +28,11 @@ class Executor {
 
     var awaitingInput = false
     val standardOutput = PrintStream(displayStream)
-    //val standardInput = Stack<String>()
+    val standardInput = Stack<String>()
 
-    //fun pushUserInput(input: String) {
-        //standardInput.push(input)
-    //}
+    fun pushUserInput(input: String) {
+        standardInput.push(input)
+    }
 
     private val externalExecutors = HashMap<String, Evaluator>()
     private val mainEvaluator = Evaluator("Main", this)
