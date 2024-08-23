@@ -417,7 +417,14 @@ class Evaluator(
             }
 
             READ, READLN -> {
-                return EString(Scanner(executor.standardInput).let { if (type == READ) it.next() else it.nextLine() })
+                // wait until a new string is pushed for use
+                executor.inputCallback()
+                while (true) {
+                    if (executor.standardInput.isNotEmpty()) {
+                        return EString(executor.standardInput.pop())
+                    }
+                    Thread.sleep(50)
+                }
             }
 
             SLEEP -> {

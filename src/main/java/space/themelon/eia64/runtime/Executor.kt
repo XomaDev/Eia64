@@ -4,6 +4,8 @@ import space.themelon.eia64.analysis.ParserX
 import space.themelon.eia64.syntax.Lexer
 import space.themelon.eia64.syntax.Token
 import java.io.File
+import java.util.*
+import kotlin.collections.HashMap
 import kotlin.system.exitProcess
 
 class Executor {
@@ -31,7 +33,10 @@ class Executor {
     // APIs for Eia64, we would want the output to be captured in memory and
     // sent somewhere else
     var standardOutput = System.out
-    var standardInput = System.`in`
+
+    // used to notify when an input is required
+    var inputCallback = { }
+    var standardInput = Stack<String>()
 
     private val externalExecutors = HashMap<String, Evaluator>()
     private val mainEvaluator = Evaluator("Main", this)

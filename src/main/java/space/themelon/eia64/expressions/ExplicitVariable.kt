@@ -22,7 +22,7 @@ data class ExplicitVariable(
     override fun sig(): Signature {
         val exprSig = expr.sig()
         if (!matches(expect = explicitSignature, got = exprSig)) {
-            where.error<String>("Variable '$name' expected signature $explicitSignature but got $exprSig")
+            where.error<String>("Variable '$name' expected signature ${explicitSignature.logName()} but got ${exprSig.logName()}")
             throw RuntimeException()
         }
         return explicitSignature
