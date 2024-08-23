@@ -35,23 +35,20 @@ object Sign {
     val TYPE = SimpleSignature(CLASS_SIGN)
 
     fun Signature.intoType(): Type {
-        return when (this) {
-            NONE -> throw RuntimeException("No equivalent type to NONE Sign")
-            ANY -> Type.E_ANY
-            NUM -> Type.E_NUMBER
-            INT -> Type.E_INT
-            FLOAT -> Type.E_FLOAT
-            STRING -> Type.E_STRING
-            CHAR -> Type.E_CHAR
-            BOOL -> Type.E_BOOL
-            ARRAY -> Type.E_ARRAY
-            UNIT -> Type.E_UNIT
-            OBJECT -> Type.E_OBJECT
-            TYPE -> Type.E_TYPE
-
-            is ArrayExtension -> Type.E_ARRAY
-            is ObjectExtension -> Type.E_OBJECT
-            else -> throw RuntimeException("Unknown signature $this provided for translation into Type")
-        }
+        return if (this == NONE) throw RuntimeException("No equivalent type to NONE Sign")
+        else if (this == ANY) Type.E_ANY
+        else if (this == NUM) Type.E_NUMBER
+        else if (this == INT) Type.E_INT
+        else if (this == FLOAT) Type.E_FLOAT
+        else if (this == STRING) Type.E_STRING
+        else if (this == CHAR) Type.E_CHAR
+        else if (this == BOOL) Type.E_BOOL
+        else if (this == ARRAY) Type.E_ARRAY
+        else if (this == UNIT) Type.E_UNIT
+        else if (this == OBJECT) Type.E_OBJECT
+        else if (this == TYPE) Type.E_TYPE
+        else if (this is ArrayExtension) Type.E_ARRAY
+        else if (this is ObjectExtension) Type.E_OBJECT
+        else throw RuntimeException("Unknown signature $this provided for translation into Type")
     }
 }

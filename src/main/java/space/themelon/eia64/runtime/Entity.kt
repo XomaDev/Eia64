@@ -35,24 +35,22 @@ open class Entity(
             } else value
         }
 
-        fun getSignature(value: Any): Signature = when (value) {
-            is Entity -> {
-                // repeatedly break that repeat unboxing
-                //  to retrieve the underlying value
-                if (value.interruption != InterruptionType.NONE) getSignature(value.value)
-                else value.signature
-            }
-            is ENil -> Sign.NIL
-            is EInt -> Sign.INT
-            is EFloat -> Sign.FLOAT
-            is EString -> Sign.STRING
-            is EBool -> Sign.BOOL
-            is EChar -> Sign.CHAR
-            is EArray -> ArrayExtension(value.elementSignature)
-            is EType -> Sign.TYPE
-            is Expression -> Sign.UNIT
-            is Evaluator -> ObjectExtension(value.className)
-            else -> throw RuntimeException("Unknown type of value $value")
+        fun getSignature(value: Any): Signature = if (value is Entity) {
+            // repeatedly break that repeat unboxing
+            //  to retrieve the underlying value
+            if (value.interruption != InterruptionType.NONE) getSignature(value.value)
+            else value.signature
         }
+        else if (value is ENil) Sign.NIL
+        else if (value is EInt) Sign.INT
+        else if (value is EFloat) Sign.FLOAT
+        else if (value is EString) Sign.STRING
+        else if (value is EBool) Sign.BOOL
+        else if (value is EChar) Sign.CHAR
+        else if (value is EArray) ArrayExtension(value.elementSignature)
+        else if (value is EType) Sign.TYPE
+        else if (value is Expression) Sign.UNIT
+        else if (value is Evaluator) ObjectExtension(value.className)
+        else throw RuntimeException("Unknown type of value $value")
     }
 }

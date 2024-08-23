@@ -1,10 +1,12 @@
 package space.themelon.eia64.runtime
 
+import org.teavm.jso.ajax.XMLHttpRequest
 import space.themelon.eia64.analysis.ParserX
 import space.themelon.eia64.syntax.Lexer
 import space.themelon.eia64.syntax.Token
+import space.themelon.eia64.tea.TeaMain
 import java.io.File
-import kotlin.system.exitProcess
+import java.util.Stack
 
 class Executor {
 
@@ -13,25 +15,21 @@ class Executor {
         // where runtime logs are displayed
         var LOGS_PIPE_PATH = "/tmp/pipe1"
 
-        var STD_LIB = "" // will be set
-        var EXECUTION_DIRECTORY: String = File(System.getProperty("user.dir")).absolutePath
+        var STD_LIB = "https://ekita.hackclub.app/stdlib/"
 
         // This unit could be overridden to replace default exitProcess() behaviour
         // When you are demonstrating Eia for e.g., in a server, you shouldn't to allow a random
         // dude to shut down your whole server by doing exit(n) in Eia
-        var EIA_SHUTDOWN: (Int) -> Unit = { exitCode -> exitProcess(exitCode) }
+        //var EIA_SHUTDOWN: (Int) -> Unit = { exitCode -> exitProcess(exitCode) }
     }
 
-    init {
-        if (STD_LIB.isBlank()) throw RuntimeException("STD_LIB is not set")
+    var awaitingInput = false
+    //val standardOutput = ArrayList<String>()
+    val standardInput = Stack<String>()
+
+    fun pushUserInput(input: String) {
+        standardInput.push(input)
     }
-
-
-    // why do we do this? sometimes while we are developing demonstrable
-    // APIs for Eia64, we would want the output to be captured in memory and
-    // sent somewhere else
-    var standardOutput = System.out
-    var standardInput = System.`in`
 
     private val externalExecutors = HashMap<String, Evaluator>()
     private val mainEvaluator = Evaluator("Main", this)
@@ -39,18 +37,12 @@ class Executor {
     private val externalParsers = HashMap<String, ParserX>()
     private val mainParser = ParserX(this)
 
-    fun loadMainFile(sourceFile: String) {
-        try {
-            mainEvaluator.mainEval(mainParser.parse(getTokens(sourceFile)))
-        } catch (e: ShutdownException) {
-            standardOutput.println("Executor was shutdown")
-        }
-    }
-
     fun loadMainSource(source: String): Any {
         try {
-            val tokens = mainParser.parse(Lexer(source).tokens)
-            return mainEvaluator.eval(tokens)
+            val tokens = Lexer(source).tokens
+            val parsed = mainParser.parse(tokens)
+            println(parsed)
+            return mainEvaluator.eval(parsed)
         } catch (e: ShutdownException) {
             throw RuntimeException("Executor was shutdown")
         }
@@ -80,10 +72,24 @@ class Executor {
     }
 
     // called by parsers, parse the included module
-    fun addModule(sourceFile: String, name: String): Boolean {
+    fun addModule(fileUrl: String, name: String): Boolean {
         if (externalParsers[name] != null) return false
-        externalParsers[name] = ParserX(this).also { it.parse(getTokens(sourceFile)) }
+        getSourceCode(fileUrl)?.let { code ->
+            externalParsers[name] = ParserX(this).also { it.parse(Lexer(code).tokens) }
+            println("Loaded module $name")
+        }
         return true
+    }
+
+    private fun getSourceCode(fileUrl: String): String? {
+        val request = XMLHttpRequest.create()
+        request.open("GET", fileUrl, false)
+        request.send()
+        if (request.status == 200) {
+            return request.responseText
+        }
+        println("Could not load Standard Library $fileUrl")
+        return null
     }
 
     fun getModule(name: String) = externalParsers[name] ?: throw RuntimeException("Could not find module '$name'")
@@ -100,6 +106,4 @@ class Executor {
     }
 
     fun getEvaluator(name: String) = externalExecutors[name]
-
-    private fun getTokens(sourceFile: String) = Lexer(File(sourceFile).readText()).tokens
 }

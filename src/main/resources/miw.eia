@@ -1,3 +1,0 @@
-itr (x: 10 to 30 by 5) {
-    println(x)
-}

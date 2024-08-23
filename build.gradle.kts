@@ -1,6 +1,10 @@
+import org.teavm.gradle.api.OptimizationLevel
+
 plugins {
     id("java")
     kotlin("jvm")
+    id("war")
+    id("org.teavm") version "0.9.2"
 }
 
 group = "space.themelon.eia64"
@@ -17,6 +21,8 @@ dependencies {
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.2")
+
+    implementation(teavm.libs.jsoApis)
 }
 
 tasks.test {
@@ -41,4 +47,28 @@ tasks.register<Jar>("fatJar") {
 
 kotlin {
     jvmToolchain(11)
+}
+
+teavm {
+    js {
+        sourceMap = true
+        obfuscated = false
+        addedToWebApp = true
+        optimization.value(OptimizationLevel.NONE)
+    }
+    all {
+        mainClass = "space.themelon.eia64.tea.TeaMain"
+    }
+}
+
+tasks.register<Copy>("unzipWar") {
+    group = "build"
+    val buildDirectory = layout.buildDirectory.asFile.get().absolutePath
+    from(zipTree("$buildDirectory/libs/${project.name}-${project.version}.war"))
+    into("$buildDirectory/pub")
+    dependsOn("build")
+}
+
+tasks.named("build") {
+    finalizedBy("unzipWar")
 }

@@ -24,16 +24,9 @@ class CompletionHelper(
         }
         var entitiesOpen = 0
         tokens.forEach {
-            when (it.type) {
-                Type.OPEN_CURVE,
-                Type.OPEN_SQUARE,
-                Type.OPEN_CURLY -> entitiesOpen++
-
-                Type.CLOSE_CURVE,
-                Type.CLOSE_SQUARE,
-                Type.CLOSE_CURLY -> entitiesOpen--
-                else -> { }
-            }
+            if (it.type == Type.OPEN_CURVE || it.type == Type.OPEN_SQUARE || it.type == Type.OPEN_CURLY) entitiesOpen++
+            else if (it.type == Type.CLOSE_CURVE || it.type == Type.CLOSE_SQUARE || it.type == Type.CLOSE_CURLY) entitiesOpen--
+            else { }
         }
         if (entitiesOpen == 0) {
             buffer = StringJoiner("\n")

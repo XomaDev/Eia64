@@ -25,14 +25,18 @@ class ParserX(
     lateinit var parsed: ExpressionList
 
     fun parse(tokens: List<Token>): ExpressionList {
+        println("Parsing $tokens")
         index = 0
         size = tokens.size
         this.tokens = tokens
 
         val expressions = ArrayList<Expression>()
+        println("done")
         parseScopeOutline()
+        println("done!")
         while (!isEOF()) expressions.add(parseStatement())
-        if (Executor.DEBUG) expressions.forEach { println(it) }
+        println("done2")
+        println(expressions)
         parsed = ExpressionList(expressions)
         parsed.sig() // necessary
         return parsed
@@ -43,17 +47,11 @@ class ParserX(
     private fun parseClass(): Expression {
         val token = next()
         if (token.flags.isNotEmpty()) {
-            when (token.flags[0]) {
-                Flag.V_KEYWORD -> return variableDeclaration(false, token)
-                Flag.MODIFIER -> return handleModifier(token)
-                else -> { }
-            }
+            if (token.flags[0] == Flag.V_KEYWORD) return variableDeclaration(false, token)
+            else if (token.flags[0] == Flag.MODIFIER) return handleModifier(token)
         }
-        when (token.type) {
-            Type.FUN -> return fnDeclaration()
-            Type.INCLUDE -> return includeStatement()
-            else -> { }
-        }
+        if (token.type == Type.FUN) return fnDeclaration()
+        else if (token.type == Type.INCLUDE) return includeStatement()
         return token.error("Unexpected token")
     }
 
@@ -62,27 +60,24 @@ class ParserX(
     private fun parseStatement(): Expression {
         val token = next()
         if (token.flags.isNotEmpty()) {
-            when (token.flags[0]) {
-                Flag.LOOP -> return loop(token)
-                Flag.V_KEYWORD -> return variableDeclaration(false, token)
-                Flag.INTERRUPTION -> return interruption(token)
-                Flag.MODIFIER -> return handleModifier(token)
-                else -> {}
+            if (token.flags[0] == Flag.LOOP) return loop(token)
+            else if (token.flags[0] == Flag.V_KEYWORD) return variableDeclaration(false, token)
+            else if (token.flags[0] == Flag.INTERRUPTION) return interruption(token)
+            else if (token.flags[0] == Flag.MODIFIER) return handleModifier(token)
+            else {
             }
         }
-        return when (token.type) {
-            Type.IF -> ifDeclaration(token)
-            Type.FUN -> fnDeclaration()
-            Type.SHADO -> shadoDeclaration()
-            Type.NEW -> newStatement(token)
-            Type.INCLUDE -> includeStatement()
-            Type.WHEN -> whenStatement(token)
-            Type.THROW -> throwStatement(token)
-            Type.TRY -> tryCatchStatement(token)
-            else -> {
-                back()
-                parseExpr(0)
-            }
+        return if (token.type == Type.IF) ifDeclaration(token)
+        else if (token.type == Type.FUN) fnDeclaration()
+        else if (token.type == Type.SHADO) shadoDeclaration()
+        else if (token.type == Type.NEW) newStatement(token)
+        else if (token.type == Type.INCLUDE) includeStatement()
+        else if (token.type == Type.WHEN) whenStatement(token)
+        else if (token.type == Type.THROW) throwStatement(token)
+        else if (token.type == Type.TRY) tryCatchStatement(token)
+        else {
+            back()
+            parseExpr(0)
         }
     }
 
@@ -93,21 +88,20 @@ class ParserX(
                 if (it == Flag.LOOP
                     || it == Flag.V_KEYWORD
                     || it == Flag.INTERRUPTION
-                    || it == Flag.MODIFIER)
+                    || it == Flag.MODIFIER
+                )
                     return true
             }
-        return when (token.type) {
-            Type.IF,
-            Type.FUN,
-            Type.STD,
-            Type.INCLUDE,
-            Type.NEW,
-            Type.THROW,
-            Type.TRY,
-            Type.SHADO,
-            Type.WHEN -> true
-            else -> false
-        }
+        val type = token.type;
+        return type == Type.IF
+                || type == Type.FUN
+                || type == Type.STD
+                || type == Type.INCLUDE
+                || type == Type.NEW
+                || type == Type.THROW
+                || type == Type.TRY
+                || type == Type.SHADO
+                || type == Type.WHEN
     }
 
     private fun parseScopeOutline() {
@@ -122,37 +116,33 @@ class ParserX(
             // Predefine all the outlines!
             manager.defineSemiFn(reference.name, reference)
         }
-
         while (!isEOF()) {
             val token = next()
-            when (val type = token.type) {
-                Type.OPEN_CURLY -> curlyBracesCount++
-                Type.CLOSE_CURLY -> {
-                    if (curlyBracesCount == 0) break
-                    else curlyBracesCount--
+            val type = token.type
+            if (type == Type.OPEN_CURLY) curlyBracesCount++
+            else if (type == Type.CLOSE_CURLY) {
+                if (curlyBracesCount == 0) break
+                else curlyBracesCount--
+            } else if (type == Type.FUN) {
+                if (curlyBracesCount == 0) handleFn(false)
+            } else if (type == Type.VISIBLE || type == Type.INVISIBLE) {
+                if (curlyBracesCount == 0 && isNext(Type.FUN)) {
+                    skip()
+                    handleFn(type == Type.VISIBLE)
                 }
-                Type.FUN -> if (curlyBracesCount == 0) handleFn(false)
-                Type.VISIBLE, Type.INVISIBLE -> {
-                    if (curlyBracesCount == 0 && isNext(Type.FUN)) {
-                        skip()
-                        handleFn(type == Type.VISIBLE)
-                    }
-                }
-                else -> { }
+            } else {
+                println("else: $type")
             }
         }
-
         index = originalIndex
     }
 
     private fun handleModifier(modifier: Token): Expression {
         val visible = modifier.type == Type.VISIBLE
         val next = next()
-        return when (next.type) {
-            Type.FUN -> fnDeclaration()
-            Type.VAR, Type.LET -> variableDeclaration(visible, next)
-            else -> next.error("Unexpected token")
-        }
+        return if (next.type == Type.FUN) fnDeclaration()
+        else if (next.type == Type.VAR || next.type == Type.LET) variableDeclaration(visible, next)
+        else next.error("Unexpected token")
     }
 
     private fun throwStatement(token: Token) = ThrowExpr(token, parseStatement())
@@ -175,37 +165,36 @@ class ParserX(
         val classNames = mutableListOf<String>()
         while (true) {
             val next = next()
-            when (next.type) {
+            if (next.type
                 // means importing only one static instance of the class
-                Type.STATIC -> classNames.add(includeStatic())
-                Type.STD -> {
-                    expectType(Type.COLON)
-
-                    val filePath = if (isNext(Type.ALPHA)) readAlpha()
-                    else expectType(Type.E_STRING).data as String
-
-                    val file = File("${Executor.STD_LIB}/$filePath.eia")
-                    val moduleName = getModuleName(file)
-                    classNames.add(moduleName)
-
-                    manager.classes.add(moduleName)
-                    executor.addModule(file.absolutePath, moduleName)
+                == Type.STATIC
+            ) {
+                expectType(Type.COLON)
+                val includeType = next()
+                if (includeType.type != Type.STD) {
+                    return includeType.error("Eia Web only supports including Std Libs")
                 }
-                Type.E_STRING -> {
-                    // include("simulationenv/HelloProgram")
-                    var path = next.data as String + ".eia"
-                    if (path.startsWith("stdlib")) {
-                        path = path.replaceFirst("stdlib", Executor.STD_LIB)
-                    }
-                    val sourceFile = getModulePath(path)
-
-                    verifyFilePath(sourceFile, next)
-                    val moduleName = getModuleName(sourceFile)
-                    manager.classes.add(moduleName)
-                    executor.addModule(sourceFile.absolutePath, moduleName)
-                }
-                else -> next.error("Unexpected token")
+                val moduleName = readAlpha()
+                val fileUrl = "${Executor.STD_LIB}/${moduleName}.eia"
+                manager.classes.add(moduleName)
+                manager.staticClasses.add(moduleName)
+                executor.addModule(fileUrl, moduleName)
+                classNames.add(moduleName)
             }
+            else if (next.type == Type.STD) {
+                expectType(Type.COLON)
+                if (isNext(Type.E_STRING)) {
+                    next().error<String>("Eia Web only supports including Std Libs")
+                }
+                val moduleName = readAlpha()
+                val fileUrl = "${Executor.STD_LIB}/$moduleName.eia"
+                classNames.add(moduleName)
+
+                manager.classes.add(moduleName)
+                executor.addModule(fileUrl, moduleName)
+            }
+            else if (next.type == Type.E_STRING) throw RuntimeException("Eia Web only supports including Std Libs")
+            else next.error("Unexpected token")
             if (peek().type == Type.CLOSE_CURVE) break
             expectType(Type.COMMA)
         }
@@ -213,36 +202,9 @@ class ParserX(
         return Include(classNames)
     }
 
-    private fun includeStatic(): String {
-        expectType(Type.COLON)
-        val path = next()
-        val sourceFile = if (path.type == Type.STD) {
-            expectType(Type.COLON)
-            File("${Executor.STD_LIB}/${readAlpha()}.eia")
-        } else {
-            if (path.type != Type.E_STRING)
-                path.error<String>("Expected a string type for static:")
-            File("${getModulePath(path.data as String)}.eia")
-        }
-        verifyFilePath(sourceFile, path)
-        val moduleName = getModuleName(sourceFile)
-        manager.classes.add(moduleName)
-        manager.staticClasses.add(moduleName)
-        executor.addModule(sourceFile.absolutePath, moduleName)
-        return moduleName
-    }
-
-    private fun getModuleName(sourceFile: File) = sourceFile.name.substring(0, sourceFile.name.length - ".eia".length)
-
-    private fun verifyFilePath(sourceFile: File, next: Token) {
-        if (!sourceFile.isFile || !sourceFile.exists()) {
-            next.error<String>("Cannot find source file '$sourceFile', make sure it is a full valid path")
-        }
-    }
-
     private fun getModulePath(path: String) =
         if (path.startsWith('/')) File(path)
-        else File("${Executor.EXECUTION_DIRECTORY}/$path")
+        else File("NONE/$path")
 
     private fun newStatement(token: Token): NewObj {
         val module = readAlpha()
@@ -254,7 +216,8 @@ class ParserX(
             token.error<String>("Could not find init(${arguments.toSignString()}) function")
             throw RuntimeException() // never reached
         }
-        return NewObj(token,
+        return NewObj(
+            token,
             module,
             arguments,
             reference
@@ -301,41 +264,36 @@ class ParserX(
     }
 
     private fun loop(where: Token): Expression {
-        when (where.type) {
-            Type.UNTIL -> {
-                val expr = parseNextInBrace()
-                // Scope: Automatic
-                val body = manager.iterativeScope { autoScopeBody() }
-                return Until(where, expr, body)
-            }
-
-            Type.FOR -> return forLoop(where)
-
-            Type.EACH -> {
-                expectType(Type.OPEN_CURVE)
-                val iName = readAlpha()
-                expectType(Type.COLON)
-
-                val from = parseStatement()
-                expectType(Type.TO)
-                val to = parseStatement()
-
-                var by: Expression? = null
-                if (isNext(Type.BY)) {
-                    skip()
-                    by = parseStatement()
-                }
-                expectType(Type.CLOSE_CURVE)
-                manager.enterScope()
-                manager.defineVariable(iName, false, Sign.INT, false)
-                // Manual Scopped!
-                val body = manager.iterativeScope { unscoppedBodyExpr() }
-                manager.leaveScope()
-                return Itr(where, iName, from, to, by, body)
-            }
-
-            else -> return where.error("Unknown loop type symbol")
+        if (where.type == Type.UNTIL) {
+            val expr = parseNextInBrace()
+            // Scope: Automatic
+            val body = manager.iterativeScope { autoScopeBody() }
+            return Until(where, expr, body)
         }
+        else if (where.type == Type.FOR) return forLoop(where)
+        else if (where.type == Type.EACH) {
+            expectType(Type.OPEN_CURVE)
+            val iName = readAlpha()
+            expectType(Type.COLON)
+
+            val from = parseStatement()
+            expectType(Type.TO)
+            val to = parseStatement()
+
+            var by: Expression? = null
+            if (isNext(Type.BY)) {
+                skip()
+                by = parseStatement()
+            }
+            expectType(Type.CLOSE_CURVE)
+            manager.enterScope()
+            manager.defineVariable(iName, false, Sign.INT, false)
+            // Manual Scopped!
+            val body = manager.iterativeScope { unscoppedBodyExpr() }
+            manager.leaveScope()
+            return Itr(where, iName, from, to, by, body)
+        }
+        else return where.error("Unknown loop type symbol")
     }
 
     private fun forLoop(where: Token): Expression {
@@ -351,15 +309,14 @@ class ParserX(
         val entity = parseStatement()
         expectType(Type.CLOSE_CURVE)
 
-        val elementSignature = when (val iterableSignature = entity.sig()) {
-            is ArrayExtension -> iterableSignature.elementSignature
-            Sign.ARRAY -> Sign.ANY
-            Sign.STRING -> Sign.CHAR
-
-            else -> {
-                where.error<String>("Unknown non iterable element for '$iName'")
-                throw RuntimeException()
-            }
+        val iterableSignature = entity.sig()
+        val elementSignature = if (iterableSignature is ArrayExtension) {
+            iterableSignature.elementSignature
+        } else if (iterableSignature == Sign.ARRAY) Sign.ANY
+        else if (iterableSignature == Sign.STRING) Sign.CHAR
+        else {
+            where.error<String>("Unknown non iterable element for '$iName'")
+            throw RuntimeException()
         }
 
         manager.enterScope()
@@ -403,24 +360,22 @@ class ParserX(
         return Interruption(
             token,
             token.type,
-            when (token.type) {
-                Type.RETURN -> {
-                    val expectedSignature = manager.getPromisedSignature
-                    if (expectedSignature == Sign.NONE) {
-                        null
-                    } else {
-                        val expr = parseStatement()
-                        val gotSignature = expr.sig()
-                        if (!matches(expectedSignature, gotSignature)) {
-                            token.error<String>("Was expecting return type of $expectedSignature but got $gotSignature")
-                            throw RuntimeException()
-                        }
-                        expr
+            if (token.type == Type.RETURN) {
+                val expectedSignature = manager.getPromisedSignature
+                if (expectedSignature == Sign.NONE) {
+                    null
+                } else {
+                    val expr = parseStatement()
+                    val gotSignature = expr.sig()
+                    if (!matches(expectedSignature, gotSignature)) {
+                        token.error<String>("Was expecting return type of $expectedSignature but got $gotSignature")
+                        throw RuntimeException()
                     }
+                    expr
                 }
-                Type.USE -> parseStatement()
-                else -> null
             }
+            else if (token.type == Type.USE) parseStatement()
+            else null
         )
     }
 
@@ -530,10 +485,8 @@ class ParserX(
             return IfStatement(where, logicalExpr, ifBody, NoneExpression.INSTANCE)
         skip()
 
-        val elseBranch = when (peek().type) {
-            Type.IF -> ifDeclaration(next())
-            else -> autoBodyExpr()
-        }
+        val elseBranch = if (peek().type == Type.IF) ifDeclaration(next())
+        else autoBodyExpr()
         return IfStatement(where, logicalExpr, ifBody, elseBranch)
     }
 
@@ -571,8 +524,8 @@ class ParserX(
 
     private fun variableDeclaration(public: Boolean, where: Token): Expression {
         //if (!isNext(Type.EXCLAMATION)) {
-            // for now, later when ';' will be swapped with //, we won't need it
-            //return readVariableDeclaration(where, public)
+        // for now, later when ';' will be swapped with //, we won't need it
+        //return readVariableDeclaration(where, public)
         //}
         // '!' mark after let or var represents multi expressions
         //next()
@@ -619,29 +572,39 @@ class ParserX(
 
     private fun readSignature(token: Token): Signature {
         if (token.hasFlag(Flag.CLASS)) {
-            // then wrap it around Simple Signature
-            return when (val classType = token.type) {
-                Type.E_NUMBER -> Sign.NUM
-                Type.E_NIL -> Sign.NIL
-                Type.E_INT -> Sign.INT
-                Type.E_FLOAT -> Sign.FLOAT
-                Type.E_STRING -> Sign.STRING
-                Type.E_CHAR -> Sign.CHAR
-                Type.E_BOOL -> Sign.BOOL
-                Type.E_ANY -> Sign.ANY
-                Type.E_UNIT -> Sign.UNIT
-                Type.E_TYPE -> Sign.TYPE
-                Type.E_ARRAY -> {
-                    if (isNext(Type.LEFT_DIAMOND)) {
-                        skip()
-                        val elementSignature = readSignature(next())
-                        expectType(Type.RIGHT_DIAMOND)
-                        return ArrayExtension(elementSignature)
-                    }
-                    return Sign.ARRAY
+            val classType = token.type
+            if (classType == Type.E_NUMBER) {
+                return Sign.NUM
+            } else if (classType == Type.E_NIL) {
+                return Sign.NIL
+            } else if (classType == Type.E_INT) {
+                return Sign.INT
+            } else if (classType == Type.E_FLOAT) {
+                return Sign.FLOAT
+            } else if (classType == Type.E_STRING) {
+                return Sign.STRING
+            } else if (classType == Type.E_CHAR) {
+                return Sign.CHAR
+            } else if (classType == Type.E_BOOL) {
+                return Sign.BOOL
+            } else if (classType == Type.E_ANY) {
+                return Sign.ANY
+            } else if (classType == Type.E_UNIT) {
+                return Sign.UNIT
+            } else if (classType == Type.E_TYPE) {
+                return Sign.TYPE
+            } else if (classType == Type.E_ARRAY) {
+                if (isNext(Type.LEFT_DIAMOND)) {
+                    skip()
+                    val elementSignature = readSignature(next())
+                    expectType(Type.RIGHT_DIAMOND)
+                    return ArrayExtension(elementSignature)
                 }
-                Type.E_OBJECT -> ObjectExtension(Sign.OBJECT.type) // Generic form
-                else -> token.error("Unknown class $classType")
+                return Sign.ARRAY
+            } else if (classType == Type.E_OBJECT) {
+                return ObjectExtension(Sign.OBJECT.type) // Generic form
+            } else {
+                return token.error("Unknown class $classType")
             }
         }
 
@@ -660,16 +623,13 @@ class ParserX(
 
     private fun readVariableExpr(): Expression {
         val nextToken = peek()
-        return when (nextToken.type) {
-            Type.ASSIGNMENT -> {
-                skip()
-                parseStatement()
-            }
-
-            Type.OPEN_CURVE -> shadoDeclaration()
-            Type.OPEN_CURLY -> parseStatement()
-            else -> nextToken.error("Unexpected variable expression")
+        return if (nextToken.type == Type.ASSIGNMENT) {
+            skip()
+            parseStatement()
         }
+        else if (nextToken.type == Type.OPEN_CURVE) shadoDeclaration()
+        else if (nextToken.type == Type.OPEN_CURLY) parseStatement()
+        else nextToken.error("Unexpected variable expression")
     }
 
     private fun parseExpr(minPrecedence: Int): Expression {
@@ -721,34 +681,28 @@ class ParserX(
                 && nextOp.type != Type.DOUBLE_COLON // value casting
             ) break
 
-            left = when (nextOp.type) {
+            left = if (nextOp.type
                 // calling shadow func
-                Type.OPEN_CURVE -> unitCall(left)
-                Type.OPEN_SQUARE -> {
-                    // array access
-                    val where = next()
-                    val expr = parseStatement()
-                    expectType(Type.CLOSE_SQUARE)
-                    ArrayAccess(left.marking!!, left, expr)
-                }
-                Type.DOUBLE_COLON -> {
-                    skip()
-                    Cast(nextOp, left, readSignature(next()))
-                }
-                else -> classElementCall(left)
-            }
+                == Type.OPEN_CURVE
+            ) unitCall(left)
+            else if (nextOp.type == Type.OPEN_SQUARE) {
+                // array access
+                val expr = parseStatement()
+                expectType(Type.CLOSE_SQUARE)
+                ArrayAccess(left.marking!!, left, expr)
+            } else if (nextOp.type == Type.DOUBLE_COLON) {
+                skip()
+                Cast(nextOp, left, readSignature(next()))
+            } else classElementCall(left)
         }
         return left
     }
 
-    private fun isLiteral(expression: Expression) = when (expression) {
-        is IntLiteral,
-        is StringLiteral, -> true
-        is BoolLiteral -> true
-        is CharLiteral -> true
-        is ArrayLiteral -> true
-        else -> false
-    }
+    private fun isLiteral(expression: Expression) = if (expression is IntLiteral || expression is StringLiteral) true
+    else if (expression is BoolLiteral) true
+    else if (expression is CharLiteral) true
+    else if (expression is ArrayLiteral) true
+    else false
 
     private fun checkMutability(where: Token, variableExpression: Expression) {
         // it's fine if it's array access, array elements are always mutable
@@ -757,21 +711,15 @@ class ParserX(
         val variableName: String
         val index: Int
 
-        when (variableExpression) {
-            is Alpha -> {
-                variableName = variableExpression.value
-                index = variableExpression.index
-            }
-
-            is ForeignField -> {
-                variableName = variableExpression.property
-                index = variableExpression.uniqueVariable.index
-            }
-
-            else -> {
-                where.error<String>("Expected a variable to assign")
-                throw RuntimeException()
-            }
+        if (variableExpression is Alpha) {
+            variableName = variableExpression.value
+            index = variableExpression.index
+        } else if (variableExpression is ForeignField) {
+            variableName = variableExpression.property
+            index = variableExpression.uniqueVariable.index
+        } else {
+            where.error<String>("Expected a variable to assign")
+            throw RuntimeException()
         }
         // Variable Index
         // Below 0: represents a name type, a function? a class? etc.
@@ -850,8 +798,8 @@ class ParserX(
 
     // Whether the expression references an external static
     // included class
-    private fun isStatic(expression: Expression)
-        = expression is Alpha && manager.staticClasses.contains(expression.value)
+    private fun isStatic(expression: Expression) =
+        expression is Alpha && manager.staticClasses.contains(expression.value)
 
     private fun getModuleInfo(
         where: Token,
@@ -869,22 +817,16 @@ class ParserX(
             return ModuleInfo(where, objectExpression.value, false)
         } else {
             val signature = objectExpression.sig()
-            when (signature) {
-                is SimpleSignature -> {
-                    // Linked Static Invocation (String, Int, Array)
-                    return ModuleInfo(where, getLinkedModule(signature, where), true)
-                }
-
-                is ObjectExtension -> {
-                    // Object Invocation
-                    return ModuleInfo(where, signature.extensionClass, false)
-                }
-
-                else -> {
-                    // TODO: we'll have to work on a fix for this
-                    signature as ArrayExtension
-                    return ModuleInfo(where, "array", true)
-                }
+            if (signature is SimpleSignature) {
+                // Linked Static Invocation (String, Int, Array)
+                return ModuleInfo(where, getLinkedModule(signature, where), true)
+            } else if (signature is ObjectExtension) {
+                // Object Invocation
+                return ModuleInfo(where, signature.extensionClass, false)
+            } else {
+                // TODO: we'll have to work on a fix for this
+                signature as ArrayExtension
+                return ModuleInfo(where, "array", true)
             }
         }
     }
@@ -892,20 +834,18 @@ class ParserX(
     private fun getLinkedModule(
         signature: Signature,
         where: Token
-    ) = when (signature) {
-        Sign.NONE -> where.error("Signature type NONE has no module")
-        Sign.ANY -> where.error("Signature type ANY has no module")
-        Sign.CHAR -> where.error("Signature type CHAR has no module")
-        Sign.FLOAT -> where.error("Signature type FLOAT has no module")
-        Sign.UNIT -> where.error("Signature type UNIT has no module")
-        Sign.OBJECT -> where.error("Signature type OBJECT has no module") // (Raw Object sign)
-        Sign.INT -> "eint"
-        Sign.STRING -> "string"
-        Sign.BOOL -> "bool"
-        Sign.ARRAY -> "array"
-        Sign.TYPE -> "etype"
-        else -> where.error("Unknown object signature for module link $signature")
-    }
+    ) = if (signature == Sign.NONE) where.error("Signature type NONE has no module")
+    else if (signature == Sign.ANY) where.error("Signature type ANY has no module")
+    else if (signature == Sign.CHAR) where.error("Signature type CHAR has no module")
+    else if (signature == Sign.FLOAT) where.error("Signature type FLOAT has no module")
+    else if (signature == Sign.UNIT) where.error("Signature type UNIT has no module")
+    else if (signature == Sign.OBJECT) where.error("Signature type OBJECT has no module") // (Raw Object sign)
+    else if (signature == Sign.INT) "eint"
+    else if (signature == Sign.STRING) "string"
+    else if (signature == Sign.BOOL) "bool"
+    else if (signature == Sign.ARRAY) "array"
+    else if (signature == Sign.TYPE) "etype"
+    else where.error("Unknown object signature for module link $signature")
 
     private fun resolveGlobalVr(where: Token, name: String): UniqueVariable? {
         val variable = manager.resolveGlobalVr(name) ?: return null
@@ -919,76 +859,77 @@ class ParserX(
         return reference
     }
 
-    private fun operatorPrecedence(type: Flag) = when (type) {
-        Flag.ASSIGNMENT_TYPE -> 1
-        Flag.IS -> 2
-        Flag.LOGICAL_OR -> 3
-        Flag.LOGICAL_AND -> 4
-        Flag.BITWISE_OR -> 5
-        Flag.BITWISE_AND -> 6
-        Flag.EQUALITY -> 7
-        Flag.RELATIONAL -> 8
-        Flag.BINARY -> 9
-        Flag.BINARY_L2 -> 10
-        Flag.BINARY_L3 -> 11
-        else -> -1
+    private fun operatorPrecedence(type: Flag) = if (type == Flag.ASSIGNMENT_TYPE) {
+        1
+    } else if (type == Flag.IS) {
+        2
+    } else if (type == Flag.LOGICAL_OR) {
+        3
+    } else if (type == Flag.LOGICAL_AND) {
+        4
+    } else if (type == Flag.BITWISE_OR) {
+        5
+    } else if (type == Flag.BITWISE_AND) {
+        6
+    } else if (type == Flag.EQUALITY) {
+        7
+    } else if (type == Flag.RELATIONAL) {
+        8
+    } else if (type == Flag.BINARY) {
+        9
+    } else if (type == Flag.BINARY_L2) {
+        10
+    } else if (type == Flag.BINARY_L3) {
+        11
+    } else {
+        -1
     }
 
     private fun parseTerm(): Expression {
         // a term is only one value, like 'a', '123'
-        when (peek().type) {
-            Type.OPEN_CURVE -> {
-                skip()
-                val expr = parseStatement()
-                expectType(Type.CLOSE_CURVE)
-                return expr
-            }
-
-            Type.OPEN_CURLY -> return Shadow(emptyList(), autoScopeBody().expr)
-
-            else -> {}
-        }
+        if (peek().type == Type.OPEN_CURVE) {
+            skip()
+            val expr = parseStatement()
+            expectType(Type.CLOSE_CURVE)
+            return expr
+        } else if (peek().type == Type.OPEN_CURLY) return Shadow(emptyList(), autoScopeBody().expr)
         val token = next()
-        when {
-            token.hasFlag(Flag.VALUE) -> {
-                val value = parseValue(token)
-                if (!token.hasFlag(Flag.CONSTANT_VALUE) // not a hard constant, like `123` or `"Hello, World"`
-                    && !isEOF()
-                    && peek().type == Type.OPEN_CURVE)
-                    return unitCall(value)
-                return value
-            }
-            token.hasFlag(Flag.UNARY) -> return UnaryOperation(token, token.type, parseTerm(), true)
-            token.hasFlag(Flag.NATIVE_CALL) -> {
-                val arguments = callArguments()
-                return NativeCall(token, token.type, arguments)
-            }
-            token.type == Type.ARRAY_OF -> {
-                if (isNext(Type.OPEN_CURVE)) {
-                    skip()
-                    return arrayStatement(token)
-                } else {
-                    // not for array allocation, array declaration with initial elements
-                    expectType(Type.LEFT_DIAMOND)
-                    val elementSignature = readSignature(next())
-                    expectType(Type.RIGHT_DIAMOND)
-                    expectType(Type.OPEN_CURVE)
-                    return arrayStatementSignature(token, elementSignature)
-                }
-            }
-            token.type == Type.MAKE_ARRAY -> {
+        if (token.hasFlag(Flag.VALUE)) {
+            val value = parseValue(token)
+            if (!token.hasFlag(Flag.CONSTANT_VALUE) // not a hard constant, like `123` or `"Hello, World"`
+                && !isEOF()
+                && peek().type == Type.OPEN_CURVE
+            )
+                return unitCall(value)
+            return value
+        } else if (token.hasFlag(Flag.UNARY)) return UnaryOperation(token, token.type, parseTerm(), true)
+        else if (token.hasFlag(Flag.NATIVE_CALL)) {
+            val arguments = callArguments()
+            return NativeCall(token, token.type, arguments)
+        } else if (token.type == Type.ARRAY_OF) {
+            if (isNext(Type.OPEN_CURVE)) {
+                skip()
+                return arrayStatement(token)
+            } else {
+                // not for array allocation, array declaration with initial elements
                 expectType(Type.LEFT_DIAMOND)
                 val elementSignature = readSignature(next())
                 expectType(Type.RIGHT_DIAMOND)
-
                 expectType(Type.OPEN_CURVE)
-                val size = parseStatement()
-                expectType(Type.COMMA)
-                val defaultValue = parseStatement()
-                expectType(Type.CLOSE_CURVE)
-
-                return ArrayAllocation(token, elementSignature, size, defaultValue)
+                return arrayStatementSignature(token, elementSignature)
             }
+        } else if (token.type == Type.MAKE_ARRAY) {
+            expectType(Type.LEFT_DIAMOND)
+            val elementSignature = readSignature(next())
+            expectType(Type.RIGHT_DIAMOND)
+
+            expectType(Type.OPEN_CURVE)
+            val size = parseStatement()
+            expectType(Type.COMMA)
+            val defaultValue = parseStatement()
+            expectType(Type.CLOSE_CURVE)
+
+            return ArrayAllocation(token, elementSignature, size, defaultValue)
         }
         back()
         if (canParseNext()) return parseStatement()
@@ -1023,43 +964,37 @@ class ParserX(
     }
 
     private fun parseValue(token: Token): Expression {
-        return when (token.type) {
-            Type.NIL -> NilLiteral(token)
-            Type.E_TRUE, Type.E_FALSE -> BoolLiteral(token, token.type == Type.E_TRUE)
-            Type.E_INT -> IntLiteral(token, token.data as Int)
-            Type.E_FLOAT -> FloatLiteral(token, token.data as Float)
-            Type.E_STRING -> StringLiteral(token, token.data as String)
-            Type.E_CHAR -> CharLiteral(token, token.data as Char)
-            Type.ALPHA -> {
-                val name = readAlpha(token)
-                val vrReference = manager.resolveVr(name)
-                if (vrReference == null) {
-                    // could be a function call or static invocation
-                    if (manager.hasFunctionNamed(name))
-                        // there could be multiple functions with same name
-                        // but different args, this just marks it as a function
-                        Alpha(token, -3, name, Sign.NONE)
-                    else if (manager.staticClasses.contains(name))
-                        // probably referencing a method from an outer class
-                        Alpha(token, -2, name, Sign.NONE)
-                    else
-                        // Unresolved name
-                        token.error("Cannot find symbol '$name'")
-                } else {
-                    // classic variable access
-                    Alpha(token, vrReference.index, name, vrReference.signature)
-                }
+        return if (token.type == Type.NIL) NilLiteral(token)
+        else if (token.type == Type.E_TRUE || token.type == Type.E_FALSE) BoolLiteral(token, token.type == Type.E_TRUE)
+        else if (token.type == Type.E_INT) IntLiteral(token, token.data as Int)
+        else if (token.type == Type.E_FLOAT) FloatLiteral(token, token.data as Float)
+        else if (token.type == Type.E_STRING) StringLiteral(token, token.data as String)
+        else if (token.type == Type.E_CHAR) CharLiteral(token, token.data as Char)
+        else if (token.type == Type.ALPHA) {
+            val name = readAlpha(token)
+            val vrReference = manager.resolveVr(name)
+            if (vrReference == null) {
+                // could be a function call or static invocation
+                if (manager.hasFunctionNamed(name))
+                // there could be multiple functions with same name
+                // but different args, this just marks it as a function
+                    Alpha(token, -3, name, Sign.NONE)
+                else if (manager.staticClasses.contains(name))
+                // probably referencing a method from an outer class
+                    Alpha(token, -2, name, Sign.NONE)
+                else
+                // Unresolved name
+                    token.error("Cannot find symbol '$name'")
+            } else {
+                // classic variable access
+                Alpha(token, vrReference.index, name, vrReference.signature)
             }
-            Type.CLASS_VALUE -> parseType(token)
-
-            Type.OPEN_CURVE -> {
-                val expr = parseStatement()
-                expectType(Type.CLOSE_CURVE)
-                expr
-            }
-
-            else -> token.error("Unknown token type")
-        }
+        } else if (token.type == Type.CLASS_VALUE) parseType(token)
+        else if (token.type == Type.OPEN_CURVE) {
+            val expr = parseStatement()
+            expectType(Type.CLOSE_CURVE)
+            expr
+        } else token.error("Unknown token type")
     }
 
     private fun parseType(token: Token): TypeLiteral {
@@ -1141,7 +1076,7 @@ class ParserX(
 }
 
 private fun List<Expression>.toSignString(): String {
-    val string = StringJoiner(", ")
-    for (expression in this) string.add(expression.sig().logName())
+    val string = StringBuilder()
+    for (expression in this) string.append(expression.sig().logName()).append(" ")
     return string.toString()
 }

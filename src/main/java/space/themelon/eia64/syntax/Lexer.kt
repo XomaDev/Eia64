@@ -1,6 +1,5 @@
 package space.themelon.eia64.syntax
 
-import space.themelon.eia64.runtime.Executor
 import space.themelon.eia64.syntax.Type.*
 import space.themelon.eia64.syntax.Type.Companion.KEYWORDS
 
@@ -13,9 +12,6 @@ class Lexer(private val source: String) {
 
     init {
         while (!isEOF()) parseNext()
-        if (Executor.DEBUG) {
-            tokens.forEach { println(it) }
-        }
     }
 
     private fun parseNext() {
@@ -30,58 +26,62 @@ class Lexer(private val source: String) {
             while (!isEOF() && peek() != '\n') index++
             return
         }
-        tokens.add(when (char) {
-            '=' -> if (consumeNext('=')) createOp("==") else createOp("=")
-
-            '^' -> createOp("^")
-
-            '*' ->
+        tokens.add(
+            if (char == '=') {
+                if (consumeNext('=')) createOp("==") else createOp("=")
+            } else if (char == '^') createOp("^")
+            else if (char == '*') {
                 if (consumeNext('=')) createOp("*=") else createOp("*")
-            '/' -> if (consumeNext('=')) createOp("/=") else createOp("/")
-            '%' -> if (consumeNext('=')) createOp("%=") else createOp("%")
-            '+' ->
+            } else if (char == '/') {
+                if (consumeNext('=')) createOp("/=") else createOp("/")
+            } else if (char == '%') {
+                if (consumeNext('=')) createOp("%=") else createOp("%")
+            } else if (char == '+') {
                 if (consumeNext('+')) createOp("++")
                 else if (consumeNext('=')) createOp("+=")
                 else createOp("+")
-            '-' -> if (consumeNext('-')) createOp("--")
-                  else if (consumeNext('=')) createOp("-=")
-                  else if (consumeNext('>')) createOp("->")
-                  else createOp("-")
-
-            '|' -> if (consumeNext('|')) createOp("||") else createOp("|")
-            '&' -> if (consumeNext('&')) createOp("&&") else createOp("&")
-
-            '!' -> if (consumeNext('=')) createOp("!=") else createOp("!")
-
-            '>' -> if (consumeNext('=')) createOp(">=") else createOp(">")
-            '<' -> if (consumeNext('=')) createOp("<=") else createOp("<")
-
-            '.' -> if (isNumeric(peek())) {
-                index--
-                parseNumeric()
-            } else createOp(".")
-            ':' -> if (consumeNext('=')) createOp(":=")
-                   else if (consumeNext(':')) createOp("::")
-                   else createOp(":")
-            ';' -> createOp(";")
-            ',' -> createOp(",")
-            '(' -> createOp("(")
-            ')' -> createOp(")")
-            '[' -> createOp("[")
-            ']' -> createOp("]")
-            '{' -> createOp("{")
-            '}' -> createOp("}")
-            '\'' -> parseChar()
-            '"' -> parseString()
-            else -> {
+            } else if (char == '-') {
+                if (consumeNext('-')) createOp("--")
+                else if (consumeNext('=')) createOp("-=")
+                else if (consumeNext('>')) createOp("->")
+                else createOp("-")
+            } else if (char == '|') {
+                if (consumeNext('|')) createOp("||") else createOp("|")
+            } else if (char == '&') {
+                if (consumeNext('&')) createOp("&&") else createOp("&")
+            } else if (char == '!') {
+                if (consumeNext('=')) createOp("!=") else createOp("!")
+            } else if (char == '>') {
+                if (consumeNext('=')) createOp(">=") else createOp(">")
+            } else if (char == '<') {
+                if (consumeNext('=')) createOp("<=") else createOp("<")
+            } else if (char == '.') {
+                if (isNumeric(peek())) {
+                    index--
+                    parseNumeric()
+                } else createOp(".")
+            } else if (char == ':') {
+                if (consumeNext('=')) createOp(":=")
+                else if (consumeNext(':')) createOp("::")
+                else createOp(":")
+            } else if (char == ';') createOp(";")
+            else if (char == ',') createOp(",")
+            else if (char == '(') createOp("(")
+            else if (char == ')') createOp(")")
+            else if (char == '[') createOp("[")
+            else if (char == ']') createOp("]")
+            else if (char == '{') createOp("{")
+            else if (char == '}') createOp("}")
+            else if (char == '\'') parseChar()
+            else if (char == '"') parseString()
+            else {
                 if (isAlpha(char)) parseAlpha(char)
                 else if (isNumeric(char)) {
                     index--
                     parseNumeric()
-                }
-                else throw RuntimeException("Unknown operator at line $line: '$char'")
+                } else throw RuntimeException("Unknown operator at line $line: '$char'")
             }
-        })
+        )
     }
 
     private fun createOp(operator: String): Token {

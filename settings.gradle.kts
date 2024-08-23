@@ -8,3 +8,4 @@ plugins {
 }
 rootProject.name = "Eia64"
 include("tests")
+include("HttpFileServer")

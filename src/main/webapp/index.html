@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Project Eia64</title>
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <script defer type="text/javascript" charset="utf-8" src="wasm/eia.wasm-runtime.js"></script>
+</head>
+<body>
+    <script>
+        let runner = null;
+        function init() {
+            TeaVM.wasm.load("wasm/eia.wasm", {
+
+            }).then(teavm => {
+                this.instance = teavm.instance;
+                runner = n => teavm.main([n.toString()]);
+            })
+        }
+        init()
+    </script>
+    <button id="meow-button">Meow</button>
+</body>
+</html>
