@@ -168,66 +168,38 @@ class ParserX(
             if (next.type
                 // means importing only one static instance of the class
                 == Type.STATIC
-            ) classNames.add(includeStatic())
+            ) {
+                expectType(Type.COLON)
+                val includeType = next()
+                if (includeType.type != Type.STD) {
+                    return includeType.error("Eia Web only supports including Std Libs")
+                }
+                val moduleName = readAlpha()
+                val fileUrl = "${Executor.STD_LIB}/${moduleName}.eia"
+                manager.classes.add(moduleName)
+                manager.staticClasses.add(moduleName)
+                executor.addModule(fileUrl, moduleName)
+                classNames.add(moduleName)
+            }
             else if (next.type == Type.STD) {
                 expectType(Type.COLON)
-
-                val filePath = if (isNext(Type.ALPHA)) readAlpha()
-                else expectType(Type.E_STRING).data as String
-
-                val file = File("${Executor.STD_LIB}/$filePath.eia")
-                val moduleName = getModuleName(file)
+                if (isNext(Type.E_STRING)) {
+                    next().error<String>("Eia Web only supports including Std Libs")
+                }
+                val moduleName = readAlpha()
+                val fileUrl = "${Executor.STD_LIB}/$moduleName.eia"
                 classNames.add(moduleName)
 
                 manager.classes.add(moduleName)
-                executor.addModule(file.absolutePath, moduleName)
+                executor.addModule(fileUrl, moduleName)
             }
-            else if (next.type == Type.E_STRING) {
-                // include("simulationenv/HelloProgram")
-                var path = next.data as String + ".eia"
-                if (path.startsWith("stdlib")) {
-                    path = path.replaceFirst("stdlib", Executor.STD_LIB)
-                }
-                val sourceFile = getModulePath(path)
-
-                verifyFilePath(sourceFile, next)
-                val moduleName = getModuleName(sourceFile)
-                manager.classes.add(moduleName)
-                executor.addModule(sourceFile.absolutePath, moduleName)
-            }
+            else if (next.type == Type.E_STRING) throw RuntimeException("Eia Web only supports including Std Libs")
             else next.error("Unexpected token")
             if (peek().type == Type.CLOSE_CURVE) break
             expectType(Type.COMMA)
         }
         expectType(Type.CLOSE_CURVE)
         return Include(classNames)
-    }
-
-    private fun includeStatic(): String {
-        expectType(Type.COLON)
-        val path = next()
-        val sourceFile = if (path.type == Type.STD) {
-            expectType(Type.COLON)
-            File("${Executor.STD_LIB}/${readAlpha()}.eia")
-        } else {
-            if (path.type != Type.E_STRING)
-                path.error<String>("Expected a string type for static:")
-            File("${getModulePath(path.data as String)}.eia")
-        }
-        verifyFilePath(sourceFile, path)
-        val moduleName = getModuleName(sourceFile)
-        manager.classes.add(moduleName)
-        manager.staticClasses.add(moduleName)
-        executor.addModule(sourceFile.absolutePath, moduleName)
-        return moduleName
-    }
-
-    private fun getModuleName(sourceFile: File) = sourceFile.name.substring(0, sourceFile.name.length - ".eia".length)
-
-    private fun verifyFilePath(sourceFile: File, next: Token) {
-        if (!sourceFile.isFile || !sourceFile.exists()) {
-            next.error<String>("Cannot find source file '$sourceFile', make sure it is a full valid path")
-        }
     }
 
     private fun getModulePath(path: String) =

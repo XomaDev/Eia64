@@ -1,15 +1,12 @@
 package space.themelon.eia64.runtime
 
+import org.teavm.jso.ajax.XMLHttpRequest
 import space.themelon.eia64.analysis.ParserX
 import space.themelon.eia64.syntax.Lexer
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.tea.TeaMain
-import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.PrintStream
-import java.util.ArrayList
 import java.util.Stack
-import kotlin.system.exitProcess
 
 class Executor {
 
@@ -18,7 +15,7 @@ class Executor {
         // where runtime logs are displayed
         var LOGS_PIPE_PATH = "/tmp/pipe1"
 
-        var STD_LIB = "" // will be set
+        var STD_LIB = "https://ekita.hackclub.app/stdlib/"
 
         // This unit could be overridden to replace default exitProcess() behaviour
         // When you are demonstrating Eia for e.g., in a server, you shouldn't to allow a random
@@ -39,14 +36,6 @@ class Executor {
 
     private val externalParsers = HashMap<String, ParserX>()
     private val mainParser = ParserX(this)
-
-    fun loadMainFile(sourceFile: String) {
-        try {
-            mainEvaluator.mainEval(mainParser.parse(getTokens(sourceFile)))
-        } catch (e: ShutdownException) {
-            TeaMain.flagStdOutLn("Executor was shutdown")
-        }
-    }
 
     fun loadMainSource(source: String): Any {
         try {
@@ -83,10 +72,24 @@ class Executor {
     }
 
     // called by parsers, parse the included module
-    fun addModule(sourceFile: String, name: String): Boolean {
+    fun addModule(fileUrl: String, name: String): Boolean {
         if (externalParsers[name] != null) return false
-        externalParsers[name] = ParserX(this).also { it.parse(getTokens(sourceFile)) }
+        getSourceCode(fileUrl)?.let { code ->
+            externalParsers[name] = ParserX(this).also { it.parse(Lexer(code).tokens) }
+            println("Loaded module $name")
+        }
         return true
+    }
+
+    private fun getSourceCode(fileUrl: String): String? {
+        val request = XMLHttpRequest.create()
+        request.open("GET", fileUrl, false)
+        request.send()
+        if (request.status == 200) {
+            return request.responseText
+        }
+        println("Could not load Standard Library $fileUrl")
+        return null
     }
 
     fun getModule(name: String) = externalParsers[name] ?: throw RuntimeException("Could not find module '$name'")
@@ -103,6 +106,4 @@ class Executor {
     }
 
     fun getEvaluator(name: String) = externalExecutors[name]
-
-    private fun getTokens(sourceFile: String) = Lexer(File(sourceFile).readText()).tokens
 }

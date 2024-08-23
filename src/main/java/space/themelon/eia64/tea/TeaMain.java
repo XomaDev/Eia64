@@ -5,35 +5,21 @@ import org.teavm.jso.JSFunctor;
 import org.teavm.jso.JSObject;
 import space.themelon.eia64.runtime.Executor;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 public class TeaMain {
 
   private static final Executor executor = new Executor();
 
   public static void main(String[] args) {
-    //readResource();
+    loadStdLib();
     exportExecCall((TeaMain::executeEia));
     provideUserInput((TeaMain::provideInput));
   }
 
-  private static void readResource() {
-    // try to read a.txt from resources
-    // update: meh it failed while transpiling
-    InputStream in = TeaMain.class.getClassLoader().getResourceAsStream("a.txt");
-    try {
-      byte[] bytes = new byte[in.available()];
-      in.read(bytes);
-      System.out.println(new String(bytes));
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    } finally {
-      try {
-        in.close();
-      } catch (IOException e) {
-
-      }
+  private static void loadStdLib() {
+    // load all the Standard Library by default
+    String[] stdLibClasses = {"array", "eint", "etype", "math", "string", "list"};
+    for (String aClass : stdLibClasses) {
+      executor.addModule(Executor.Companion.getSTD_LIB() + aClass + ".eia", aClass);
     }
   }
 
