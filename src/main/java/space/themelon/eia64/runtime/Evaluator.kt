@@ -423,7 +423,7 @@ class Evaluator(
                     if (executor.standardInput.isNotEmpty()) {
                         return EString(executor.standardInput.pop())
                     }
-                    Thread.sleep(50)
+                    Thread.sleep(100)
                 }
             }
 
