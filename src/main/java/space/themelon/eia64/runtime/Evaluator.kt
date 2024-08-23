@@ -13,6 +13,8 @@ import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type.*
 import space.themelon.eia64.tea.TeaMain
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 import kotlin.collections.ArrayList
 import kotlin.math.pow
 import kotlin.random.Random
@@ -474,15 +476,7 @@ class Evaluator(
     override fun nativeCall(call: NativeCall): Any {
         val type = call.call
         if (type == PRINT || type == PRINTLN) {
-            var printCount = 0
-            call.arguments.forEach {
-                var printable = unboxEval(it)
-                printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
-
-                printCount += printable.length
-                executor.standardOutput.print(printable)
-            }
-            if (type == PRINTLN) executor.standardOutput.print('\n')
+            handlePrint(call)
             return Nothing.INSTANCE
         } else if (type == READ || type == READLN) {
             // wait until notified about input availability
@@ -589,6 +583,27 @@ class Evaluator(
             return Nothing.INSTANCE
         } else {
             throw RuntimeException("Unknown native call operation: '$type'")
+        }
+    }
+
+    private fun handlePrint(call: NativeCall) {
+        // In WebVersion, both print() and println() are equal
+        val bytesStream = ByteArrayOutputStream()
+        // We pass it through PrintStream to avoid having to deal
+        // with terminal escape characters
+        val stdOutput = PrintStream(bytesStream)
+        call.arguments.forEach {
+            var printable = unboxEval(it)
+            printable = if (printable is Array<*>)
+                printable.contentDeepToString()
+            else printable.toString()
+
+            stdOutput.print(printable)
+        }
+        stdOutput.close()
+        val lines = bytesStream.toString().split('\n')
+        lines.forEach {
+            TeaMain.flagStdOutLn(it)
         }
     }
 

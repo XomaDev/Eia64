@@ -3,9 +3,11 @@ package space.themelon.eia64.runtime
 import space.themelon.eia64.analysis.ParserX
 import space.themelon.eia64.syntax.Lexer
 import space.themelon.eia64.syntax.Token
+import space.themelon.eia64.tea.TeaMain
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
+import java.util.ArrayList
 import java.util.Stack
 import kotlin.system.exitProcess
 
@@ -24,10 +26,8 @@ class Executor {
         //var EIA_SHUTDOWN: (Int) -> Unit = { exitCode -> exitProcess(exitCode) }
     }
 
-    val displayStream = ByteArrayOutputStream()
-
     var awaitingInput = false
-    val standardOutput = PrintStream(displayStream)
+    //val standardOutput = ArrayList<String>()
     val standardInput = Stack<String>()
 
     fun pushUserInput(input: String) {
@@ -44,7 +44,7 @@ class Executor {
         try {
             mainEvaluator.mainEval(mainParser.parse(getTokens(sourceFile)))
         } catch (e: ShutdownException) {
-            standardOutput.println("Executor was shutdown")
+            TeaMain.flagStdOutLn("Executor was shutdown")
         }
     }
 
