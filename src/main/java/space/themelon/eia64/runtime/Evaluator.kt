@@ -404,15 +404,12 @@ class Evaluator(
     override fun nativeCall(call: NativeCall): Any {
         when (val type = call.call) {
             PRINT, PRINTLN -> {
-                var printCount = 0
                 call.arguments.forEach {
                     var printable = unboxEval(it)
                     printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
-
-                    printCount += printable.length
-                    executor.standardOutput.print(printable)
+                    executor.standardOutput.write(printable.encodeToByteArray())
                 }
-                if (type == PRINTLN) executor.standardOutput.print('\n')
+                if (type == PRINTLN) executor.standardOutput.write(10)
                 return Nothing.INSTANCE
             }
 

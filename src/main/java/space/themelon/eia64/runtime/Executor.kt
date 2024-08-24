@@ -4,6 +4,7 @@ import space.themelon.eia64.analysis.ParserX
 import space.themelon.eia64.syntax.Lexer
 import space.themelon.eia64.syntax.Token
 import java.io.File
+import java.io.OutputStream
 import java.util.*
 import kotlin.collections.HashMap
 import kotlin.system.exitProcess
@@ -44,9 +45,9 @@ class Executor {
     private val externalParsers = HashMap<String, ParserX>()
     private val mainParser = ParserX(this)
 
-    fun loadMainFile(sourceFile: String) {
+    fun loadFileSource(sourceCode: String) {
         try {
-            mainEvaluator.mainEval(mainParser.parse(getTokens(sourceFile)))
+            mainEvaluator.mainEval(mainParser.parse(Lexer(sourceCode).tokens))
         } catch (e: ShutdownException) {
             standardOutput.println("Executor was shutdown")
         }

@@ -42,4 +42,8 @@ class CompletionHelper(
         }
         return false
     }
+
+    fun clearBuffer() {
+
+    }
 }
