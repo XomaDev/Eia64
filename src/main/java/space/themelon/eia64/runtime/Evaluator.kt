@@ -39,6 +39,10 @@ class Evaluator(
         evaluator = VoidEvaluator()
     }
 
+    fun recreate() {
+        evaluator = this
+    }
+
     fun mainEval(expr: Expression): Any {
         val normalEvaluated = eval(expr)
         val mainEvaluated = dynamicFnCall(

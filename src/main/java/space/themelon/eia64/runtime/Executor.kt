@@ -77,6 +77,10 @@ class Executor {
         mainEvaluator.shutdown()
     }
 
+    fun recreateEvaluator() {
+        mainEvaluator.recreate()
+    }
+
     // maybe for internal testing only
     private fun clearMemories() {
         mainEvaluator.clearMemory()

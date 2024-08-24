@@ -44,6 +44,6 @@ class CompletionHelper(
     }
 
     fun clearBuffer() {
-
+        buffer = StringJoiner("")
     }
 }
