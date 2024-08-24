@@ -53,7 +53,17 @@ class Evaluator(
         return mainEvaluated
     }
 
-    fun eval(expr: Expression) = expr.accept(evaluator)
+    // we have to intentionally limit speed
+    private var counter = 0
+
+    fun eval(expr: Expression): Any {
+        if (counter == 7) {
+            Thread.sleep(1)
+            counter = 0
+        }
+        counter++
+        return expr.accept(evaluator)
+    }
 
     private fun unboxEval(expr: Expression) = unbox(eval(expr))
 
