@@ -1,7 +1,7 @@
 # A New Programming Language — Eia64
 
 
-![EiaPromo.png](graphics/EiaPromo.png)
+![EiaPromo.png](https://raw.githubusercontent.com/XomaDev/Eia64/readme/graphics/EiaPromo.png)
 
 SSH into `hackckub.app`
 
@@ -35,12 +35,12 @@ There are 3 main stages
 
 An example for lexing, parsing and execution of code <b>`print(1 + 2 * 3)`</b>
 
-![Step1.png](graphics/Step1.png)
+![Step1.png](https://raw.githubusercontent.com/XomaDev/Eia64/readme/graphics/Step1.png)
 
 In the above demonstration, after taking in the code input, lexer emits a stream or an array of tokens. After the Parser receives it, it converts it into a Tree.\
 An expression can contain many sub expressions, for e.g. `+{Int{2}, Int{3}}`. 
 
-![Step2.png](graphics/Step2.png)
+![Step2.png](https://raw.githubusercontent.com/XomaDev/Eia64/readme/graphics/Step2.png)
 
 3. Execution\
   In interpreters, execution is the last step. If it was for compilers, this step would be compilation, where bytecodes or machine codes are emitted.\
