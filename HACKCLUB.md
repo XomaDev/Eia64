@@ -1,3 +1,6 @@
+[![Watch the video](https://raw.githubusercontent.com/XomaDev/Eia64/readme/graphics/PlayThumb.png)](https://youtu.be/H1s11JVKE2M)
+
+
 # A New Programming Language — Eia64
 
 
