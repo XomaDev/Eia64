@@ -96,8 +96,8 @@ class ScopeManager {
                        mutable: Boolean,
                        signature: Signature,
                        public: Boolean) {
-        if (name in currentScope.variables)
-            throw RuntimeException("Variable $name is already defined in the current scope")
+        if (currentScope.resolveVr(name) != null)
+            throw RuntimeException("Variable $name is already defined")
         currentScope.defineVr(name, mutable, signature, public)
         trace?.declareVariable(mutable, name, signature)
     }
