@@ -6,7 +6,7 @@
 
 ![EiaPromo.png](https://raw.githubusercontent.com/XomaDev/Eia64/readme/graphics/EiaPromo.png)
 
-SSH into `hackckub.app`
+SSH into `hackclub.app`
 
 ````shell
 ssh hackclub.app -p 2121
