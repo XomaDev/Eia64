@@ -11,7 +11,7 @@ SSH into `hackckub.app`
 ````shell
 ssh hackclub.app -p 2121
 ````
-Or try Eia-Playground — [eia.themelon.space]()
+Or try Eia-Playground — [eia.themelon.space](https://eia.themelon.space)
 
 ## Highlights ✨
 
