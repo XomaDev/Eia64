@@ -9,7 +9,7 @@ import kotlin.system.exitProcess
 class Executor {
 
     companion object {
-        var DEBUG = true
+        var DEBUG = false
         // where runtime logs are displayed
         var LOGS_PIPE_PATH = "/tmp/pipe1"
 

@@ -71,6 +71,7 @@ class Lexer(private val source: String) {
             ']' -> createOp("]")
             '{' -> createOp("{")
             '}' -> createOp("}")
+            '@' -> createOp("@")
             '\'' -> parseChar()
             '"' -> parseString()
             else -> {

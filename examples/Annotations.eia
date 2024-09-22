@@ -1,0 +1,6 @@
+@Block
+fn SayHello() {
+  println("Hello, World!")
+}
+
+SayHello()

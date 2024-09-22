@@ -16,6 +16,7 @@ enum class Type {
     USE,
     DOT,
     RIGHT_ARROW,
+    AT,
 
     SEMI_COLON, COLON, DOUBLE_COLON,
     ASSIGNMENT,
@@ -115,6 +116,7 @@ enum class Type {
                 it[","] = StaticToken(COMMA, arrayOf(Flag.NONE))
 
                 it[":="] = StaticToken(USE, arrayOf(Flag.INTERRUPTION))
+                it["@"] = StaticToken(AT, arrayOf(Flag.NONE))
             }
 
             KEYWORDS.let {

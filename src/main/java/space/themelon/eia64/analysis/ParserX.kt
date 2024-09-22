@@ -71,6 +71,7 @@ class ParserX(
             }
         }
         return when (token.type) {
+            Type.AT -> Annotated(readAlpha(), parseStatement())
             Type.IF -> ifDeclaration(token)
             Type.FUN -> fnDeclaration()
             Type.SHADO -> shadoDeclaration()
@@ -97,6 +98,7 @@ class ParserX(
                     return true
             }
         return when (token.type) {
+            Type.AT,
             Type.IF,
             Type.FUN,
             Type.STD,
