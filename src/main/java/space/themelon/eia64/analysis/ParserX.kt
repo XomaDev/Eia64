@@ -71,7 +71,7 @@ class ParserX(
             }
         }
         return when (token.type) {
-            Type.AT -> Annotated(readAlpha(), parseStatement())
+            Type.AT -> readAnnotation()
             Type.IF -> ifDeclaration(token)
             Type.FUN -> fnDeclaration()
             Type.SHADO -> shadoDeclaration()
@@ -271,6 +271,35 @@ class ParserX(
         val expr = parseStatement()
         expectType(Type.CLOSE_CURVE)
         return expr
+    }
+
+    private fun readAnnotation(): Annotated {
+        val name = readAlpha()
+        val props: HashMap<String, PureLiteral>
+        if (isNext(Type.OPEN_CURVE)) {
+            skip()
+            props = readNamedLiterals()
+            expectType(Type.CLOSE_CURVE)
+        } else {
+            props = HashMap()
+        }
+        return Annotated(name, parseStatement(), props)
+    }
+
+    private fun readNamedLiterals(): HashMap<String, PureLiteral> {
+        val props = HashMap<String, PureLiteral>()
+        if (isNext(Type.CLOSE_CURVE)) return props
+        fun parseProp() {
+            val name = readAlpha()
+            expectType(Type.COLON)
+            props += name to pureValue(next())
+        }
+        while (!isNext(Type.CLOSE_CURVE)) {
+            parseProp()
+            if (!isNext(Type.COMMA)) break
+            skip()
+        }
+        return props
     }
 
     private fun whenStatement(where: Token): Expression {
@@ -870,8 +899,7 @@ class ParserX(
             // Pure static invocation
             return ModuleInfo(where, objectExpression.value, false)
         } else {
-            val signature = objectExpression.sig()
-            when (signature) {
+            when (val signature = objectExpression.sig()) {
                 is SimpleSignature -> {
                     // Linked Static Invocation (String, Int, Array)
                     return ModuleInfo(where, getLinkedModule(signature, where), true)
@@ -1026,12 +1054,6 @@ class ParserX(
 
     private fun parseValue(token: Token): Expression {
         return when (token.type) {
-            Type.NIL -> NilLiteral(token)
-            Type.E_TRUE, Type.E_FALSE -> BoolLiteral(token, token.type == Type.E_TRUE)
-            Type.E_INT -> IntLiteral(token, token.data as Int)
-            Type.E_FLOAT -> FloatLiteral(token, token.data as Float)
-            Type.E_STRING -> StringLiteral(token, token.data as String)
-            Type.E_CHAR -> CharLiteral(token, token.data as Char)
             Type.ALPHA -> {
                 val name = readAlpha(token)
                 val vrReference = manager.resolveVr(name)
@@ -1052,16 +1074,24 @@ class ParserX(
                     Alpha(token, vrReference.index, name, vrReference.signature)
                 }
             }
-            Type.CLASS_VALUE -> parseType(token)
-
             Type.OPEN_CURVE -> {
                 val expr = parseStatement()
                 expectType(Type.CLOSE_CURVE)
                 expr
             }
-
-            else -> token.error("Unknown token type")
+            else -> pureValue(token)
         }
+    }
+
+    private fun pureValue(token: Token): PureLiteral = when (token.type) {
+        Type.NIL -> NilLiteral(token)
+        Type.E_TRUE, Type.E_FALSE -> BoolLiteral(token, token.type == Type.E_TRUE)
+        Type.E_INT -> IntLiteral(token, token.data as Int)
+        Type.E_FLOAT -> FloatLiteral(token, token.data as Float)
+        Type.E_STRING -> StringLiteral(token, token.data as String)
+        Type.E_CHAR -> CharLiteral(token, token.data as Char)
+        Type.CLASS_VALUE -> parseType(token)
+        else -> token.error("Unknown token type")
     }
 
     private fun parseType(token: Token): TypeLiteral {
@@ -1117,6 +1147,14 @@ class ParserX(
         if (next.type != type)
             next.error<String>("Expected token type $type but got $next")
         return next
+    }
+
+    private fun consumeNext(type: Type): Boolean {
+        if (isNext(type)) {
+            skip()
+            return true
+        }
+        return false
     }
 
     private fun isNext(type: Type) = !isEOF() && peek().type == type

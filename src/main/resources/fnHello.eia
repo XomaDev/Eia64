@@ -1,3 +1,0 @@
-fn hello() {
-  return "hello world"
-}

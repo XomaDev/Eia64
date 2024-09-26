@@ -4,7 +4,8 @@ import space.themelon.eia64.Expression
 
 data class Annotated(
     val name: String,
-    private val actual: Expression,
+    val actual: Expression,
+    val properties: HashMap<String, PureLiteral>
 ): Expression() {
 
     override fun <R> accept(v: Visitor<R>) = actual.accept(v)

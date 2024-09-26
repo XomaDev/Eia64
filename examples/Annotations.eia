@@ -1,4 +1,6 @@
-@Block
+@Block(
+  description: "Prints Hello, World"
+)
 fn SayHello() {
   println("Hello, World!")
 }

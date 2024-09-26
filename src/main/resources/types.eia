@@ -1,3 +1,0 @@
-let objs = ~{{ "this can be evaluated" "or is it?" }}
-
-println( ~objs )
