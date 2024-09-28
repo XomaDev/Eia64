@@ -167,4 +167,7 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
+    override fun dynamicLinkBody(linkBody: DynamicLinkBody): Any {
+        throw ShutdownException()
+    }
 }

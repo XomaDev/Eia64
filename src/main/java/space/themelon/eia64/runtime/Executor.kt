@@ -1,5 +1,6 @@
 package space.themelon.eia64.runtime
 
+import space.themelon.eia64.analysis.ModuleResolver
 import space.themelon.eia64.analysis.ParserX
 import space.themelon.eia64.syntax.Lexer
 import space.themelon.eia64.syntax.Token
@@ -9,7 +10,7 @@ import kotlin.system.exitProcess
 class Executor {
 
     companion object {
-        var DEBUG = true
+        var DEBUG = false
         // where runtime logs are displayed
         var LOGS_PIPE_PATH = "/tmp/pipe1"
 
@@ -26,14 +27,15 @@ class Executor {
         if (STD_LIB.isBlank()) throw RuntimeException("STD_LIB is not set")
     }
 
-
     // why do we do this? sometimes while we are developing demonstrable
     // APIs for Eia64, we would want the output to be captured in memory and
     // sent somewhere else
     var standardOutput = System.out
     var standardInput = System.`in`
 
-    private val externalExecutors = HashMap<String, Evaluator>()
+    val imaginaryModules = HashMap<String, ModuleResolver>()
+
+    private val externalEvaluators = HashMap<String, Evaluator>()
     private val mainEvaluator = Evaluator("Main", this)
 
     private val externalParsers = HashMap<String, ParserX>()
@@ -74,9 +76,15 @@ class Executor {
     // maybe for internal testing only
     private fun clearMemories() {
         mainEvaluator.clearMemory()
-        externalExecutors.values.forEach {
+        externalEvaluators.values.forEach {
             it.clearMemory()
         }
+    }
+
+    fun addImaginaryModule(name: String, resolver: ModuleResolver) {
+        imaginaryModules += name to resolver
+        mainParser.addImaginary(name)
+        externalEvaluators[name] = mainEvaluator
     }
 
     // called by parsers, parse the included module
@@ -86,12 +94,12 @@ class Executor {
         return true
     }
 
-    fun getModule(name: String) = externalParsers[name] ?: throw RuntimeException("Could not find module '$name'")
+    fun getModule(name: String) = externalParsers[name] ?: imaginaryModules[name] ?: throw RuntimeException("Could not find module '$name'")
 
     // loads the included module and executes it
     fun executeModule(name: String): Evaluator {
         val evaluator = newEvaluator(name)
-        externalExecutors[name] = evaluator
+        externalEvaluators[name] = evaluator
         return evaluator
     }
 
@@ -99,7 +107,7 @@ class Executor {
         it.eval((externalParsers[name] ?: throw RuntimeException("Static module '$name') not found")).parsed)
     }
 
-    fun getEvaluator(name: String) = externalExecutors[name]
+    fun getEvaluator(name: String) = externalEvaluators[name]
 
     private fun getTokens(sourceFile: String) = Lexer(File(sourceFile).readText()).tokens
 }

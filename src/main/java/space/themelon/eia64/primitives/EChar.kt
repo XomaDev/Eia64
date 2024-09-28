@@ -16,6 +16,8 @@ class EChar(initialValue: Char): Primitive<EChar> {
     override fun isCopyable() = true
     override fun copy() = EChar(charValue)
 
+    override fun javaValue() = charValue
+
     override fun toString() = charValue.toString()
 
     override fun equals(other: Any?): Boolean {

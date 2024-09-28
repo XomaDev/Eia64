@@ -34,6 +34,22 @@ object Sign {
     val OBJECT = SimpleSignature(OBJECT_SIGN)
     val TYPE = SimpleSignature(CLASS_SIGN)
 
+    val MAPPING = HashMap<String, SimpleSignature>().apply {
+        put(NONE_SIGN, NONE)
+        put(NIL_SIGN, NIL)
+        put(ANY_SIGN, ANY)
+        put(NUM_SIGN, NUM)
+        put(INT_SIGN, INT)
+        put(FLOAT_SIGN, FLOAT)
+        put(STRING_SIGN, STRING)
+        put(CHAR_SIGN, CHAR)
+        put(BOOL_SIGN, BOOL)
+        put(ARRAY_SIGN, ARRAY)
+        put(UNIT_SIGN, UNIT)
+        put(OBJECT_SIGN, OBJECT)
+        put(CLASS_SIGN, TYPE)
+    }
+
     fun Signature.intoType(): Type {
         return when (this) {
             NONE -> throw RuntimeException("No equivalent type to NONE Sign")

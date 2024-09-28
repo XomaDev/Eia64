@@ -17,6 +17,8 @@ class ENil: Primitive<ENil> {
 
     override fun copy(): ENil = this
 
+    override fun javaValue() = null
+
     override fun equals(other: Any?) = other is ENil
     override fun hashCode() = 0
 

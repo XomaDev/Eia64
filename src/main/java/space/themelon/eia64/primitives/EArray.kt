@@ -34,6 +34,8 @@ class EArray(
         throw RuntimeException("Cannot apply copy() on EArray")
     }
 
+    override fun javaValue() = arrayValue
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is EArray) return false

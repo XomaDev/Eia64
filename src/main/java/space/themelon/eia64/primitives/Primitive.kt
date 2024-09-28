@@ -6,4 +6,5 @@ interface Primitive<T> {
     fun stdlibName(): String
     fun isCopyable(): Boolean
     fun copy(): T
+    fun javaValue(): Any?
 }

@@ -14,7 +14,7 @@ import java.util.StringJoiner
 
 class ParserX(
     private val executor: Executor,
-) {
+): ModuleResolver() {
 
     private val manager = ScopeManager()
 
@@ -36,6 +36,10 @@ class ParserX(
         parsed = ExpressionList(expressions)
         parsed.sig() // necessary
         return parsed
+    }
+
+    fun addImaginary(name: String) {
+        manager.staticClasses += name
     }
 
     // This shall not be used for now, since it interferes with live mode and
@@ -937,13 +941,13 @@ class ParserX(
         else -> where.error("Unknown object signature for module link $signature")
     }
 
-    private fun resolveGlobalVr(where: Token, name: String): UniqueVariable? {
+    override fun resolveGlobalVr(where: Token, name: String): UniqueVariable? {
         val variable = manager.resolveGlobalVr(name) ?: return null
         if (!variable.public) where.error<String>("Variable $name is marked private")
         return variable
     }
 
-    private fun resolveGlobalFn(where: Token, name: String, numArgs: Int): FunctionReference? {
+    override fun resolveGlobalFn(where: Token, name: String, numArgs: Int): FunctionReference? {
         val reference = manager.resolveFn(name, numArgs) ?: return null
         if (!reference.public) where.error<String>("Function $name is marked private")
         return reference
@@ -999,6 +1003,7 @@ class ParserX(
                     return arrayStatement(token)
                 } else {
                     // not for array allocation, array declaration with initial elements
+                    expectType(Type.LEFT_DIAMOND)
                     expectType(Type.LEFT_DIAMOND)
                     val elementSignature = readSignature(next())
                     expectType(Type.RIGHT_DIAMOND)

@@ -16,6 +16,8 @@ class EInt(initialValue: Int): Primitive<EInt>, Comparable<EInt>, Numeric {
     override fun isCopyable() = true
     override fun copy() = EInt(intValue)
 
+    override fun javaValue() = intValue
+
     override fun getAndIncrement() = intValue++
     override fun incrementAndGet() = ++intValue
 

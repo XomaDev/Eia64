@@ -673,6 +673,9 @@ class Evaluator(
 
         if (sigArgsSize != callArgsSize)
             reportWrongArguments(fnName, sigArgsSize, callArgsSize)
+        if (fn.body is DynamicLinkBody) {
+            return fn.body.callback(callArgs)
+        }
         val parameters = fn.arguments.iterator()
         val callExpressions = callArgs.iterator()
 
@@ -699,6 +702,10 @@ class Evaluator(
         // Return the function itself as a unit
         if (fn.isVoid) return fn
         return result
+    }
+
+    override fun dynamicLinkBody(linkBody: DynamicLinkBody) {
+        throw UnsupportedOperationException("Should not be called, can only be used")
     }
 
     override fun unitInvoke(shadoInvoke: ShadoInvoke): Any {

@@ -30,6 +30,8 @@ class EString(
     override fun isCopyable() = true
     override fun copy() = EString(string)
 
+    override fun javaValue() = string
+
     override fun toString() = string
 
     override fun equals(other: Any?): Boolean {

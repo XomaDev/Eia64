@@ -2,7 +2,7 @@
   description: "Prints Hello, World"
 )
 fn SayHello() {
-  println("Hello, World!")
+  Notifier1.ShowAlert("Hello, World!")
 }
 
 SayHello()

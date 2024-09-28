@@ -26,6 +26,8 @@ class EType(
     // Change, so it doesn't make a difference
     override fun copy() = this
 
+    override fun javaValue() = signature.logName()
+
     override fun equals(other: Any?) = other is EType &&
             (matches(signature, other.signature) || matches(other.signature, signature))
     override fun hashCode() = signature.hashCode()

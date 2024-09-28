@@ -17,6 +17,8 @@ class EFloat(initialValue: Float): Primitive<EFloat>, Comparable<EFloat>, Numeri
     override fun isCopyable() = true
     override fun copy() = EFloat(floatValue)
 
+    override fun javaValue() = floatValue
+
     override fun compareTo(other: EFloat) = floatValue.compareTo(other.floatValue)
     override fun compareTo(number: Numeric) = floatValue.compareTo(number.get().toFloat())
 
