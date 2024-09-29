@@ -11,7 +11,7 @@ import space.themelon.eia64.signatures.Signature
 open class Entity(
     private val name: String,
     private val mutable: Boolean,
-    var value: Any,
+    private var value: Any,
     val signature: Signature,
     val interruption: InterruptionType = InterruptionType.NONE,
 ) {
@@ -26,12 +26,14 @@ open class Entity(
         }
     }
 
+    open fun get(): Any = value
+
     companion object {
         fun unbox(value: Any): Any {
             return if (value is Entity) {
                 // break that return boxing
-                if (value.interruption != InterruptionType.NONE) unbox(value.value)
-                else value.value
+                if (value.interruption != InterruptionType.NONE) unbox(value.get())
+                else value.get()
             } else value
         }
 
@@ -39,7 +41,7 @@ open class Entity(
             is Entity -> {
                 // repeatedly break that repeat unboxing
                 //  to retrieve the underlying value
-                if (value.interruption != InterruptionType.NONE) getSignature(value.value)
+                if (value.interruption != InterruptionType.NONE) getSignature(value.get())
                 else value.signature
             }
             is ENil -> Sign.NIL

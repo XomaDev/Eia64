@@ -227,6 +227,7 @@ class Evaluator(
                 is Alpha -> update(toUpdate.index, toUpdate.value, value)
                 is ArrayAccess -> updateArrayElement(toUpdate, value)
                 is ForeignField -> updateForeignField(toUpdate, value)
+                is LinkField -> toUpdate.entity.update(value)
                 else -> throw RuntimeException("Unknown left operand for [= Assignment]: $toUpdate")
             }
             value
@@ -584,6 +585,8 @@ class Evaluator(
         )
     }
 
+    override fun linkField(link: LinkField) = link.entity
+
     // finds associated evaluator for a foreign field (gVariable)
     // that is being accessed
     private fun getEvaluatorForField(propertyAccess: ForeignField): Evaluator {
@@ -762,7 +765,7 @@ class Evaluator(
                     InterruptionType.BREAK -> break
                     InterruptionType.CONTINUE -> continue
                     InterruptionType.RETURN -> return result
-                    InterruptionType.USE -> result.value
+                    InterruptionType.USE -> result.get()
                     else -> { }
                 }
             }
@@ -809,7 +812,7 @@ class Evaluator(
                     InterruptionType.BREAK -> break
                     InterruptionType.CONTINUE -> continue
                     InterruptionType.RETURN -> return result
-                    InterruptionType.USE -> result.value
+                    InterruptionType.USE -> result.get()
                     else -> { }
                 }
             }
@@ -842,7 +845,7 @@ class Evaluator(
                         continue
                     }
                     InterruptionType.RETURN -> return result
-                    InterruptionType.USE -> return result.value
+                    InterruptionType.USE -> return result.get()
                     else -> { }
                 }
             }
@@ -879,7 +882,7 @@ class Evaluator(
                     }
                     InterruptionType.USE -> {
                         memory.leaveScope()
-                        return result.value
+                        return result.get()
                     }
                     else -> { }
                 }

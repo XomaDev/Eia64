@@ -95,6 +95,7 @@ class Executor {
     }
 
     fun getModule(name: String) = externalParsers[name] ?: imaginaryModules[name] ?: throw RuntimeException("Could not find module '$name'")
+    fun isImaginaryModule(name: String) = imaginaryModules.containsKey(name)
 
     // loads the included module and executes it
     fun executeModule(name: String): Evaluator {

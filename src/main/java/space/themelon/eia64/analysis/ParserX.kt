@@ -3,6 +3,7 @@ package space.themelon.eia64.analysis
 import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.ArrayLiteral
+import space.themelon.eia64.runtime.Entity
 import space.themelon.eia64.runtime.Executor
 import space.themelon.eia64.signatures.*
 import space.themelon.eia64.signatures.Matching.matches
@@ -10,6 +11,7 @@ import space.themelon.eia64.syntax.Flag
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 import java.io.File
+import java.lang.UnsupportedOperationException
 import java.util.StringJoiner
 
 class ParserX(
@@ -788,6 +790,7 @@ class ParserX(
     private fun checkMutability(where: Token, variableExpression: Expression) {
         // it's fine if it's array access, array elements are always mutable
         if (variableExpression is ArrayAccess) return
+        if (variableExpression is LinkField) return
 
         val variableName: String
         val index: Int
@@ -838,13 +841,19 @@ class ParserX(
         objectExpression: Expression,
         moduleInfo: ModuleInfo,
         property: String
-    ): ForeignField {
+    ): Expression {
+        val moduleName = moduleInfo.name
+        val resolver = executor.getModule(moduleName)
+        if (executor.isImaginaryModule(moduleName)) {
+            val resolved = resolver.resolveGlobalVrImaginary(property)
+            return LinkField(resolved.signature, resolved)
+        }
         // Plan:
         //  Global variables of other class are located in scope 0
         //  So we need to just maintain position of that variable in
         //  super scope, then access it at runtime
-        val uniqueVariable = executor.getModule(moduleInfo.name).resolveGlobalVr(moduleInfo.where, property)
-            ?: moduleInfo.where.error("Could not find global variable '$property' in module ${moduleInfo.name}")
+        val uniqueVariable = resolver.resolveGlobalVr(moduleInfo.where, property)
+            ?: moduleInfo.where.error("Could not find global variable '$property' in module $moduleName")
         return ForeignField(
             where = moduleInfo.where,
             static = isStatic(objectExpression),
@@ -939,6 +948,10 @@ class ParserX(
         Sign.ARRAY -> "array"
         Sign.TYPE -> "etype"
         else -> where.error("Unknown object signature for module link $signature")
+    }
+
+    override fun resolveGlobalVrImaginary(name: String): Entity {
+        throw UnsupportedOperationException()
     }
 
     override fun resolveGlobalVr(where: Token, name: String): UniqueVariable? {

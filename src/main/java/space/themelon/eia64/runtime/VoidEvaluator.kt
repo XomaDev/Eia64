@@ -123,6 +123,10 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
+    override fun linkField(link: LinkField): Any {
+        throw ShutdownException()
+    }
+
     override fun classMethodCall(call: ClassMethodCall): Any {
         throw ShutdownException()
     }

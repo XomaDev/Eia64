@@ -40,6 +40,7 @@ abstract class Expression(
         fun scope(scope: Scope): R
         fun methodCall(call: MethodCall): R
         fun classPropertyAccess(propertyAccess: ForeignField): R
+        fun linkField(link: LinkField): R
         fun classMethodCall(call: ClassMethodCall): R
         fun unitInvoke(shadoInvoke: ShadoInvoke): R
         fun until(until: Until): R

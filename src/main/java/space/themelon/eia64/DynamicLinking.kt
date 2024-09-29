@@ -5,21 +5,26 @@ import space.themelon.eia64.analysis.ModuleResolver
 import space.themelon.eia64.analysis.UniqueVariable
 import space.themelon.eia64.expressions.DynamicLinkBody
 import space.themelon.eia64.expressions.FunctionExpr
+import space.themelon.eia64.runtime.Entity
 import space.themelon.eia64.runtime.Executor
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.SimpleSignature
 import space.themelon.eia64.syntax.Token
+import java.lang.UnsupportedOperationException
 import java.lang.reflect.Method
 
 object DynamicLinking {
     // Helps to dynamically add classes.
-    @Suppress("UNCHECKED_CAST")
     fun addStatic(
         executor: Executor,
         moduleName: String,
-        // variable resolve callback
         callback: Any,
+        // variable resolve callback
         vrResolveCallbackMethod: Method,
+        // variable get callback
+        vrGetCallbackMethod: Method,
+        // variable set callback
+        vrSetCallbackMethod: Method,
         // function resolve callback,
         fnResolveCallbackMethod: Method,
         // function invoke callback,
@@ -30,15 +35,22 @@ object DynamicLinking {
                 where: Token,
                 name: String
             ): UniqueVariable {
+                // for us, it's only imaginary variables :)
+                throw UnsupportedOperationException()
+            }
+
+            override fun resolveGlobalVrImaginary(name: String): Entity {
                 val resolved = vrResolveCallbackMethod.invoke(callback, moduleName, name)
                     ?: throw RuntimeException("Unable to resolve dynamic class variable $name in module $moduleName")
-                resolved as Array<*>
-                val index = resolved[0] as Int
-                val mutable = resolved[1] as Boolean
                 val signature =
-                    (resolved[2] as String).let { Sign.MAPPING[it] ?: throw RuntimeException("Unknown signature $it") }
-                val public = resolved[3] as Boolean
-                return UniqueVariable(index, mutable, signature, public)
+                    (resolved as String).let { Sign.MAPPING[it] ?: throw RuntimeException("Unknown signature $it") }
+
+                return object: Entity(name, true, 0, signature) {
+                    override fun update(another: Any) {
+                        vrSetCallbackMethod.invoke(callback, moduleName, name, another)
+                    }
+                    override fun get() = vrGetCallbackMethod.invoke(callback, moduleName, name)
+                }
             }
 
             override fun resolveGlobalFn(
@@ -46,7 +58,7 @@ object DynamicLinking {
                 name: String,
                 numArgs: Int
             ): FunctionReference {
-                val resolved = fnResolveCallbackMethod.invoke(callback, moduleName, name)
+                val resolved = fnResolveCallbackMethod.invoke(callback, moduleName, name, numArgs)
                     ?: throw RuntimeException("Unable to resolve dynamic function $name in module $moduleName")
                 resolved as Array<*>
                 // Array<Array<String>>  <ParameterName, Signature>
