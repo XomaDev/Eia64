@@ -31,7 +31,7 @@ enum class Type {
 
     E_NIL,
     E_NUMBER, E_INT, E_FLOAT, E_BOOL, E_STRING, E_CHAR,
-    E_ARRAY, E_ANY, E_UNIT, E_OBJECT, E_TYPE,
+    E_ARRAY, E_ANY, E_UNIT, E_JAVA, E_OBJECT, E_TYPE,
 
     ALPHA,
     E_TRUE, E_FALSE, CLASS_VALUE,
@@ -49,7 +49,7 @@ enum class Type {
     FUN,
     ARRAY_OF, MAKE_ARRAY,
     COPY, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT, MEM_CLEAR,
-    INCLUDE, STD, STATIC, NEW,
+    JAVA, INCLUDE, STD, STATIC, NEW,
     THROW, TRY, CATCH,
 
     RETURN, BREAK, CONTINUE,
@@ -167,6 +167,7 @@ enum class Type {
                 it["exit"] = StaticToken(EXIT, arrayOf(Flag.NATIVE_CALL))
                 it["memclear"] = StaticToken(MEM_CLEAR, arrayOf(Flag.NATIVE_CALL))
 
+                it["java"] = StaticToken(JAVA)
                 it["std"] = StaticToken(STD)
                 it["static"] = StaticToken(STATIC)
                 it["include"] = StaticToken(INCLUDE)

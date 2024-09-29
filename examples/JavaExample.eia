@@ -1,0 +1,4 @@
+java("java.lang.String", JString)
+
+let javaString = JString("  hello world  ")
+println(javaString.trim())

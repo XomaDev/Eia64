@@ -23,6 +23,9 @@ abstract class Expression(
         fun array(literal: ArrayLiteral): R
         fun explicitArrayLiteral(arrayCreation: ExplicitArrayLiteral): R
         fun arrayAllocation(arrayAllocation: ArrayAllocation): R
+        fun importJava(javaClass: ImportJavaClass): R
+        fun makeJavaObject(makeJavaObject: MakeJavaObject): R
+        fun javaMethodCall(methodCall: JavaMethodCall): R
         fun include(include: Include): R
         fun new(new: NewObj): R
         fun throwExpr(throwExpr: ThrowExpr): R

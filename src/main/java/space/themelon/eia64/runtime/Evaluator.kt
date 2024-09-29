@@ -15,6 +15,7 @@ import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type.*
 import java.io.FileOutputStream
 import java.io.PrintStream
+import java.util.Objects
 import java.util.Scanner
 import kotlin.collections.ArrayList
 import kotlin.math.pow
@@ -73,8 +74,18 @@ class Evaluator(
     // on tracer on behalf of us
     private val memory = Memory(tracer)
 
+    // imported java classes
+    private val javaClasses = HashMap<String, Class<*>>()
+
+    // custom alpha naming mapping, alpha tokens can be dynamically mapped
+    private val customDefinitions = HashMap<String, Any?>()
+
     fun clearMemory() {
         memory.clearMemory()
+    }
+
+    fun defineAlpha(name: String, value: Any) {
+        customDefinitions += name to value
     }
 
     override fun noneExpression() = Nothing.INSTANCE
@@ -87,7 +98,14 @@ class Evaluator(
     override fun charLiteral(literal: CharLiteral) = EChar(literal.value)
     override fun typeLiteral(literal: TypeLiteral) = EType(literal.signature)
 
-    override fun alpha(alpha: Alpha) = memory.getVar(alpha.index, alpha.value)
+    override fun alpha(alpha: Alpha): Any {
+        if (alpha.index < 0) {
+            customDefinitions[alpha.value]?.let { return it }
+            return alpha.where.error("Cannot find symbol '${alpha.value}'")
+        } else {
+            return memory.getVar(alpha.index, alpha.value)
+        }
+    }
 
     private fun prepareArrayOf(
         arguments: List<Expression>,
@@ -335,6 +353,59 @@ class Evaluator(
     override fun expressionBind(bind: ExpressionBind): Any {
         bind.expressions.forEach { unboxEval(it) }
         return Nothing.INSTANCE
+    }
+
+    override fun importJava(javaClass: ImportJavaClass): Any {
+        val clazz = javaClass.clazz
+        javaClasses += javaClass.namedAs to clazz
+        return EJava(clazz)
+    }
+
+    override fun makeJavaObject(makeJavaObject: MakeJavaObject): Any {
+        val parametersCount = makeJavaObject.arguments.size
+
+        val evaluatedArgs = evaluateArgs(makeJavaObject.arguments) as Array<Any?>
+        val types = arrayOfNulls<Class<*>>(parametersCount)
+        for ((index, any) in evaluatedArgs.withIndex()) {
+            if (any is Primitive<*>) {
+                val newValue = any.javaValue()
+                evaluatedArgs[index] = newValue
+                types[index] = newValue!!.javaClass
+            }
+        }
+
+        searchLoop@
+        for (constructor in makeJavaObject.clazz.constructors) {
+            if (constructor.parameterCount == parametersCount) {
+                for ((index, parameter) in constructor.parameters.withIndex()) {
+                    if (!types[index]!!.isAssignableFrom(parameter.type)) {
+                        continue@searchLoop
+                    }
+                }
+                return EJava(constructor.newInstance(*evaluatedArgs))
+            }
+        }
+        throw EiaRuntimeException("Cannot find constructor for `${makeJavaObject.debugName}` " +
+                "package ${makeJavaObject.clazz.name} of size $parametersCount")
+    }
+
+    override fun javaMethodCall(methodCall: JavaMethodCall): Any {
+        val javaObject = (unboxEval(methodCall.objectExpression) as EJava).get()
+        val parametersCount = methodCall.args.size
+        val evaluatedArgs = evaluateArgs(methodCall.args) as Array<Any?>
+        for ((index, any) in evaluatedArgs.withIndex()) {
+            if (any is Primitive<*>) {
+                val newValue = any.javaValue()
+                evaluatedArgs[index] = newValue
+            }
+        }
+        for (method in javaObject.javaClass.methods) {
+            if (method.name == methodCall.methodName && method.parameterCount == parametersCount) {
+                val invokeResult = method.invoke(javaObject, *evaluatedArgs) ?: return ENil()
+                return EJava(invokeResult)
+            }
+        }
+        throw EiaRuntimeException("Cannot find method '${methodCall.methodName}' of parameters count $parametersCount on $javaObject")
     }
 
     override fun include(include: Include): Any {

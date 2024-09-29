@@ -2,6 +2,7 @@ package space.themelon.eia64.runtime
 
 import space.themelon.eia64.analysis.ModuleResolver
 import space.themelon.eia64.analysis.ParserX
+import space.themelon.eia64.primitives.EJava
 import space.themelon.eia64.syntax.Lexer
 import space.themelon.eia64.syntax.Token
 import java.io.File
@@ -10,7 +11,7 @@ import kotlin.system.exitProcess
 class Executor {
 
     companion object {
-        var DEBUG = false
+        var DEBUG = true
         // where runtime logs are displayed
         var LOGS_PIPE_PATH = "/tmp/pipe1"
 
@@ -79,6 +80,10 @@ class Executor {
         externalEvaluators.values.forEach {
             it.clearMemory()
         }
+    }
+
+    fun defineAlpha(name: String, value: Any) {
+        mainEvaluator.defineAlpha(name, EJava(value))
     }
 
     fun addImaginaryModule(name: String, resolver: ModuleResolver) {

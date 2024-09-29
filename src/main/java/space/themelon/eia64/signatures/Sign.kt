@@ -1,5 +1,6 @@
 package space.themelon.eia64.signatures
 
+import space.themelon.eia64.primitives.Primitive
 import space.themelon.eia64.syntax.Type
 
 object Sign {
@@ -15,6 +16,7 @@ object Sign {
     private const val BOOL_SIGN = "sig_bool"
     private const val ARRAY_SIGN = "sig_array"
     private const val UNIT_SIGN = "sig_unit"
+    private const val JAVA_SIGN = "sig_java"
     const val OBJECT_SIGN = "sig_object"
     private const val CLASS_SIGN = "sig_class"
 
@@ -31,6 +33,7 @@ object Sign {
     val BOOL = SimpleSignature(BOOL_SIGN)
     val ARRAY = SimpleSignature(ARRAY_SIGN)
     val UNIT = SimpleSignature(UNIT_SIGN)
+    val JAVA = SimpleSignature(JAVA_SIGN)
     val OBJECT = SimpleSignature(OBJECT_SIGN)
     val TYPE = SimpleSignature(CLASS_SIGN)
 
@@ -46,6 +49,7 @@ object Sign {
         put(BOOL_SIGN, BOOL)
         put(ARRAY_SIGN, ARRAY)
         put(UNIT_SIGN, UNIT)
+        put(JAVA_SIGN, JAVA)
         put(OBJECT_SIGN, OBJECT)
         put(CLASS_SIGN, TYPE)
     }
@@ -62,6 +66,7 @@ object Sign {
             BOOL -> Type.E_BOOL
             ARRAY -> Type.E_ARRAY
             UNIT -> Type.E_UNIT
+            JAVA -> Type.E_JAVA
             OBJECT -> Type.E_OBJECT
             TYPE -> Type.E_TYPE
 

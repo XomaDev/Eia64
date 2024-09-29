@@ -54,6 +54,7 @@ open class Entity(
             is EType -> Sign.TYPE
             is Expression -> Sign.UNIT
             is Evaluator -> ObjectExtension(value.className)
+            is EJava -> Sign.JAVA
             else -> throw RuntimeException("Unknown type of value $value")
         }
     }

@@ -13,6 +13,7 @@ class ScopeManager {
 
     val classes = ArrayList<String>()
     val staticClasses = ArrayList<String>()
+    val javaClasses = HashMap<String, Class<*>>()
 
     // Helps us to know if `continue` and `break` statements
     // are allowed in the current scope

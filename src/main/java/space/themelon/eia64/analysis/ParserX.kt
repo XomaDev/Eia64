@@ -11,7 +11,6 @@ import space.themelon.eia64.syntax.Flag
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 import java.io.File
-import java.lang.UnsupportedOperationException
 import java.util.StringJoiner
 
 class ParserX(
@@ -81,6 +80,7 @@ class ParserX(
             Type.IF -> ifDeclaration(token)
             Type.FUN -> fnDeclaration()
             Type.SHADO -> shadoDeclaration()
+            Type.JAVA -> javaInclude()
             Type.NEW -> newStatement(token)
             Type.INCLUDE -> includeStatement()
             Type.WHEN -> whenStatement(token)
@@ -109,6 +109,7 @@ class ParserX(
             Type.FUN,
             Type.STD,
             Type.INCLUDE,
+            Type.JAVA,
             Type.NEW,
             Type.THROW,
             Type.TRY,
@@ -267,6 +268,16 @@ class ParserX(
             arguments,
             reference
         )
+    }
+
+    private fun javaInclude(): Expression {
+        expectType(Type.OPEN_CURVE)
+        val javaPackage = expectType(Type.E_STRING).data as String
+        val clazz = Class.forName(javaPackage)
+        val namedAs = if (consumeNext(Type.COMMA)) readAlpha() else clazz.simpleName
+        expectType(Type.CLOSE_CURVE)
+        manager.javaClasses += namedAs to clazz
+        return ImportJavaClass(clazz, namedAs)
     }
 
     private fun parseNextInBrace(): Expression {
@@ -831,10 +842,17 @@ class ParserX(
         val element = next()
         val elementName = readAlpha(element)
 
-        val moduleInfo = getModuleInfo(element, objExpr)
-        if (isNext(Type.OPEN_CURVE))
-            return classMethodCall(objExpr, moduleInfo, elementName)
-        return classPropertyAccess(objExpr, moduleInfo, elementName)
+        if (objExpr.sig() == Sign.JAVA) {
+            if (isNext(Type.OPEN_CURVE)) {
+                return JavaMethodCall(objExpr, elementName, callArguments())
+            }
+            throw Exception() // for now
+        } else {
+            val moduleInfo = getModuleInfo(element, objExpr)
+            if (isNext(Type.OPEN_CURVE))
+                return classMethodCall(objExpr, moduleInfo, elementName)
+            return classPropertyAccess(objExpr, moduleInfo, elementName)
+        }
     }
 
     private fun classPropertyAccess(
@@ -1084,9 +1102,11 @@ class ParserX(
                     else if (manager.staticClasses.contains(name))
                         // probably referencing a method from an outer class
                         Alpha(token, -2, name, Sign.NONE)
+                    else if (manager.javaClasses.contains(name))
+                        // Java class constructor
+                        Alpha(token, -3, name, Sign.NONE)
                     else
-                        // Unresolved name
-                        token.error("Cannot find symbol '$name'")
+                        Alpha(token, -4, name, Sign.JAVA)
                 } else {
                     // classic variable access
                     Alpha(token, vrReference.index, name, vrReference.signature)
@@ -1121,11 +1141,16 @@ class ParserX(
         val arguments = callArguments()
         if (unitExpr is Alpha) {
             val name = unitExpr.value
-            val fnExpr = manager.resolveFn(name, arguments.size)
-            if (fnExpr != null) {
-                if (fnExpr.argsSize == -1)
-                    throw RuntimeException("[Internal] Function args size is not yet set")
-                return MethodCall(unitExpr.marking!!, fnExpr, arguments)
+            if (manager.javaClasses.contains(name)) {
+                // so it's a java class constructor
+                return MakeJavaObject(manager.javaClasses[name]!!, name, arguments)
+            } else {
+                val fnExpr = manager.resolveFn(name, arguments.size)
+                if (fnExpr != null) {
+                    if (fnExpr.argsSize == -1)
+                        throw RuntimeException("[Internal] Function args size is not yet set")
+                    return MethodCall(unitExpr.marking!!, fnExpr, arguments)
+                }
             }
         }
         return ShadoInvoke(unitExpr.marking!!, unitExpr, arguments)

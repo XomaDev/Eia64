@@ -55,6 +55,18 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
+    override fun importJava(javaClass: ImportJavaClass): Any {
+        throw ShutdownException()
+    }
+
+    override fun makeJavaObject(makeJavaObject: MakeJavaObject): Any {
+        throw ShutdownException()
+    }
+
+    override fun javaMethodCall(methodCall: JavaMethodCall): Any {
+        throw ShutdownException()
+    }
+
     override fun include(include: Include): Any {
         throw ShutdownException()
     }
