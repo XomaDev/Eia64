@@ -79,7 +79,6 @@ class ParserX(
             Type.AT -> readAnnotation()
             Type.IF -> ifDeclaration(token)
             Type.FUN -> fnDeclaration()
-            Type.SHADO -> shadoDeclaration()
             Type.JAVA -> javaInclude()
             Type.NEW -> newStatement(token)
             Type.INCLUDE -> includeStatement()
@@ -113,7 +112,6 @@ class ParserX(
             Type.NEW,
             Type.THROW,
             Type.TRY,
-            Type.SHADO,
             Type.WHEN -> true
             else -> false
         }
@@ -540,29 +538,6 @@ class ParserX(
         return fnExpr
     }
 
-    private fun shadoDeclaration(): Shadow {
-        val names = ArrayList<String>()
-
-        manager.enterScope()
-        expectType(Type.OPEN_CURVE)
-        while (!isEOF() && peek().type != Type.CLOSE_CURVE) {
-            val name = readAlpha()
-            expectType(Type.COLON)
-
-            val argSignature = readSignature(next())
-            manager.defineVariable(name, true, argSignature, false)
-            names.add(name)
-            if (!isNext(Type.COMMA)) break
-            skip()
-        }
-        expectType(Type.CLOSE_CURVE)
-        val body = if (isNext(Type.ASSIGNMENT)) {
-            skip()
-            parseStatement()
-        } else expressions() // Fully Manual Scopped
-        manager.leaveScope()
-        return Shadow(names, body)
-    }
 
     private fun ifDeclaration(where: Token): IfStatement {
         val logicalExpr = parseNextInBrace()
@@ -714,7 +689,6 @@ class ParserX(
                 parseStatement()
             }
 
-            Type.OPEN_CURVE -> shadoDeclaration()
             Type.OPEN_CURLY -> parseStatement()
             else -> nextToken.error("Unexpected variable expression")
         }
@@ -842,17 +816,21 @@ class ParserX(
         val element = next()
         val elementName = readAlpha(element)
 
-        if (objExpr.sig() == Sign.JAVA) {
-            if (isNext(Type.OPEN_CURVE)) {
-                return JavaMethodCall(objExpr, elementName, callArguments())
-            }
-            throw Exception() // for now
-        } else {
-            val moduleInfo = getModuleInfo(element, objExpr)
-            if (isNext(Type.OPEN_CURVE))
-                return classMethodCall(objExpr, moduleInfo, elementName)
-            return classPropertyAccess(objExpr, moduleInfo, elementName)
+//        if (objExpr.sig() == Sign.JAVA) {
+//            if (isNext(Type.OPEN_CURVE)) {
+//                return JavaMethodCall(objExpr, elementName, callArguments())
+//            }
+//            throw Exception() // for now
+//        } else {
+//            val moduleInfo = getModuleInfo(element, objExpr)
+//            if (isNext(Type.OPEN_CURVE))
+//                return classMethodCall(objExpr, moduleInfo, elementName)
+//            return classPropertyAccess(objExpr, moduleInfo, elementName)
+//        }
+        if (isNext(Type.OPEN_CURVE)) {
+            return JavaMethodCall(objExpr, elementName, callArguments())
         }
+        throw Exception() // for now
     }
 
     private fun classPropertyAccess(
@@ -1009,8 +987,6 @@ class ParserX(
                 return expr
             }
 
-            Type.OPEN_CURLY -> return Shadow(emptyList(), autoScopeBody().expr)
-
             else -> {}
         }
         val token = next()
@@ -1153,7 +1129,7 @@ class ParserX(
                 }
             }
         }
-        return ShadoInvoke(unitExpr.marking!!, unitExpr, arguments)
+        throw RuntimeException("Not coded")
     }
 
     private fun callArguments(): List<Expression> {

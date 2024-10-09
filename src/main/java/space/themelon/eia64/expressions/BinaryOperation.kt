@@ -5,6 +5,7 @@ import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.signatures.Matching.numericOrChar
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
+import space.themelon.eia64.syntax.Flag
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
 
@@ -15,7 +16,38 @@ data class BinaryOperation(
     val operator: Type
 ) : Expression(where) {
 
-    override fun <R> accept(v: Visitor<R>) = v.binaryOperation(this)
+    private var evalExpr = this
+
+    init {
+        // we need to convert
+        // a += 2
+        // into
+        // a = a + 2
+        if (where.hasFlag(Flag.TRANSFORM)) {
+            // map
+            // +=   --->  +
+            // -=   --->  -
+            val newOperator = when (operator) {
+                Type.ADDITIVE_ASSIGNMENT -> Type.PLUS
+                Type.DEDUCTIVE_ASSIGNMENT -> Type.NEGATE
+                Type.MULTIPLICATIVE_ASSIGNMENT -> Type.TIMES
+                Type.DIVIDIVE_ASSIGNMENT -> Type.SLASH
+                Type.REMAINDER_ASSIGNMENT -> Type.REMAINDER
+                else -> throw RuntimeException("Cannot transform operator $operator")
+            }
+            evalExpr = BinaryOperation(
+                Token(where.lineCount, Type.ASSIGNMENT),
+                left,
+                BinaryOperation(
+                    Token(where.lineCount, newOperator),
+                    left,
+                    right,
+                    newOperator),
+                Type.ASSIGNMENT)
+        }
+    }
+
+    override fun <R> accept(v: Visitor<R>) = v.binaryOperation(evalExpr)
 
     override fun sig(): Signature {
         val leftExprSign = left.sig()

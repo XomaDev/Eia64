@@ -15,11 +15,11 @@ import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type.*
 import java.io.FileOutputStream
 import java.io.PrintStream
-import java.util.Objects
 import java.util.Scanner
 import kotlin.collections.ArrayList
 import kotlin.math.pow
 import kotlin.random.Random
+import kotlin.reflect.full.declaredFunctions
 
 class Evaluator(
     val className: String,
@@ -250,35 +250,6 @@ class Evaluator(
             }
             value
         }
-        ADDITIVE_ASSIGNMENT -> {
-            val element = unboxEval(expr.left)
-            when (element) {
-                is EString -> element.append(unboxEval(expr.right))
-                is Numeric -> element.plusAssign(numericExpr(expr.right))
-                else -> throw RuntimeException("Cannot apply += operator on element $element")
-            }
-            element
-        }
-        DEDUCTIVE_ASSIGNMENT -> {
-            val variable = numericExpr(expr.left)
-            variable /= (numericExpr(expr.right))
-            variable
-        }
-        MULTIPLICATIVE_ASSIGNMENT -> {
-            val variable = numericExpr(expr.left)
-            variable *= (numericExpr(expr.right))
-            variable
-        }
-        DIVIDIVE_ASSIGNMENT -> {
-            val variable = numericExpr(expr.left)
-            variable /= (numericExpr(expr.right))
-            variable
-        }
-        REMAINDER_ASSIGNMENT -> {
-            val variable = numericExpr(expr.left)
-            variable %= (numericExpr(expr.right))
-            variable
-        }
         POWER -> {
             val left = numericExpr(expr.left)
             val right = numericExpr(expr.right)
@@ -389,23 +360,28 @@ class Evaluator(
                 "package ${makeJavaObject.clazz.name} of size $parametersCount")
     }
 
-    override fun javaMethodCall(methodCall: JavaMethodCall): Any {
-        val javaObject = (unboxEval(methodCall.objectExpression) as EJava).get()
-        val parametersCount = methodCall.args.size
-        val evaluatedArgs = evaluateArgs(methodCall.args) as Array<Any?>
-        for ((index, any) in evaluatedArgs.withIndex()) {
-            if (any is Primitive<*>) {
-                val newValue = any.javaValue()
-                evaluatedArgs[index] = newValue
-            }
+    override fun javaMethodCall(call: JavaMethodCall): Any {
+        val funcName = call.funcName
+        val parameterSize = call.parameters.size
+
+        val obj = (unboxEval(call.objectExpr) as Primitive<*>).get()
+        val callArgs = call.parameters.map { (unboxEval(it) as Primitive<*>).get() }.toTypedArray()
+
+        val func = obj.javaClass.methods.find { it.name == funcName && it.parameters.size == parameterSize }
+            ?: throw EiaRuntimeException("Cannot find function '$funcName' of parameter size $parameterSize on object `$obj`")
+        return func.invoke(obj, *callArgs).toEia()
+    }
+
+    private fun Any?.toEia(): Primitive<*> {
+        if (this == null) return ENil()
+        return when (this) {
+            is Int -> EInt(this)
+            is Float -> EFloat(this)
+            is Char -> EChar(this)
+            is String -> EString(this)
+            is Boolean -> EBool(this)
+            else -> EJava(this)
         }
-        for (method in javaObject.javaClass.methods) {
-            if (method.name == methodCall.methodName && method.parameterCount == parametersCount) {
-                val invokeResult = method.invoke(javaObject, *evaluatedArgs) ?: return ENil()
-                return EJava(invokeResult)
-            }
-        }
-        throw EiaRuntimeException("Cannot find method '${methodCall.methodName}' of parameters count $parametersCount on $javaObject")
     }
 
     override fun include(include: Include): Any {
@@ -782,44 +758,6 @@ class Evaluator(
         throw UnsupportedOperationException("Should not be called, can only be used")
     }
 
-    override fun unitInvoke(shadoInvoke: ShadoInvoke): Any {
-        var operand: Any = shadoInvoke.expr
-
-        // Fully Manual Scopped
-        if (operand !is Shadow)
-            operand = unboxEval(operand as Expression)
-
-        if (operand !is Shadow)
-            throw RuntimeException("Expected shadow element for call, but got $operand")
-
-        val expectedArgs = operand.names.size
-        val gotArgs = shadoInvoke.arguments.size
-
-        if (expectedArgs != gotArgs) {
-            reportWrongArguments("AnonShado", expectedArgs, gotArgs, "Shado")
-        }
-
-        val argIterator = operand.names.iterator()
-        val exprIterator = evaluateArgs(shadoInvoke.arguments).iterator()
-
-        memory.enterScope()
-        while (exprIterator.hasNext()) {
-            memory.declareVar(argIterator.next(), exprIterator.next())
-        }
-
-        val result = eval(operand.body)
-        memory.leaveScope()
-
-        if (result is Entity) {
-            when (result.interruption) {
-                InterruptionType.RETURN,
-                InterruptionType.USE -> return result
-                else -> { }
-            }
-        }
-        return result
-    }
-
     private fun reportWrongArguments(name: String, expectedArgs: Int, gotArgs: Int, type: String = "Fn") {
         throw RuntimeException("$type [$name()] expected $expectedArgs but got $gotArgs")
     }
@@ -1014,8 +952,6 @@ class Evaluator(
         tracer?.declareFn(function.name, function.arguments)
         return EBool(true)
     }
-
-    override fun shado(shadow: Shadow) = shadow
 
     override fun arrayAccess(access: ArrayAccess): Any {
         val entity = unboxEval(access.expr)

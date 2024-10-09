@@ -66,11 +66,11 @@ enum class Type {
                 // Binary operators arranged from the lowest precedence to highest
 
                 it["="] = StaticToken(ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.NONE))
-                it["+="] = StaticToken(ADDITIVE_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.NONE))
-                it["-="] = StaticToken(DEDUCTIVE_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.NONE))
-                it["*="] = StaticToken(MULTIPLICATIVE_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.NONE))
-                it["/="] = StaticToken(DIVIDIVE_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.NONE))
-                it["%="] = StaticToken(REMAINDER_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.NONE))
+                it["+="] = StaticToken(ADDITIVE_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.TRANSFORM))
+                it["-="] = StaticToken(DEDUCTIVE_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.TRANSFORM))
+                it["*="] = StaticToken(MULTIPLICATIVE_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.TRANSFORM))
+                it["/="] = StaticToken(DIVIDIVE_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.TRANSFORM))
+                it["%="] = StaticToken(REMAINDER_ASSIGNMENT, arrayOf(Flag.ASSIGNMENT_TYPE, Flag.OPERATOR, Flag.TRANSFORM))
 
                 it["||"] = StaticToken(LOGICAL_OR, arrayOf(Flag.LOGICAL_OR, Flag.OPERATOR))
                 it["&&"] = StaticToken(LOGICAL_AND, arrayOf(Flag.LOGICAL_AND, Flag.OPERATOR))

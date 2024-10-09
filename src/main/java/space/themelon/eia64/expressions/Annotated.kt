@@ -4,7 +4,7 @@ import space.themelon.eia64.Expression
 
 data class Annotated(
     val name: String,
-    val actual: Expression,
+    var actual: Expression,
     val properties: HashMap<String, PureLiteral>
 ): Expression() {
 

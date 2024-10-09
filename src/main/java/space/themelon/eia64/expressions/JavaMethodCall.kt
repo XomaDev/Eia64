@@ -5,16 +5,16 @@ import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 
 data class JavaMethodCall(
-    val objectExpression: Expression,
-    val methodName: String,
-    val args: List<Expression>,
+    val objectExpr: Expression,
+    val funcName: String,
+    val parameters: List<Expression>,
 ): Expression() {
 
     override fun <R> accept(v: Visitor<R>) = v.javaMethodCall(this)
 
     override fun sig(): Signature {
-        objectExpression.sig()
-        args.forEach { it.sig() }
+        objectExpr.sig()
+        parameters.forEach { it.sig() }
         return Sign.JAVA
     }
 }

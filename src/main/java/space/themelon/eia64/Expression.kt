@@ -25,7 +25,7 @@ abstract class Expression(
         fun arrayAllocation(arrayAllocation: ArrayAllocation): R
         fun importJava(javaClass: ImportJavaClass): R
         fun makeJavaObject(makeJavaObject: MakeJavaObject): R
-        fun javaMethodCall(methodCall: JavaMethodCall): R
+        fun javaMethodCall(call: JavaMethodCall): R
         fun include(include: Include): R
         fun new(new: NewObj): R
         fun throwExpr(throwExpr: ThrowExpr): R
@@ -33,7 +33,6 @@ abstract class Expression(
         fun variable(variable: ExplicitVariable): R
         fun autoVariable(autoVariable: AutoVariable): R
         fun isStatement(isStatement: IsStatement): R
-        fun shado(shadow: Shadow): R
         fun unaryOperation(expr: UnaryOperation): R
         fun binaryOperation(expr: BinaryOperation): R
         fun expressions(list: ExpressionList): R
@@ -45,7 +44,6 @@ abstract class Expression(
         fun classPropertyAccess(propertyAccess: ForeignField): R
         fun linkField(link: LinkField): R
         fun classMethodCall(call: ClassMethodCall): R
-        fun unitInvoke(shadoInvoke: ShadoInvoke): R
         fun until(until: Until): R
         fun itr(itr: Itr): R
         fun whenExpr(whenExpr: When): R

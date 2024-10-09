@@ -23,4 +23,9 @@ enum class Flag {
     NATIVE_CALL,
     INTERRUPTION,
     NONE,
+
+    // count += 5
+    // shall be translated to
+    // count = count + 5
+    TRANSFORM,
 }
