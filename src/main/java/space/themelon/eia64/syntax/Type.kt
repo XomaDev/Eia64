@@ -29,8 +29,8 @@ enum class Type {
     IS,
 
     E_NIL,
-    E_NUMBER, E_INT, E_FLOAT, E_BOOL, E_STRING, E_CHAR,
-    E_ARRAY, E_ANY, E_UNIT, E_OBJECT, E_TYPE,
+    E_NUMBER, E_INT, E_FLOAT, E_DOUBLE, E_BOOL, E_STRING, E_CHAR,
+    E_ARRAY, E_ANY, E_UNIT, E_OBJECT, E_TYPE, E_JAVA,
 
     ALPHA,
     E_TRUE, E_FALSE, CLASS_VALUE,
@@ -47,8 +47,10 @@ enum class Type {
     FOR, UNTIL,
     FUN,
     ARRAY_OF, MAKE_ARRAY,
+    MAKE_LIST, MAKE_DICT,
+
     COPY, TIME, RAND, PRINT, PRINTLN, READ, READLN, LEN, SLEEP, FORMAT, EXIT, MEM_CLEAR,
-    INCLUDE, STD, STATIC, NEW,
+    IMPORT,
     THROW, TRY, CATCH,
 
     RETURN, BREAK, CONTINUE,
@@ -118,18 +120,19 @@ enum class Type {
             }
 
             KEYWORDS.let {
-                it["Nil"] = StaticToken(E_NIL, arrayOf(Flag.CLASS))
-                it["Number"] = StaticToken(E_NUMBER, arrayOf(Flag.CLASS))
-                it["Int"] = StaticToken(E_INT, arrayOf(Flag.CLASS))
-                it["Float"] = StaticToken(E_FLOAT, arrayOf(Flag.CLASS))
-                it["Bool"] = StaticToken(E_BOOL, arrayOf(Flag.CLASS))
-                it["String"] = StaticToken(E_STRING, arrayOf(Flag.CLASS))
-                it["Char"] = StaticToken(E_CHAR, arrayOf(Flag.CLASS))
-                it["Any"] = StaticToken(E_ANY, arrayOf(Flag.CLASS))
-                it["Array"] = StaticToken(E_ARRAY, arrayOf(Flag.CLASS))
-                it["Unit"] = StaticToken(E_UNIT, arrayOf(Flag.CLASS))
-                it["Object"] = StaticToken(E_OBJECT, arrayOf(Flag.CLASS))
-                it["Type"] = StaticToken(E_TYPE, arrayOf(Flag.CLASS))
+//                it["Nil"] = StaticToken(E_NIL, arrayOf(Flag.CLASS))
+//                it["Number"] = StaticToken(E_NUMBER, arrayOf(Flag.CLASS))
+//                it["Int"] = StaticToken(E_INT, arrayOf(Flag.CLASS))
+//                it["Float"] = StaticToken(E_FLOAT, arrayOf(Flag.CLASS))
+//                it["Bool"] = StaticToken(E_BOOL, arrayOf(Flag.CLASS))
+//                it["String"] = StaticToken(E_STRING, arrayOf(Flag.CLASS))
+//                it["Char"] = StaticToken(E_CHAR, arrayOf(Flag.CLASS))
+//                it["Any"] = StaticToken(E_ANY, arrayOf(Flag.CLASS))
+//                it["Array"] = StaticToken(E_ARRAY, arrayOf(Flag.CLASS))
+//                it["Unit"] = StaticToken(E_UNIT, arrayOf(Flag.CLASS))
+//                it["Object"] = StaticToken(E_OBJECT, arrayOf(Flag.CLASS))
+//                it["Type"] = StaticToken(E_TYPE, arrayOf(Flag.CLASS))
+//                it["Java"] = StaticToken(E_JAVA, arrayOf(Flag.CLASS))
 
                 it["nil"] = StaticToken(NIL, arrayOf(Flag.VALUE))
                 it["true"] = StaticToken(E_TRUE, arrayOf(Flag.VALUE, Flag.E_BOOL))
@@ -150,6 +153,9 @@ enum class Type {
                 it["typeOf"] = StaticToken(TYPE_OF, arrayOf(Flag.NATIVE_CALL))
                 it["copy"] = StaticToken(COPY, arrayOf(Flag.NATIVE_CALL))
 
+                it["makeList"] = StaticToken(MAKE_LIST)
+                it["makeDict"] = StaticToken(MAKE_DICT)
+
                 it["arrayOf"] = StaticToken(ARRAY_OF)
                 it["makeArray"] = StaticToken(MAKE_ARRAY)
 
@@ -165,10 +171,7 @@ enum class Type {
                 it["exit"] = StaticToken(EXIT, arrayOf(Flag.NATIVE_CALL))
                 it["memclear"] = StaticToken(MEM_CLEAR, arrayOf(Flag.NATIVE_CALL))
 
-                it["std"] = StaticToken(STD)
-                it["static"] = StaticToken(STATIC)
-                it["include"] = StaticToken(INCLUDE)
-                it["new"] = StaticToken(NEW)
+                it["import"] = StaticToken(IMPORT)
                 it["throw"] = StaticToken(THROW)
                 it["try"] = StaticToken(TRY)
                 it["catch"] = StaticToken(CATCH)
@@ -188,8 +191,6 @@ enum class Type {
                 it["else"] = StaticToken(ELSE, arrayOf(Flag.NONE))
 
                 it["fn"] = StaticToken(FUN, arrayOf(Flag.NONE)) // manual scope
-                it["shado"] = StaticToken(SHADO) // manual scope
-                it["when"] = StaticToken(WHEN) // auto scope
 
                 it["return"] = StaticToken(RETURN, arrayOf(Flag.INTERRUPTION))
                 it["break"] = StaticToken(BREAK, arrayOf(Flag.INTERRUPTION))

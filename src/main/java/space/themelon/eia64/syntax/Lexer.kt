@@ -1,8 +1,9 @@
 package space.themelon.eia64.syntax
 
-import space.themelon.eia64.runtime.Executor
+import space.themelon.eia64.runtime.Environment
 import space.themelon.eia64.syntax.Type.*
 import space.themelon.eia64.syntax.Type.Companion.KEYWORDS
+import java.util.StringJoiner
 
 class Lexer(private val source: String) {
 
@@ -13,7 +14,7 @@ class Lexer(private val source: String) {
 
     init {
         while (!isEOF()) parseNext()
-        if (Executor.DEBUG) {
+        if (Environment.DEBUG) {
             tokens.forEach { println(it) }
         }
     }
@@ -30,58 +31,63 @@ class Lexer(private val source: String) {
             while (!isEOF() && peek() != '\n') index++
             return
         }
-        tokens.add(when (char) {
-            '=' -> if (consumeNext('=')) createOp("==") else createOp("=")
+        tokens.add(
+            when (char) {
+                '=' -> if (consumeNext('=')) createOp("==") else createOp("=")
 
-            '^' -> createOp("^")
+                '^' -> createOp("^")
 
-            '*' ->
-                if (consumeNext('=')) createOp("*=") else createOp("*")
-            '/' -> if (consumeNext('=')) createOp("/=") else createOp("/")
-            '%' -> if (consumeNext('=')) createOp("%=") else createOp("%")
-            '+' ->
-                if (consumeNext('+')) createOp("++")
-                else if (consumeNext('=')) createOp("+=")
-                else createOp("+")
-            '-' -> if (consumeNext('-')) createOp("--")
-                  else if (consumeNext('=')) createOp("-=")
-                  else if (consumeNext('>')) createOp("->")
-                  else createOp("-")
+                '*' ->
+                    if (consumeNext('=')) createOp("*=") else createOp("*")
 
-            '|' -> if (consumeNext('|')) createOp("||") else createOp("|")
-            '&' -> if (consumeNext('&')) createOp("&&") else createOp("&")
+                '/' -> if (consumeNext('=')) createOp("/=") else createOp("/")
+                '%' -> if (consumeNext('=')) createOp("%=") else createOp("%")
+                '+' ->
+                    if (consumeNext('+')) createOp("++")
+                    else if (consumeNext('=')) createOp("+=")
+                    else createOp("+")
 
-            '!' -> if (consumeNext('=')) createOp("!=") else createOp("!")
+                '-' -> if (consumeNext('-')) createOp("--")
+                else if (consumeNext('=')) createOp("-=")
+                else if (consumeNext('>')) createOp("->")
+                else createOp("-")
 
-            '>' -> if (consumeNext('=')) createOp(">=") else createOp(">")
-            '<' -> if (consumeNext('=')) createOp("<=") else createOp("<")
+                '|' -> if (consumeNext('|')) createOp("||") else createOp("|")
+                '&' -> if (consumeNext('&')) createOp("&&") else createOp("&")
 
-            '.' -> if (isNumeric(peek())) {
-                index--
-                parseNumeric()
-            } else createOp(".")
-            ':' -> if (consumeNext('=')) createOp(":=")
-                   else if (consumeNext(':')) createOp("::")
-                   else createOp(":")
-            ';' -> createOp(";")
-            ',' -> createOp(",")
-            '(' -> createOp("(")
-            ')' -> createOp(")")
-            '[' -> createOp("[")
-            ']' -> createOp("]")
-            '{' -> createOp("{")
-            '}' -> createOp("}")
-            '\'' -> parseChar()
-            '"' -> parseString()
-            else -> {
-                if (isAlpha(char)) parseAlpha(char)
-                else if (isNumeric(char)) {
+                '!' -> if (consumeNext('=')) createOp("!=") else createOp("!")
+
+                '>' -> if (consumeNext('=')) createOp(">=") else createOp(">")
+                '<' -> if (consumeNext('=')) createOp("<=") else createOp("<")
+
+                '.' -> if (isNumeric(peek())) {
                     index--
                     parseNumeric()
+                } else createOp(".")
+
+                ':' -> if (consumeNext('=')) createOp(":=")
+                else if (consumeNext(':')) createOp("::")
+                else createOp(":")
+
+                ';' -> createOp(";")
+                ',' -> createOp(",")
+                '(' -> createOp("(")
+                ')' -> createOp(")")
+                '[' -> createOp("[")
+                ']' -> createOp("]")
+                '{' -> createOp("{")
+                '}' -> createOp("}")
+                '\'' -> parseChar()
+                '"' -> parseString()
+                else -> {
+                    if (isAlpha(char)) parseAlpha(char)
+                    else if (isNumeric(char)) {
+                        index--
+                        parseNumeric()
+                    } else throw RuntimeException("Unknown operator at line $line: '$char'")
                 }
-                else throw RuntimeException("Unknown operator at line $line: '$char'")
             }
-        })
+        )
     }
 
     private fun createOp(operator: String): Token {
@@ -118,7 +124,10 @@ class Lexer(private val source: String) {
                     'n' -> c = '\n'
                     't' -> c = '\t'
                     's' -> c = ' '
-                    '\'', '\"', '\\' -> { c = e }
+                    '\'', '\"', '\\' -> {
+                        c = e
+                    }
+
                     else -> reportError("Invalid escape character '$e'")
                 }
             }
@@ -137,8 +146,27 @@ class Lexer(private val source: String) {
             } else break
         }
         val value = content.toString()
+        if (value == "import") return parseImport()
         val token = KEYWORDS[value]
         return token?.normalToken(line) ?: Token(line, ALPHA, arrayOf(Flag.VALUE), value)
+    }
+
+    private fun parseImport(): Token {
+        // make em better in the comming days
+        // we need to add another layer b/w lexer and parser to handle this problem well
+        if (!consumeNext(' ')) throw IllegalStateException("Illegal syntax")
+        val pkgName = StringJoiner(".")
+        while (!isEOF()) {
+            val part = StringBuilder()
+            while (isAlpha(peek()) || isNumeric(peek())) {
+                part.append(next())
+            }
+            pkgName.add(part.toString())
+            if (consumeNext('.')) continue
+            else break
+        }
+        println(pkgName)
+        return Token(line, IMPORT, emptyArray(), pkgName.toString())
     }
 
     private fun parseNumeric(): Token {
@@ -159,10 +187,12 @@ class Lexer(private val source: String) {
             type = E_INT
             value = content.toString().toInt()
         }
-        return Token(line,
+        return Token(
+            line,
             type,
             arrayOf(Flag.VALUE, Flag.CONSTANT_VALUE),
-            value)
+            value
+        )
     }
 
     private fun isNumeric(c: Char) = c in '0'..'9'

@@ -1,6 +1,8 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
+import space.themelon.eia64.analysis.ScopeManager
+import space.themelon.eia64.runtime.Environment
 import space.themelon.eia64.signatures.Sign
 
 class NoneExpression: Expression() {

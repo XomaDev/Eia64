@@ -1,7 +1,8 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.signatures.Matching.matches
+import space.themelon.eia64.analysis.ScopeManager
+import space.themelon.eia64.runtime.Environment
 import space.themelon.eia64.signatures.Matching.numericOrChar
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
@@ -13,46 +14,46 @@ data class BinaryOperation(
     val left: Expression, // sig checked
     val right: Expression, // sig checked
     val operator: Type
-) : Expression(where) {
+) : Expression() {
 
     override fun <R> accept(v: Visitor<R>) = v.binaryOperation(this)
 
     override fun sig(): Signature {
-        val leftExprSign = left.sig()
-        val rightExprSign = right.sig()
+        val leftSig = left.sig()
+        val rightSig = right.sig()
 
-        val leftLogName = leftExprSign.logName()
-        val rightLogName = rightExprSign.logName()
+        val leftLogName = leftSig.logName()
+        val rightLogName = rightSig.logName()
 
-        var resultSign = leftExprSign
+        var resultSign = leftSig
         when (operator) {
-            Type.PLUS -> if (!leftExprSign.isNumeric() && !rightExprSign.isNumeric()) resultSign = Sign.STRING
+            Type.PLUS -> if (!leftSig.isNumeric() && !rightSig.isNumeric()) resultSign = Sign.STRING
 
-            Type.NEGATE -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
-                applyError("arithmetic", "Numeric", "-")
+            Type.NEGATE -> if (!leftSig.isNumeric() || !rightSig.isNumeric())
+                applyError("arithmetic", "Numeric", "-", leftSig, rightSig)
 
-            Type.TIMES -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
-                applyError("arithmetic", "Numeric", "*")
+            Type.TIMES -> if (!leftSig.isNumeric() || !rightSig.isNumeric())
+                applyError("arithmetic", "Numeric", "*", leftSig, rightSig)
 
-            Type.SLASH -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
-                applyError("arithmetic", "Numeric", "/")
+            Type.SLASH -> if (!leftSig.isNumeric() || !rightSig.isNumeric())
+                applyError("arithmetic", "Numeric", "/", leftSig, rightSig)
 
-            Type.REMAINDER -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
-                applyError("arithmetic", "Remainder", "%")
+            Type.REMAINDER -> if (!leftSig.isNumeric() || !rightSig.isNumeric())
+                applyError("arithmetic", "Remainder", "%", leftSig, rightSig)
 
-            Type.BITWISE_AND -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
-                applyError("bitwise", "Numeric", "&")
+            Type.BITWISE_AND -> if (!leftSig.isNumeric() || !rightSig.isNumeric())
+                applyError("bitwise", "Numeric", "&", leftSig, rightSig)
 
-            Type.BITWISE_OR -> if (!leftExprSign.isNumeric() || !rightExprSign.isNumeric())
-                applyError("bitwise", "Numeric", "|")
+            Type.BITWISE_OR -> if (!leftSig.isNumeric() || !rightSig.isNumeric())
+                applyError("bitwise", "Numeric", "|", leftSig, rightSig)
 
             Type.EQUALS, Type.NOT_EQUALS -> resultSign = Sign.BOOL
 
-            Type.LOGICAL_AND -> if (leftExprSign != Sign.BOOL || rightExprSign != Sign.BOOL)
-                applyError("logical", "Numeric", "&&")
+            Type.LOGICAL_AND -> if (leftSig != Sign.BOOL || rightSig != Sign.BOOL)
+                applyError("logical", "Numeric", "&&", leftSig, rightSig)
 
-            Type.LOGICAL_OR -> if (leftExprSign != Sign.BOOL || rightExprSign != Sign.BOOL) {
-                applyError("logical", "Numeric", "||")
+            Type.LOGICAL_OR -> if (leftSig != Sign.BOOL || rightSig != Sign.BOOL) {
+                applyError("logical", "Numeric", "||", leftSig, rightSig)
             } else resultSign = Sign.BOOL
 
             Type.RIGHT_DIAMOND -> if (!numericOrChar(left, right)) {
@@ -72,42 +73,33 @@ data class BinaryOperation(
                 where.error<String>("Cannot apply logical operator on [Numeric/Char] expressions: ($leftLogName <= $rightLogName)")
             } else resultSign = Sign.BOOL
 
-            Type.ASSIGNMENT -> {
-                if (left is ArrayAccess) {
-                    // Array Assignment Safety Check
-                    // Can we really assign *this type* to that *array type*?
-                    if (!matches(expect = leftExprSign, got = rightExprSign)) {
-                        where.error<String>("Cannot assign type $rightExprSign to an array of type $leftExprSign")
-                    }
-                }
-                resultSign = rightExprSign
-            }
+            Type.ASSIGNMENT -> resultSign = rightSig
 
-            Type.ADDITIVE_ASSIGNMENT -> when (rightExprSign) {
+            Type.ADDITIVE_ASSIGNMENT -> when (rightSig) {
                 Sign.STRING, Sign.CHAR -> resultSign = Sign.STRING
                 Sign.INT -> resultSign = Sign.INT
                 Sign.FLOAT -> resultSign = Sign.FLOAT
-                else -> where.error("Unknown expression signature for operator (+= Additive Assignment): $rightExprSign")
+                else -> where.error("Unknown expression signature for operator (+= Additive Assignment): $rightSig")
             }
 
-            Type.POWER -> if (!leftExprSign.isInt() || !rightExprSign.isInt()) applyError("arithmetic", "Numeric", "**")
+            Type.POWER -> if (!leftSig.isInt() || !rightSig.isInt()) applyError("arithmetic", "Numeric", "**", leftSig, rightSig)
 
-            Type.DEDUCTIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric()) simpleApplyError("Numeric", "-=")
-            Type.MULTIPLICATIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric()) simpleApplyError("Numeric", "*=")
-            Type.DIVIDIVE_ASSIGNMENT -> if (!rightExprSign.isNumeric()) simpleApplyError("Numeric", "/=")
-            Type.REMAINDER_ASSIGNMENT -> if (!rightExprSign.isNumeric()) simpleApplyError("Numeric", "%=")
+            Type.DEDUCTIVE_ASSIGNMENT -> if (!rightSig.isNumeric()) simpleApplyError("Numeric", "-=", rightSig)
+            Type.MULTIPLICATIVE_ASSIGNMENT -> if (!rightSig.isNumeric()) simpleApplyError("Numeric", "*=", rightSig)
+            Type.DIVIDIVE_ASSIGNMENT -> if (!rightSig.isNumeric()) simpleApplyError("Numeric", "/=", rightSig)
+            Type.REMAINDER_ASSIGNMENT -> if (!rightSig.isNumeric()) simpleApplyError("Numeric", "%=", rightSig)
 
             else -> where.error("Unknown Binary Operator $operator")
         }
         return resultSign
     }
 
-    private fun applyError(group: String, type: String, operator: String) {
+    private fun applyError(group: String, type: String, operator: String, left: Signature, right: Signature) {
         where.error<String>("Cannot apply $group operator on non $type expressions: " +
-                "(${left.sig().logName()} $operator ${right.sig().logName()})")
+                "(${left.logName()} $operator ${right.logName()})")
     }
 
-    private fun simpleApplyError(type: String, operator: String) {
-        where.error<String>("Expected $type expression for ($operator) but got ${right.sig().logName()}")
+    private fun simpleApplyError(type: String, operator: String, right: Signature) {
+        where.error<String>("Expected $type expression for ($operator) but got ${right.logName()}")
     }
 }

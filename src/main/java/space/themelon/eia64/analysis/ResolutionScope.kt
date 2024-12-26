@@ -33,10 +33,8 @@ class ResolutionScope(val before: ResolutionScope? = null) {
     }
 
     fun defineVr(name: String,
-                 mutable: Boolean,
-                 signature: Signature,
-                 public: Boolean) {
-        variables[name] = UniqueVariable(variables.size, mutable, signature, public)
+                 signature: Signature) {
+        variables[name] = UniqueVariable(variables.size, signature)
     }
 
     fun resolveVr(name: String): UniqueVariable? {

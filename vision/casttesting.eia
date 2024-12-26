@@ -1,3 +1,0 @@
-let namesRaw: Array = arrayOf("meow", "world")
-let namesType: Array<String> = namesRaw::Array<String>
-let namesRawSecond: Array = namesType::Array

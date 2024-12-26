@@ -23,6 +23,11 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
+    override fun doubleLiteral(literal: DoubleLiteral): Any {
+        throw ShutdownException()
+
+    }
+
     override fun boolLiteral(literal: BoolLiteral): Any {
         throw ShutdownException()
     }
@@ -37,6 +42,21 @@ class VoidEvaluator() : Expression.Visitor<Any> {
 
     override fun typeLiteral(literal: TypeLiteral): Any {
         throw ShutdownException()
+    }
+
+    override fun makeList(makeList: MakeList): Any {
+        throw ShutdownException()
+
+    }
+
+    override fun makeDict(makeDict: MakeDictionary): Any {
+        throw ShutdownException()
+
+    }
+
+    override fun variable(variable: Variable): Any {
+        throw ShutdownException()
+
     }
 
     override fun alpha(alpha: Alpha): Any {
@@ -55,35 +75,12 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
-    override fun include(include: Include): Any {
-        throw ShutdownException()
-    }
-
-    override fun new(new: NewObj): Any {
-        throw ShutdownException()
-    }
-
     override fun throwExpr(throwExpr: ThrowExpr): Any {
         throw ShutdownException()
     }
 
-    override fun tryCatch(tryCatch: TryCatch): Any {
-        throw ShutdownException()
-    }
-
-    override fun variable(variable: ExplicitVariable): Any {
-        throw ShutdownException()
-    }
-
-    override fun autoVariable(autoVariable: AutoVariable): Any {
-        throw ShutdownException()
-    }
 
     override fun isStatement(isStatement: IsStatement): Any {
-        throw ShutdownException()
-    }
-
-    override fun shado(shadow: Shadow): Any {
         throw ShutdownException()
     }
 
@@ -119,17 +116,6 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
-    override fun classPropertyAccess(propertyAccess: ForeignField): Any {
-        throw ShutdownException()
-    }
-
-    override fun classMethodCall(call: ClassMethodCall): Any {
-        throw ShutdownException()
-    }
-
-    override fun unitInvoke(shadoInvoke: ShadoInvoke): Any {
-        throw ShutdownException()
-    }
 
     override fun until(until: Until): Any {
         throw ShutdownException()
@@ -165,6 +151,20 @@ class VoidEvaluator() : Expression.Visitor<Any> {
 
     override fun arrayAccess(access: ArrayAccess): Any {
         throw ShutdownException()
+    }
+
+    override fun newJava(newInstance: NewInstance): Any {
+        throw ShutdownException()
+    }
+
+    override fun javaFieldAccess(access: JavaField): Any {
+        throw ShutdownException()
+
+    }
+
+    override fun javaMethodCall(jCall: JavaMethodCall): Any {
+        throw ShutdownException()
+
     }
 
 }

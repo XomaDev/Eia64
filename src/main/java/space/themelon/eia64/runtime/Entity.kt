@@ -1,12 +1,9 @@
 package space.themelon.eia64.runtime
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.primitives.*
-import space.themelon.eia64.signatures.ArrayExtension
+import space.themelon.eia64.containers.*
+import space.themelon.eia64.signatures.*
 import space.themelon.eia64.signatures.Matching.matches
-import space.themelon.eia64.signatures.ObjectExtension
-import space.themelon.eia64.signatures.Sign
-import space.themelon.eia64.signatures.Signature
 
 open class Entity(
     private val name: String,
@@ -51,8 +48,8 @@ open class Entity(
             is EArray -> ArrayExtension(value.elementSignature)
             is EType -> Sign.TYPE
             is Expression -> Sign.UNIT
-            is Evaluator -> ObjectExtension(value.className)
-            else -> throw RuntimeException("Unknown type of value $value")
+            is EJava -> ClassSign(value.get().javaClass)
+            else -> Sign.JAVA
         }
     }
 }

@@ -1,10 +1,11 @@
 package space.themelon.eia64.runtime
 
-import space.themelon.eia64.EiaTrace
 import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.FunctionExpr
-import space.themelon.eia64.primitives.*
+import space.themelon.eia64.containers.*
+import space.themelon.eia64.runtime.Conversions.eiaToJava
+import space.themelon.eia64.runtime.Conversions.javaToEia
 import space.themelon.eia64.runtime.Entity.Companion.getSignature
 import space.themelon.eia64.runtime.Entity.Companion.unbox
 import space.themelon.eia64.signatures.ArrayExtension
@@ -13,25 +14,21 @@ import space.themelon.eia64.signatures.ObjectExtension
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type.*
-import java.io.FileOutputStream
-import java.io.PrintStream
+import java.lang.reflect.Modifier
 import java.util.Scanner
 import kotlin.collections.ArrayList
 import kotlin.math.pow
 import kotlin.random.Random
+import kotlin.reflect.KMutableProperty1
 
 class Evaluator(
     val className: String,
-    private val executor: Executor
+    private val environment: Environment
 ) : Expression.Visitor<Any> {
 
     private val startupTime = System.currentTimeMillis()
 
     private var evaluator: Expression.Visitor<Any> = this
-
-    // in the future, we need to give options to enable/ disable:
-    //  how about enabling it through eia code?
-    private val tracer = if (Executor.DEBUG) EiaTrace(PrintStream(FileOutputStream(Executor.LOGS_PIPE_PATH))) else null
 
     fun shutdown() {
         // Reroute all the traffic to Void, which would raise ShutdownException.
@@ -44,7 +41,8 @@ class Evaluator(
         val mainEvaluated = dynamicFnCall(
             "main",
             emptyArray(),
-            true, "")
+            true, ""
+        )
         if (mainEvaluated == null || mainEvaluated == "") return normalEvaluated
         return mainEvaluated
     }
@@ -71,7 +69,7 @@ class Evaluator(
 
     // Supply tracer to memory, so that it calls enterScope() and leaveScope()
     // on tracer on behalf of us
-    private val memory = Memory(tracer)
+    private val memory = Memory()
 
     fun clearMemory() {
         memory.clearMemory()
@@ -81,6 +79,7 @@ class Evaluator(
     override fun nilLiteral(nil: NilLiteral) = ENil()
     override fun intLiteral(literal: IntLiteral) = EInt(literal.value)
     override fun floatLiteral(literal: FloatLiteral) = EFloat(literal.value)
+    override fun doubleLiteral(literal: DoubleLiteral) = EDouble(literal.value)
 
     override fun boolLiteral(literal: BoolLiteral) = EBool(literal.value)
     override fun stringLiteral(literal: StringLiteral) = EString(literal.value)
@@ -111,54 +110,48 @@ class Evaluator(
         return EArray(getSignature(defaultValue), Array(size.get()) { defaultValue })
     }
 
-    private fun update(index: Int,
-                       name: String,
-                       value: Any) {
+    override fun makeList(makeList: MakeList): Any {
+        val list = java.util.ArrayList<Any?>()
+        makeList.elements.forEach { list += unboxEval(it) }
+        return EJava(list, "makeList<>")
+    }
+
+    override fun makeDict(makeDict: MakeDictionary): Any {
+        val dictionary = HashMap<Any?, Any?>()
+        makeDict.elements.forEach { dictionary += unboxEval(it.first) to unboxEval(it.second) }
+        return EJava(dictionary, "makeDict<>")
+    }
+
+
+    override fun newJava(newInstance: NewInstance): Any {
+        val evaldArgs = newInstance.arguments.map { unboxEval(it).eiaToJava() }.toTypedArray()
+//        println(evaldArgs.contentDeepToString())
+//        println(newInstance.constructor)
+        return EJava(newInstance.constructor.newInstance(*evaldArgs), "INSTANCE(${newInstance.packageName})")
+    }
+
+    private fun update(
+        index: Int,
+        name: String,
+        value: Any
+    ) {
         (memory.getVar(index, name) as Entity).update(value)
-        tracer?.updateVariableRuntime(name, getSignature(value), value)
     }
 
-    private fun update(aMemory: Memory,
-                       index: Int,
-                       name: String,
-                       value: Any) {
+    private fun update(
+        aMemory: Memory,
+        index: Int,
+        name: String,
+        value: Any
+    ) {
         (aMemory.getVar(index, name) as Entity).update(value)
-        tracer?.updateVariableRuntime(name, getSignature(value), value)
     }
 
-    override fun variable(variable: ExplicitVariable): Any {
+
+    override fun variable(variable: Variable): Any {
         val name = variable.name
-        val signature = variable.explicitSignature
-        val value = unboxEval(variable.expr)
-        val mutable = variable.mutable
-
-        memory.declareVar(name, Entity(name, mutable, value, signature))
-        tracer?.declareVariableRuntime(
-            mutable,
-            name,
-            signature,
-            value)
-        return value
-    }
-
-    override fun autoVariable(autoVariable: AutoVariable): Any {
-        val name = autoVariable.name
-        val value = unboxEval(autoVariable.expr)
-        val signature = getSignature(value)
-        memory.declareVar(
-            name,
-            Entity(
-                name,
-                true,
-                unbox(value),
-                signature
-            )
-        )
-        tracer?.declareVariableRuntime(
-            true,
-            autoVariable.name,
-            signature,
-            value)
+        val value = unboxEval(variable.value)
+        memory.declareVar(name, Entity(name, true, value, variable.sig()))
         return value
     }
 
@@ -171,6 +164,7 @@ class Evaluator(
             if (expr.sig().isFloat()) EFloat(value.toFloat() * -1)
             else EInt(value.toInt() * -1)
         }
+
         INCREMENT, DECREMENT -> {
             val numeric = numericExpr(expr.expr)
             val value = if (expr.towardsLeft) {
@@ -183,6 +177,7 @@ class Evaluator(
             if (value is Int) EInt(value)
             else EFloat(value as Float)
         }
+
         else -> throw RuntimeException("Unknown unary operator $type")
     }
 
@@ -194,6 +189,7 @@ class Evaluator(
         is ENil,
         is EType,
         is EArray -> left == right
+
         else -> false
     }
 
@@ -205,6 +201,7 @@ class Evaluator(
             if (left is Numeric && right is Numeric) left + right
             else EString(left.toString() + right.toString())
         }
+
         NEGATE -> numericExpr(expr.left) - numericExpr(expr.right)
         TIMES -> numericExpr(expr.left) * numericExpr(expr.right)
         SLASH -> numericExpr(expr.left) / numericExpr(expr.right)
@@ -214,6 +211,7 @@ class Evaluator(
             val right = unboxEval(expr.right)
             EBool(if (type == EQUALS) valueEquals(left, right) else !valueEquals(left, right))
         }
+
         LOGICAL_AND -> EBool(booleanExpr(expr.left).get() && (booleanExpr(expr.right).get()))
         LOGICAL_OR -> EBool(booleanExpr(expr.left).get() || booleanExpr(expr.right).get())
         RIGHT_DIAMOND -> EBool(numericExpr(expr.left) > numericExpr(expr.right))
@@ -226,11 +224,12 @@ class Evaluator(
             when (toUpdate) {
                 is Alpha -> update(toUpdate.index, toUpdate.value, value)
                 is ArrayAccess -> updateArrayElement(toUpdate, value)
-                is ForeignField -> updateForeignField(toUpdate, value)
+                is JavaField -> updateKotlinField(toUpdate, value)
                 else -> throw RuntimeException("Unknown left operand for [= Assignment]: $toUpdate")
             }
             value
         }
+
         ADDITIVE_ASSIGNMENT -> {
             val element = unboxEval(expr.left)
             when (element) {
@@ -240,31 +239,37 @@ class Evaluator(
             }
             element
         }
+
         DEDUCTIVE_ASSIGNMENT -> {
             val variable = numericExpr(expr.left)
             variable /= (numericExpr(expr.right))
             variable
         }
+
         MULTIPLICATIVE_ASSIGNMENT -> {
             val variable = numericExpr(expr.left)
             variable *= (numericExpr(expr.right))
             variable
         }
+
         DIVIDIVE_ASSIGNMENT -> {
             val variable = numericExpr(expr.left)
             variable /= (numericExpr(expr.right))
             variable
         }
+
         REMAINDER_ASSIGNMENT -> {
             val variable = numericExpr(expr.left)
             variable %= (numericExpr(expr.right))
             variable
         }
+
         POWER -> {
             val left = numericExpr(expr.left)
             val right = numericExpr(expr.right)
             EString(left.get().toDouble().pow(right.get().toDouble()).toString())
         }
+
         BITWISE_AND -> numericExpr(expr.left).and(numericExpr(expr.right))
         BITWISE_OR -> numericExpr(expr.left).or(numericExpr(expr.right))
         else -> throw RuntimeException("Unknown binary operator $type")
@@ -291,21 +296,10 @@ class Evaluator(
     override fun isStatement(isStatement: IsStatement) =
         EBool(matches(isStatement.signature, getSignature(unboxEval(isStatement.expression))))
 
-    private fun updateForeignField(field: ForeignField, value: Any) {
-        val evaluator = getEvaluatorForField(field)
-        val uniqueVariable = field.uniqueVariable
-        update(
-            aMemory = evaluator.memory,
-            index = uniqueVariable.index,
-            name = field.property,
-            value = value
-        )
-    }
-
     override fun expressions(list: ExpressionList): Any {
         if (list.preserveState)
-            // it is being stored somewhere, like in a variable, etc.
-            //   that's why we shouldn't evaluate it
+        // it is being stored somewhere, like in a variable, etc.
+        //   that's why we shouldn't evaluate it
             return list
         var result: Any? = null
         for (expression in list.expressions) {
@@ -316,15 +310,16 @@ class Evaluator(
                 // TODO:
                 //  We need to verify that these things work
                 //when (result.type) {
-                    //RETURN, BREAK, CONTINUE, USE -> return result
-                    //else -> { }
+                //RETURN, BREAK, CONTINUE, USE -> return result
+                //else -> { }
                 //}
                 when (result.interruption) {
                     InterruptionType.RETURN,
                     InterruptionType.BREAK,
                     InterruptionType.CONTINUE,
                     InterruptionType.USE -> return result
-                    else -> { }
+
+                    else -> {}
                 }
             }
         }
@@ -336,17 +331,6 @@ class Evaluator(
         return Nothing.INSTANCE
     }
 
-    override fun include(include: Include): Any {
-        include.names.forEach { executor.executeModule(it) }
-        return EBool(true)
-    }
-
-    override fun new(new: NewObj): Evaluator {
-        val evaluator = executor.newEvaluator(new.name)
-        fnInvoke(new.reference.fnExpression!!, evaluateArgs(new.arguments))
-        tracer?.runtimeObjectCreation(new.name, evaluator)
-        return evaluator
-    }
 
     // try to call a string() method located in local class if available
     @Override
@@ -355,7 +339,8 @@ class Evaluator(
             "string",
             emptyArray(),
             true,
-            "Class<$className>")
+            "Class<$className>"
+        )
         if (result is String) return result
         if (result is EString) return result.get()
         throw RuntimeException("string() returned a non string $result")
@@ -410,14 +395,14 @@ class Evaluator(
                     printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
 
                     printCount += printable.length
-                    executor.standardOutput.print(printable)
+                    environment.standardOutput.print(printable)
                 }
-                if (type == PRINTLN) executor.standardOutput.print('\n')
+                if (type == PRINTLN) environment.standardOutput.print('\n')
                 return Nothing.INSTANCE
             }
 
             READ, READLN -> {
-                return EString(Scanner(executor.standardInput).let { if (type == READ) it.next() else it.nextLine() })
+                return EString(Scanner(environment.standardInput).let { if (type == READ) it.next() else it.nextLine() })
             }
 
             SLEEP -> {
@@ -426,13 +411,15 @@ class Evaluator(
             }
 
             LEN -> {
-                return EInt(when (val data = unboxEval(call.arguments[0])) {
-                    is EString -> data.length
-                    is EArray -> data.size
-                    is ExpressionList -> data.size
-                    is ENil -> 0
-                    else -> throw RuntimeException("Unknown measurable data type $data")
-                })
+                return EInt(
+                    when (val data = unboxEval(call.arguments[0])) {
+                        is EString -> data.length
+                        is EArray -> data.size
+                        is ExpressionList -> data.size
+                        is ENil -> 0
+                        else -> throw RuntimeException("Unknown measurable data type $data")
+                    }
+                )
             }
 
             FORMAT -> {
@@ -494,29 +481,16 @@ class Evaluator(
             BOOL_CAST -> {
                 val obj = unboxEval(call.arguments[0])
                 if (getSignature(obj) == Sign.BOOL) return obj
-                return EBool(when (obj) {
-                    "true" -> true
-                    "false" -> false
-                    else -> throw RuntimeException("Cannot parse boolean value: $obj")
-                })
+                return EBool(
+                    when (obj) {
+                        "true" -> true
+                        "false" -> false
+                        else -> throw RuntimeException("Cannot parse boolean value: $obj")
+                    }
+                )
             }
 
             TYPE_OF -> return EType(getSignature(unboxEval(call.arguments[0])))
-
-            INCLUDE -> {
-                val obj = unboxEval(call.arguments[0])
-                if (obj !is EString)
-                    throw RuntimeException("Expected a string argument for include() but got $obj")
-                val parts = obj.get().split(":")
-                if (parts.size != 2)
-                    throw RuntimeException("include() received invalid argument: $obj")
-                var group = parts[0]
-                if (group.isEmpty()) group = Executor.STD_LIB
-
-                val name = parts[1]
-                executor.addModule("$group/$name.eia", name)
-                return Nothing.INSTANCE
-            }
 
             COPY -> {
                 val obj = unboxEval(call.arguments[0])
@@ -536,7 +510,7 @@ class Evaluator(
             // don't do a direct exitProcess(n), Eia could be running in a server
             // you don't need the entire server to shut down
             EXIT -> {
-                Executor.EIA_SHUTDOWN(intExpr(call.arguments[0]).get())
+                Environment.EIA_SHUTDOWN(intExpr(call.arguments[0]).get())
                 return EBool(true) // never reached (hopefully?)
             }
 
@@ -545,6 +519,7 @@ class Evaluator(
                 memory.clearMemory()
                 return Nothing.INSTANCE
             }
+
             else -> throw RuntimeException("Unknown native call operation: '$type'")
         }
     }
@@ -554,18 +529,6 @@ class Evaluator(
         throw EiaRuntimeException(message)
     }
 
-    override fun tryCatch(tryCatch: TryCatch): Any {
-        try {
-            return unboxEval(tryCatch.tryBlock)
-        } catch (e: EiaRuntimeException) {
-            // manual scope handling begins
-            memory.enterScope()
-            memory.declareVar(tryCatch.catchIdentifier, EString(e.message))
-            val result = unboxEval(tryCatch.catchBlock)
-            memory.leaveScope()
-            return result
-        }
-    }
 
     override fun scope(scope: Scope): Any {
         if (scope.imaginary) return eval(scope.expr)
@@ -575,73 +538,29 @@ class Evaluator(
         return result
     }
 
-    override fun classPropertyAccess(propertyAccess: ForeignField): Any {
-        val evaluator = getEvaluatorForField(propertyAccess)
-        val uniqueVariable = propertyAccess.uniqueVariable
-        return evaluator.memory.getVar(
-            uniqueVariable.index,
-            propertyAccess.property
-        )
+    private fun updateKotlinField(field: JavaField, value: Any) {
+        // do not evaluate field, it will lead to access
+        field.field as KMutableProperty1<Any, Any?>
+        field.field.set((unboxEval(field.jObject) as EJava).get(), value.eiaToJava())
     }
 
-    // finds associated evaluator for a foreign field (gVariable)
-    // that is being accessed
-    private fun getEvaluatorForField(propertyAccess: ForeignField): Evaluator {
-        val property = propertyAccess.property
-        val moduleName = propertyAccess.moduleInfo.name
-
-        var evaluator: Evaluator? = null
-        if (propertyAccess.static) {
-            evaluator = executor.getEvaluator(moduleName)
-        } else {
-            when (val evaluatedObject = unboxEval(propertyAccess.objectExpression)) {
-                is Evaluator -> evaluator = evaluatedObject
-                is Primitive<*> -> executor.getEvaluator(moduleName)
-                else -> throw RuntimeException("Could not find property $property of object $evaluatedObject")
-            }
-        }
-        return evaluator ?: throw RuntimeException("Could not find module $moduleName")
+    override fun javaMethodCall(call: JavaMethodCall): Any {
+        val arguments = call.arguments.map { unboxEval(it).eiaToJava() }.toTypedArray()
+        return call.method.let {
+            if (Modifier.isStatic(it.modifiers)) it.invoke(null, arguments)
+            else it.invoke(unboxEval(call.jObject).eiaToJava(), *arguments)
+        }.javaToEia()
     }
 
-    override fun methodCall(call: MethodCall)
-        = fnInvoke(call.reference.fnExpression!!, evaluateArgs(call.arguments))
-
-    override fun classMethodCall(call: ClassMethodCall): Any {
-        val obj = call.objectExpression
-        val methodName = call.method
-        val args: Array<Any>
-
-        var evaluator: Evaluator? = null
-        // we may need to do a recursive alpha parse
-        if (call.static) {
-            // static invocation of an included class
-            args = evaluateArgs(call.arguments)
-        } else {
-            val evaluatedObj = unboxEval(obj)
-            call.arguments as ArrayList
-            args = when (evaluatedObj) {
-                is Primitive<*> -> {
-                    val evaluatedArgs = arrayOfNulls<Any>(call.arguments.size + 1)
-                    for ((index, expression) in call.arguments.withIndex())
-                        evaluatedArgs[index + 1] = unboxEval(expression)
-                    // NOTE: we never should directly modify the original expression list
-                    evaluatedArgs[0] = evaluatedObj
-                    @Suppress("UNCHECKED_CAST")
-                    evaluatedArgs as Array<Any>
-                    evaluatedArgs
-                }
-                is Evaluator -> {
-                    evaluator = evaluatedObj
-                    evaluateArgs(call.arguments)
-                }
-                else -> throw RuntimeException("Could not find method '$methodName' of object $evaluatedObj")
-            }
-        }
-        val moduleName = call.moduleInfo.name
-        val finalEvaluator = evaluator ?: executor.getEvaluator(moduleName)
-            ?: throw RuntimeException("Could not find module $moduleName")
-        return finalEvaluator.fnInvoke(call.reference.fnExpression!!, args)
+    override fun javaFieldAccess(field: JavaField): Primitive<*> {
+        return field.field.let {
+            if (Modifier.isStatic(it.modifiers)) it.get(null)
+            else it.get(unboxEval(field.jObject).eiaToJava())
+        }.javaToEia()
     }
+
+    override fun methodCall(call: MethodCall) = fnInvoke(call.reference.fnExpression!!, evaluateArgs(call.arguments))
+
 
     private fun evaluateArgs(args: List<Expression>): Array<Any> {
         val evaluatedArgs = arrayOfNulls<Any>(args.size)
@@ -686,56 +605,19 @@ class Evaluator(
             callValues += Pair(definedParameter, callValue)
             argValues += Pair(definedParameter.first, callValue)
         }
-        tracer?.runtimeFnCall(fnName, argValues)
         memory.enterScope()
         callValues.forEach {
             val definedParameter = it.first
             val value = it.second
-            memory.declareVar(definedParameter.first,
-                Entity(definedParameter.first, true, value, definedParameter.second))
+            memory.declareVar(
+                definedParameter.first,
+                Entity(definedParameter.first, true, value, definedParameter.second)
+            )
         }
         val result = unboxEval(fn.body)
         memory.leaveScope()
         // Return the function itself as a unit
         if (fn.isVoid) return fn
-        return result
-    }
-
-    override fun unitInvoke(shadoInvoke: ShadoInvoke): Any {
-        var operand: Any = shadoInvoke.expr
-
-        // Fully Manual Scopped
-        if (operand !is Shadow)
-            operand = unboxEval(operand as Expression)
-
-        if (operand !is Shadow)
-            throw RuntimeException("Expected shadow element for call, but got $operand")
-
-        val expectedArgs = operand.names.size
-        val gotArgs = shadoInvoke.arguments.size
-
-        if (expectedArgs != gotArgs) {
-            reportWrongArguments("AnonShado", expectedArgs, gotArgs, "Shado")
-        }
-
-        val argIterator = operand.names.iterator()
-        val exprIterator = evaluateArgs(shadoInvoke.arguments).iterator()
-
-        memory.enterScope()
-        while (exprIterator.hasNext()) {
-            memory.declareVar(argIterator.next(), exprIterator.next())
-        }
-
-        val result = eval(operand.body)
-        memory.leaveScope()
-
-        if (result is Entity) {
-            when (result.interruption) {
-                InterruptionType.RETURN,
-                InterruptionType.USE -> return result
-                else -> { }
-            }
-        }
         return result
     }
 
@@ -748,7 +630,6 @@ class Evaluator(
         var numIterations = 0
         while (booleanExpr(until.expression).get()) {
             numIterations++
-            tracer?.runtimeUntil(numIterations)
             val result = eval(until.body)
             if (result is Entity) {
                 when (result.interruption) {
@@ -756,7 +637,7 @@ class Evaluator(
                     InterruptionType.CONTINUE -> continue
                     InterruptionType.RETURN -> return result
                     InterruptionType.USE -> result.value
-                    else -> { }
+                    else -> {}
                 }
             }
         }
@@ -767,7 +648,7 @@ class Evaluator(
         val iterable = unboxEval(forEach.entity)
 
         var index = 0
-        val size:Int
+        val size: Int
 
         val getNext: () -> Any
         when (iterable) {
@@ -794,7 +675,6 @@ class Evaluator(
             memory.enterScope()
             val element = getNext()
             memory.declareVar(named, Entity(named, false, element, getSignature(element)))
-            tracer?.runtimeForEach(numIterations, iterable, element)
             val result = eval(body)
             memory.leaveScope()
             if (result is Entity) {
@@ -803,7 +683,7 @@ class Evaluator(
                     InterruptionType.CONTINUE -> continue
                     InterruptionType.RETURN -> return result
                     InterruptionType.USE -> result.value
-                    else -> { }
+                    else -> {}
                 }
             }
         }
@@ -834,9 +714,10 @@ class Evaluator(
                         from = from + by
                         continue
                     }
+
                     InterruptionType.RETURN -> return result
                     InterruptionType.USE -> return result.value
-                    else -> { }
+                    else -> {}
                 }
             }
             from = from + by
@@ -856,7 +737,6 @@ class Evaluator(
         while (if (conditional == null) true else booleanExpr(conditional).get()) {
             numIterations++
             // Auto Scopped
-            tracer?.runtimeFor(numIterations)
             val result = eval(forLoop.body)
             // Scope -> Memory -> Array
             if (result is Entity) {
@@ -866,15 +746,18 @@ class Evaluator(
                         evalOperational()
                         continue
                     }
+
                     InterruptionType.RETURN -> {
                         memory.leaveScope()
                         return result
                     }
+
                     InterruptionType.USE -> {
                         memory.leaveScope()
                         return result.value
                     }
-                    else -> { }
+
+                    else -> {}
                 }
             }
             evalOperational()
@@ -888,27 +771,39 @@ class Evaluator(
         RETURN -> {
             // could be of a void type, so it could be null
             val expr = if (interruption.expr == null) 0 else unboxEval(interruption.expr)
-            Entity("FlowReturn",
+            Entity(
+                "FlowReturn",
                 false,
                 expr,
                 Sign.NONE,
-                InterruptionType.RETURN)
+                InterruptionType.RETURN
+            )
         }
-        USE -> Entity("FlowUse",
+
+        USE -> Entity(
+            "FlowUse",
             false,
             unboxEval(interruption.expr!!),
             Sign.NONE,
-            InterruptionType.USE)
-        BREAK -> Entity("FlowBreak",
+            InterruptionType.USE
+        )
+
+        BREAK -> Entity(
+            "FlowBreak",
             false,
             0,
             Sign.NONE,
-            InterruptionType.BREAK)
-        CONTINUE -> Entity("FlowContinue",
+            InterruptionType.BREAK
+        )
+
+        CONTINUE -> Entity(
+            "FlowContinue",
             false,
             0,
             Sign.NONE,
-            InterruptionType.CONTINUE)
+            InterruptionType.CONTINUE
+        )
+
         else -> throw RuntimeException("Unknown interruption type $type")
     }
 
@@ -923,18 +818,15 @@ class Evaluator(
 
     override fun ifFunction(ifExpr: IfStatement): Any {
         val conditionSuccess = booleanExpr(ifExpr.condition).get()
-        // Here it would be best if we could add a fallback NONE value that
-        // would prevent us from doing a lot of if checks at runtime
-        return eval(if (conditionSuccess) ifExpr.thenBody else ifExpr.elseBody)
+        if (conditionSuccess) return eval(ifExpr.thenBody)
+        ifExpr.elseBody?.let { return eval(it) }
+        return Nothing.INSTANCE
     }
 
     override fun function(function: FunctionExpr): Any {
         memory.declareFn(function.name, function)
-        tracer?.declareFn(function.name, function.arguments)
         return EBool(true)
     }
-
-    override fun shado(shadow: Shadow) = shadow
 
     override fun arrayAccess(access: ArrayAccess): Any {
         val entity = unboxEval(access.expr)

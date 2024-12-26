@@ -1,6 +1,8 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
+import space.themelon.eia64.analysis.ScopeManager
+import space.themelon.eia64.runtime.Environment
 import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
@@ -17,7 +19,7 @@ data class NativeCall(
     val where: Token,
     val call: Type,
     val arguments: List<Expression>, // sig checked
-) : Expression(where) {
+) : Expression() {
 
     companion object {
         private val OLD_FUNCTION_SIGNATURES = HashMap<Type, FunctionInfo>().apply {
@@ -40,7 +42,6 @@ data class NativeCall(
             put(Type.FORMAT, FunctionInfo(Sign.STRING, -1))
             put(Type.TYPE_OF, FunctionInfo(Sign.TYPE, 1, listOf("any" to Sign.ANY)))
 
-            put(Type.INCLUDE, FunctionInfo(Sign.NONE, 1, listOf("name" to Sign.STRING)))
             put(Type.MEM_CLEAR, FunctionInfo(Sign.NONE, 0))
             put(Type.COPY, FunctionInfo(null, 1, listOf("any" to Sign.ANY)))
         }

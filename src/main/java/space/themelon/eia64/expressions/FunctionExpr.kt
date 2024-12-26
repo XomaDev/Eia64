@@ -1,6 +1,8 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
+import space.themelon.eia64.analysis.ScopeManager
+import space.themelon.eia64.runtime.Environment
 import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
@@ -13,7 +15,7 @@ data class FunctionExpr(
     val isVoid: Boolean,
     val returnSignature: Signature,
     val body: Expression // sig checked
-) : Expression(where) {
+) : Expression() {
 
     override fun <R> accept(v: Visitor<R>) = v.function(this)
 

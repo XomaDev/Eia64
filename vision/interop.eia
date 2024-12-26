@@ -1,0 +1,11 @@
+import java.net.URL
+import java.net.HttpURLConnection
+import java.lang.String
+import org.json.JSONObject
+
+let conn = URL("http://api.quotable.io/random").openConnection()::HttpURLConnection
+conn.setRequestMethod("GET")
+if (conn.getResponseCode() == 200) {
+  let response = String(conn.getInputStream().readAllBytes())
+  println(JSONObject(response).getString("content"))
+}

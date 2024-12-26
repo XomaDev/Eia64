@@ -1,2 +1,0 @@
-let ints = arrayOf(7, 3)
-println(ints is Array<Int>)

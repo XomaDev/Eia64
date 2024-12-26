@@ -1,7 +1,8 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.signatures.SimpleSignature
+import space.themelon.eia64.analysis.ScopeManager
+import space.themelon.eia64.runtime.Environment
 import space.themelon.eia64.signatures.Sign
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type
@@ -9,7 +10,7 @@ import space.themelon.eia64.syntax.Type
 data class ExpressionList(
     val expressions: List<Expression>,
     var preserveState: Boolean = false,
-) : Expression(null) {
+) : Expression() {
 
     val size = expressions.size
     override fun <R> accept(v: Visitor<R>) = v.expressions(this)
