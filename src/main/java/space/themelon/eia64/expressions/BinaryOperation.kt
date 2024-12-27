@@ -1,10 +1,8 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.ScopeManager
-import space.themelon.eia64.runtime.Environment
 import space.themelon.eia64.signatures.Matching.numericOrChar
-import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.SignatureConstants
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
@@ -27,7 +25,7 @@ data class BinaryOperation(
 
         var resultSign = leftSig
         when (operator) {
-            Type.PLUS -> if (!leftSig.isNumeric() && !rightSig.isNumeric()) resultSign = Sign.STRING
+            Type.PLUS -> if (!leftSig.isNumeric() && !rightSig.isNumeric()) resultSign = SignatureConstants.STRING
 
             Type.NEGATE -> if (!leftSig.isNumeric() || !rightSig.isNumeric())
                 applyError("arithmetic", "Numeric", "-", leftSig, rightSig)
@@ -47,38 +45,38 @@ data class BinaryOperation(
             Type.BITWISE_OR -> if (!leftSig.isNumeric() || !rightSig.isNumeric())
                 applyError("bitwise", "Numeric", "|", leftSig, rightSig)
 
-            Type.EQUALS, Type.NOT_EQUALS -> resultSign = Sign.BOOL
+            Type.EQUALS, Type.NOT_EQUALS -> resultSign = SignatureConstants.BOOL
 
-            Type.LOGICAL_AND -> if (leftSig != Sign.BOOL || rightSig != Sign.BOOL)
+            Type.LOGICAL_AND -> if (leftSig != SignatureConstants.BOOL || rightSig != SignatureConstants.BOOL)
                 applyError("logical", "Numeric", "&&", leftSig, rightSig)
 
-            Type.LOGICAL_OR -> if (leftSig != Sign.BOOL || rightSig != Sign.BOOL) {
+            Type.LOGICAL_OR -> if (leftSig != SignatureConstants.BOOL || rightSig != SignatureConstants.BOOL) {
                 applyError("logical", "Numeric", "||", leftSig, rightSig)
-            } else resultSign = Sign.BOOL
+            } else resultSign = SignatureConstants.BOOL
 
             Type.RIGHT_DIAMOND -> if (!numericOrChar(left, right)) {
                 where.error<String>("Cannot apply logical operator on non [Numeric/Char] expressions: ($leftLogName > $rightLogName)")
-            } else resultSign = Sign.BOOL
+            } else resultSign = SignatureConstants.BOOL
 
             Type.LEFT_DIAMOND -> if (!numericOrChar(left, right)) {
                 where.error<String>("Cannot apply logical operator on non [Numeric/Char] expressions: ($leftLogName < $rightLogName)")
-            } else resultSign = Sign.BOOL
+            } else resultSign = SignatureConstants.BOOL
 
             Type.GREATER_THAN_EQUALS -> if (!numericOrChar(left, right)) {
                 where.error<String>("Cannot apply logical operator on non [Numeric/Char] expressions: ($leftLogName >= $rightLogName)")
-                resultSign = Sign.BOOL
-            } else resultSign = Sign.BOOL
+                resultSign = SignatureConstants.BOOL
+            } else resultSign = SignatureConstants.BOOL
 
             Type.LESSER_THAN_EQUALS -> if (!numericOrChar(left, right)) {
                 where.error<String>("Cannot apply logical operator on [Numeric/Char] expressions: ($leftLogName <= $rightLogName)")
-            } else resultSign = Sign.BOOL
+            } else resultSign = SignatureConstants.BOOL
 
             Type.ASSIGNMENT -> resultSign = rightSig
 
             Type.ADDITIVE_ASSIGNMENT -> when (rightSig) {
-                Sign.STRING, Sign.CHAR -> resultSign = Sign.STRING
-                Sign.INT -> resultSign = Sign.INT
-                Sign.FLOAT -> resultSign = Sign.FLOAT
+                SignatureConstants.STRING, SignatureConstants.CHAR -> resultSign = SignatureConstants.STRING
+                SignatureConstants.INT -> resultSign = SignatureConstants.INT
+                SignatureConstants.FLOAT -> resultSign = SignatureConstants.FLOAT
                 else -> where.error("Unknown expression signature for operator (+= Additive Assignment): $rightSig")
             }
 

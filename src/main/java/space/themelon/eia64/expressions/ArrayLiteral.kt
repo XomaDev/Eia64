@@ -1,10 +1,8 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.ScopeManager
-import space.themelon.eia64.runtime.Environment
 import space.themelon.eia64.signatures.ArrayExtension
-import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.SignatureConstants
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 
@@ -24,13 +22,13 @@ data class ArrayLiteral(
     // also called by Evaluator
     fun elementSignature(): Signature {
         // dynamic deciding of array element signature based on content
-        if (elements.isEmpty()) return Sign.ANY
+        if (elements.isEmpty()) return SignatureConstants.ANY
 
         var signature = elements[0].sig()
         for (element in elements) {
             val elementSignature = element.sig()
             if (elementSignature != signature) {
-                signature = Sign.ANY
+                signature = SignatureConstants.ANY
                 // if all the elements don't hold the same signature, use ANY
                 break
             }

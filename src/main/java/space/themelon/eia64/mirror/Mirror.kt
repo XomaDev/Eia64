@@ -1,4 +1,4 @@
-package space.themelon.eia64.analysis
+package space.themelon.eia64.mirror
 
 import java.lang.reflect.Constructor
 import java.lang.reflect.Method
@@ -29,7 +29,9 @@ object Mirror {
         }
     }
 
-    fun lookupMethod(name: String, clazz: Class<*>, argTypes: List<Class<*>>): Method {
+    fun lookupMethod(name: String, clazz: Class<*>, lookupTypes: List<Class<*>>): Method {
+        val argTypes = lookupTypes.map { unboxType(it) }
+        clazz.methods.forEach { println(it) }
         return clazz.methods
             .filter {
                 it.name == name
@@ -42,7 +44,8 @@ object Mirror {
             ?: throw NoSuchMethodException("Cannot find method $name with arguments $argTypes in $clazz")
     }
 
-    fun lookupConstructor(clazz: Class<*>, argTypes: List<Class<*>>): Constructor<*> {
+    fun lookupConstructor(clazz: Class<*>, lookupTypes: List<Class<*>>): Constructor<*> {
+        val argTypes = lookupTypes.map { unboxType(it) }
         return clazz.constructors
             .filter {
                 it.parameterCount == argTypes.size
@@ -54,8 +57,7 @@ object Mirror {
             ?: throw NoSuchMethodException("Cannot find constructor with arguments $argTypes in $clazz")
     }
 
-    private fun computeHierarchyDepth(got: Class<*>, expected: Class<*>): Int {
-        val argType = unboxType(got)
+    private fun computeHierarchyDepth(argType: Class<*>, expected: Class<*>): Int {
         val targetType = unboxType(expected)
 
         var depth = 0
@@ -67,16 +69,16 @@ object Mirror {
         return depth
     }
 
-    private fun unboxType(boxedType: Class<*>) = when (boxedType) {
-        Boolean::class.java -> Boolean::class.javaPrimitiveType
-        Byte::class.java -> Byte::class.javaPrimitiveType
-        Char::class.java -> Char::class.javaPrimitiveType
-        Short::class.java -> Short::class.javaPrimitiveType
-        Int::class.java -> Int::class.javaPrimitiveType
-        Long::class.java -> Long::class.javaPrimitiveType
-        Float::class.java -> Float::class.javaPrimitiveType
-        Double::class.java -> Double::class.javaPrimitiveType
-        Void::class.java -> Void.TYPE
+    private fun unboxType(boxedType: Class<*>): Class<*> = when (boxedType) {
+        java.lang.Boolean::class.java -> Boolean::class.javaPrimitiveType!!
+        java.lang.Byte::class.java -> Byte::class.javaPrimitiveType!!
+        java.lang.Character::class.java -> Char::class.javaPrimitiveType!!
+        java.lang.Short::class.java -> Short::class.javaPrimitiveType!!
+        java.lang.Integer::class.java -> Int::class.javaPrimitiveType!!
+        java.lang.Long::class.java -> Long::class.javaPrimitiveType!!
+        java.lang.Float::class.java -> Float::class.javaPrimitiveType!!
+        java.lang.Double::class.java -> Double::class.javaPrimitiveType!!
+        java.lang.Void::class.java -> Void.TYPE
         else -> boxedType
     }
 }

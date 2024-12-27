@@ -3,6 +3,7 @@ package space.themelon.eia64.analysis
 import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.ArrayLiteral
+import space.themelon.eia64.mirror.Mirror
 import space.themelon.eia64.runtime.Environment
 import space.themelon.eia64.signatures.*
 import space.themelon.eia64.signatures.Matching.matches
@@ -105,10 +106,10 @@ class Parser(
                 }
 
                 Type.FUN -> if (curlyBracesCount == 0) handleFn(false)
-                Type.VISIBLE, Type.INVISIBLE -> {
+                Type.PUBLIC, Type.PRIVATE -> {
                     if (curlyBracesCount == 0 && isNext(Type.FUN)) {
                         skip()
-                        handleFn(type == Type.VISIBLE)
+                        handleFn(type == Type.PUBLIC)
                     }
                 }
 
@@ -125,7 +126,7 @@ class Parser(
         val clazz = Mirror.lookupClass(token.data as String)
         val pkgName = clazz.name
         val simpleName = pkgName.substring(pkgName.lastIndexOf('.') + 1)
-        environment.javaImports += simpleName to clazz
+        environment.classes += simpleName to clazz
         return NoneExpression()
     }
 
@@ -171,7 +172,7 @@ class Parser(
                 }
                 eat(Type.CLOSE_CURVE)
                 manager.enterScope()
-                manager.defineVariable(iName, Sign.INT)
+                manager.defineVariable(iName, SignatureConstants.INT)
                 // Manual Scopped!
                 val body = manager.iterativeScope { manualSmtBody() }
                 manager.leaveScope()
@@ -197,8 +198,8 @@ class Parser(
         eat(Type.CLOSE_CURVE)
 
         val elementSignature = when (entity.sig()) {
-            Sign.LIST -> Sign.ANY
-            Sign.STRING -> Sign.CHAR
+            SignatureConstants.LIST -> SignatureConstants.ANY
+            SignatureConstants.STRING -> SignatureConstants.CHAR
 
             else -> {
                 where.error<String>("Unknown non iterable element for '$iName'")
@@ -250,7 +251,7 @@ class Parser(
             when (token.type) {
                 Type.RETURN -> {
                     val expectedSignature = manager.getPromisedSignature
-                    if (expectedSignature == Sign.NONE) {
+                    if (expectedSignature == SignatureConstants.NONE) {
                         null
                     } else {
                         val expr = statement()
@@ -293,7 +294,7 @@ class Parser(
             readSignature(next())
         } else {
             isVoid = true
-            Sign.UNIT
+            SignatureConstants.UNIT
         }
 
         return FunctionReference(
@@ -341,16 +342,10 @@ class Parser(
         val condition = between(Type.OPEN_CURVE, Type.CLOSE_CURVE) { statement() }
         val thenBody = smtOrBody()
 
-        val elseBody = if (notEOF() && consume(Type.ELSE))
-            peek().let { if (it.type == Type.IF) ifSmt(it) else statement() }
-        else null
-
-        return IfStatement(
-            where,
-            condition,
-            thenBody,
-            elseBody
-        )
+        if (isEOF() || !isNext(Type.ELSE)) return IfStatement(where, condition, thenBody, NoneExpression.INSTANCE)
+        skip()
+        val elseBody = if (isNext(Type.IF)) ifSmt(next()) else smtOrBody()
+        return IfStatement(where, condition, thenBody, elseBody)
     }
 
     // automatic scope operator
@@ -418,19 +413,19 @@ class Parser(
             // end of exec
         }
         return when (val name = token.data as String) {
-            "Nil" -> Sign.NIL
-            "Int" -> Sign.INT
-            "Float" -> Sign.FLOAT
-            "Bool" -> Sign.BOOL
-            "String" -> Sign.STRING
-            "Char" -> Sign.CHAR
-            "Any" -> Sign.ANY
-            "Array" -> Sign.ARRAY
-            "Unit" -> Sign.UNIT
-            "Type" -> Sign.TYPE
-            "Java" -> Sign.JAVA
+            "Nil" -> SignatureConstants.NIL
+            "Int" -> SignatureConstants.INT
+            "Float" -> SignatureConstants.FLOAT
+            "Bool" -> SignatureConstants.BOOL
+            "String" -> SignatureConstants.STRING
+            "Char" -> SignatureConstants.CHAR
+            "Any" -> SignatureConstants.ANY
+            "Array" -> SignatureConstants.ARRAY
+            "Unit" -> SignatureConstants.UNIT
+            "Type" -> SignatureConstants.TYPE
+            "Java" -> SignatureConstants.JAVA
             else -> {
-                environment.javaImports[name]?.let { return ClassSign(it) }
+                environment.classes[name]?.let { return ClassSignature(it) }
                 throw IllegalArgumentException("Unknown signature $name")
             }
         }
@@ -491,15 +486,21 @@ class Parser(
             ) break
             if (nextOp.type == Type.COLON && !left.sig().isJava()) break
 
-            when (nextOp.type) {
+            left = when (nextOp.type) {
                 // calling shadow func
-                Type.OPEN_CURVE -> left = unitCall(left)
+                Type.OPEN_CURVE -> unitCall(left)
+                Type.OPEN_SQUARE -> {
+                    // array access
+                    skip()
+                    val expr = statement()
+                    eat(Type.CLOSE_SQUARE)
+                    ArrayAccess(nextOp, left, expr)
+                }
                 Type.DOUBLE_COLON -> {
                     index++
-                    left = Cast(nextOp, left, readSignature(next()))
+                    Cast(nextOp, left, readSignature(next()))
                 }
-
-                else -> left = javaCall(left)
+                else -> javaCall(left)
             }
         }
         return left
@@ -551,7 +552,7 @@ class Parser(
     }
 
     private fun newStatement(token: Token, arguments: List<Expression>): NewInstance {
-        val clazz = (token.data as String).let { environment.javaImports[it] ?: token.error("Cannot find symbol '$it'") }
+        val clazz = (token.data as String).let { environment.classes[it] ?: token.error("Cannot find symbol '$it'") }
         val constructor = Mirror.lookupConstructor(clazz, arguments.map { it.sig().javaClass() })
         return NewInstance(
             clazz,
@@ -693,9 +694,9 @@ class Parser(
             val vrReference = manager.resolveVr(name)
             if (vrReference == null) {
                 if (manager.hasFunctionNamed(name))
-                    Alpha(token, -3, name, Sign.NONE)
-                else if (environment.javaImports.contains(name))
-                    Alpha(token, -4, name, Sign.NONE)
+                    Alpha(token, -3, name, SignatureConstants.NONE)
+                else if (environment.classes.contains(name))
+                    Alpha(token, -4, name, SignatureConstants.NONE)
                 else
                     token.error("Cannot find symbol '$name'")
             } else {

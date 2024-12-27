@@ -1,9 +1,7 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.ScopeManager
-import space.themelon.eia64.runtime.Environment
-import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.SignatureConstants
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
@@ -24,7 +22,7 @@ data class UnaryOperation(
                 Type.NEGATE -> if (!exprSign.isNumeric()) applyError("Numeric", "- Negate")
                 Type.INCREMENT -> if (!exprSign.isNumeric()) applyError("Numeric", "++ Increment")
                 Type.DECREMENT -> if (!exprSign.isNumeric()) applyError("Numeric", "-- Decrement")
-                Type.EXCLAMATION -> if (exprSign != Sign.BOOL) applyError("Bool", "! Not")
+                Type.EXCLAMATION -> if (exprSign != SignatureConstants.BOOL) applyError("Bool", "! Not")
                 else -> where.error<String>("Unknown unary operator towards left")
             }
         } else {

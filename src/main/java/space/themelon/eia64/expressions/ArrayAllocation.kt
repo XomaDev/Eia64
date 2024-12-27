@@ -1,8 +1,6 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.ScopeManager
-import space.themelon.eia64.runtime.Environment
 import space.themelon.eia64.signatures.*
 import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.syntax.Token
@@ -18,7 +16,7 @@ class ArrayAllocation(
 
     override fun sig(): Signature {
         val gotSig = size.sig()
-        if (!matches(Sign.INT, gotSig)) {
+        if (!matches(SignatureConstants.INT, gotSig)) {
             where.error<String>("Array allocation expects an Int for array length, but got $gotSig")
         }
         if (!matches(elementSignature, defaultValue.sig())) {

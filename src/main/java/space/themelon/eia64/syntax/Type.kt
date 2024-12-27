@@ -36,7 +36,7 @@ enum class Type {
     E_TRUE, E_FALSE, CLASS_VALUE,
     NIL,
 
-    VISIBLE, INVISIBLE,
+    PUBLIC, PRIVATE,
 
     BOOL_CAST, INT_CAST, FLOAT_CAST, CHAR_CAST, STRING_CAST,
     TYPE_OF,
@@ -139,8 +139,8 @@ enum class Type {
                 it["false"] = StaticToken(E_FALSE, arrayOf(Flag.VALUE, Flag.E_BOOL))
                 it["type"] = StaticToken(CLASS_VALUE, arrayOf(Flag.VALUE))
 
-                it["visible"] = StaticToken(VISIBLE, arrayOf(Flag.MODIFIER))
-                it["private"] = StaticToken(INVISIBLE, arrayOf(Flag.MODIFIER))
+                it["public"] = StaticToken(PUBLIC, arrayOf(Flag.MODIFIER))
+                it["private"] = StaticToken(PRIVATE, arrayOf(Flag.MODIFIER))
 
                 it["bool"] = StaticToken(BOOL_CAST, arrayOf(Flag.NATIVE_CALL))
                 it["int"] = StaticToken(INT_CAST, arrayOf(Flag.NATIVE_CALL))

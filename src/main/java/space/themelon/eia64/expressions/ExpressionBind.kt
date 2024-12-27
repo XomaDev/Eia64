@@ -1,9 +1,7 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.ScopeManager
-import space.themelon.eia64.runtime.Environment
-import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.SignatureConstants
 import space.themelon.eia64.signatures.Signature
 
 // A simple alternative to ExpressionList, when you want to evaluate more
@@ -16,6 +14,6 @@ data class ExpressionBind(
 
     override fun sig(): Signature {
         expressions.forEach { it.sig() }
-        return Sign.NONE // this does not return anything, non-consumable
+        return SignatureConstants.NONE // this does not return anything, non-consumable
     }
 }

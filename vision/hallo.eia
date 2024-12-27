@@ -1,0 +1,2 @@
+let name: String = "meow"
+println(name[0])

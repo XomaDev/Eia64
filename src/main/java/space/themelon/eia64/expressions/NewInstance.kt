@@ -1,10 +1,7 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.ScopeManager
-import space.themelon.eia64.runtime.Environment
-import space.themelon.eia64.signatures.ClassSign
-import space.themelon.eia64.syntax.Token
+import space.themelon.eia64.signatures.ClassSignature
 import java.lang.reflect.Constructor
 
 data class NewInstance(
@@ -16,5 +13,5 @@ data class NewInstance(
 
     override fun <R> accept(v: Visitor<R>) = v.newJava(this)
 
-    override fun sig() = ClassSign(clazz)
+    override fun sig() = ClassSignature(clazz)
 }

@@ -11,7 +11,7 @@ import space.themelon.eia64.runtime.Entity.Companion.unbox
 import space.themelon.eia64.signatures.ArrayExtension
 import space.themelon.eia64.signatures.Matching.matches
 import space.themelon.eia64.signatures.ObjectExtension
-import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.SignatureConstants
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Type.*
 import java.lang.reflect.Modifier
@@ -283,8 +283,8 @@ class Evaluator(
         when (getSignature(array)) {
             // TODO:
             //  we need to look here later, it could also be an array extension
-            Sign.ARRAY, is ArrayExtension -> (array as ArrayOperable<Any>).setAt(index, value)
-            Sign.STRING -> {
+            SignatureConstants.ARRAY, is ArrayExtension -> (array as ArrayOperable<Any>).setAt(index, value)
+            SignatureConstants.STRING -> {
                 if (value !is EChar) throw RuntimeException("string[index] requires a Char")
                 (array as EString).setAt(index, value)
             }
@@ -364,7 +364,7 @@ class Evaluator(
             }
         } else if (promisedSignature is ArrayExtension) {
             // Cast into explicit type declaration
-            if (gotSignature == Sign.ARRAY) return promisedSignature
+            if (gotSignature == SignatureConstants.ARRAY) return promisedSignature
             if (gotSignature !is ArrayExtension) {
                 cast.where.error<String>("Cannot cast $result into array type $promisedSignature")
                 throw RuntimeException()
@@ -378,8 +378,8 @@ class Evaluator(
             if (castArrayType != currentArrayType) {
                 cast.where.error<String>("Cannot cast array element type $currentArrayType into $castArrayType")
             }
-        } else if (promisedSignature == Sign.ARRAY) {
-            if (!(gotSignature is ArrayExtension || gotSignature == Sign.ARRAY)) {
+        } else if (promisedSignature == SignatureConstants.ARRAY) {
+            if (!(gotSignature is ArrayExtension || gotSignature == SignatureConstants.ARRAY)) {
                 cast.where.error<String>("Cannot cast $result to $promisedSignature")
             }
         }
@@ -425,7 +425,7 @@ class Evaluator(
             FORMAT -> {
                 val exprs = call.arguments
                 val string = unboxEval(exprs[0])
-                if (getSignature(string) != Sign.STRING)
+                if (getSignature(string) != SignatureConstants.STRING)
                     throw RuntimeException("format() requires a string argument")
                 string as EString
                 if (exprs.size > 1) {
@@ -443,10 +443,10 @@ class Evaluator(
                 val obj = unboxEval(call.arguments[0])
 
                 return when (val objType = getSignature(obj)) {
-                    Sign.INT -> obj
-                    Sign.CHAR -> EInt((obj as EChar).get().code)
-                    Sign.STRING -> EInt(obj.toString().toInt())
-                    Sign.FLOAT -> EInt((obj as EFloat).get().toInt())
+                    SignatureConstants.INT -> obj
+                    SignatureConstants.CHAR -> EInt((obj as EChar).get().code)
+                    SignatureConstants.STRING -> EInt(obj.toString().toInt())
+                    SignatureConstants.FLOAT -> EInt((obj as EFloat).get().toInt())
                     else -> throw RuntimeException("Unknown type for int() cast $objType")
                 }
             }
@@ -455,10 +455,10 @@ class Evaluator(
                 val obj = unboxEval(call.arguments[0])
 
                 return when (val objType = getSignature(obj)) {
-                    Sign.INT -> (obj as EInt).get().toFloat()
-                    Sign.FLOAT -> obj
-                    Sign.CHAR -> EFloat((obj as EChar).get().code.toFloat())
-                    Sign.STRING -> EFloat(obj.toString().toFloat())
+                    SignatureConstants.INT -> (obj as EInt).get().toFloat()
+                    SignatureConstants.FLOAT -> obj
+                    SignatureConstants.CHAR -> EFloat((obj as EChar).get().code.toFloat())
+                    SignatureConstants.STRING -> EFloat(obj.toString().toFloat())
                     else -> throw RuntimeException("Unknown type for int() cast $objType")
                 }
             }
@@ -466,21 +466,21 @@ class Evaluator(
             CHAR_CAST -> {
                 val obj = unboxEval(call.arguments[0])
                 return when (val objType = getSignature(obj)) {
-                    Sign.CHAR -> objType
-                    Sign.INT -> EChar((obj as EInt).get().toChar())
+                    SignatureConstants.CHAR -> objType
+                    SignatureConstants.INT -> EChar((obj as EInt).get().toChar())
                     else -> throw RuntimeException("Unknown type for char() cast $objType")
                 }
             }
 
             STRING_CAST -> {
                 val obj = unboxEval(call.arguments[0])
-                if (getSignature(obj) == Sign.STRING) return obj
+                if (getSignature(obj) == SignatureConstants.STRING) return obj
                 return EString(obj.toString())
             }
 
             BOOL_CAST -> {
                 val obj = unboxEval(call.arguments[0])
-                if (getSignature(obj) == Sign.BOOL) return obj
+                if (getSignature(obj) == SignatureConstants.BOOL) return obj
                 return EBool(
                     when (obj) {
                         "true" -> true
@@ -704,7 +704,7 @@ class Evaluator(
             numIterations++
             // Manual Scopped
             memory.enterScope()
-            memory.declareVar(named, Entity(named, true, from, Sign.INT))
+            memory.declareVar(named, Entity(named, true, from, SignatureConstants.INT))
             val result = eval(itr.body)
             memory.leaveScope()
             if (result is Entity) {
@@ -775,7 +775,7 @@ class Evaluator(
                 "FlowReturn",
                 false,
                 expr,
-                Sign.NONE,
+                SignatureConstants.NONE,
                 InterruptionType.RETURN
             )
         }
@@ -784,7 +784,7 @@ class Evaluator(
             "FlowUse",
             false,
             unboxEval(interruption.expr!!),
-            Sign.NONE,
+            SignatureConstants.NONE,
             InterruptionType.USE
         )
 
@@ -792,7 +792,7 @@ class Evaluator(
             "FlowBreak",
             false,
             0,
-            Sign.NONE,
+            SignatureConstants.NONE,
             InterruptionType.BREAK
         )
 
@@ -800,7 +800,7 @@ class Evaluator(
             "FlowContinue",
             false,
             0,
-            Sign.NONE,
+            SignatureConstants.NONE,
             InterruptionType.CONTINUE
         )
 

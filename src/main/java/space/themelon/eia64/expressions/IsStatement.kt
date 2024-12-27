@@ -1,9 +1,7 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.ScopeManager
-import space.themelon.eia64.runtime.Environment
-import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.SignatureConstants
 import space.themelon.eia64.signatures.Signature
 
 data class IsStatement(
@@ -15,6 +13,6 @@ data class IsStatement(
 
     override fun sig(): Signature {
         expression.sig() // necessary
-        return Sign.BOOL
+        return SignatureConstants.BOOL
     }
 }

@@ -1,10 +1,8 @@
 package space.themelon.eia64.expressions
 
 import space.themelon.eia64.Expression
-import space.themelon.eia64.analysis.ScopeManager
-import space.themelon.eia64.runtime.Environment
 import space.themelon.eia64.signatures.Matching.matches
-import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.SignatureConstants
 import space.themelon.eia64.signatures.Signature
 import space.themelon.eia64.syntax.Token
 import space.themelon.eia64.syntax.Type
@@ -23,27 +21,27 @@ data class NativeCall(
 
     companion object {
         private val OLD_FUNCTION_SIGNATURES = HashMap<Type, FunctionInfo>().apply {
-            put(Type.PRINT, FunctionInfo(Sign.NONE, -1))
-            put(Type.PRINTLN, FunctionInfo(Sign.NONE, -1))
-            put(Type.LEN, FunctionInfo(Sign.INT, 1, listOf("measurable" to Sign.ANY)))
-            put(Type.SLEEP, FunctionInfo(Sign.NONE, 1, listOf("millis" to Sign.INT)))
-            put(Type.RAND, FunctionInfo(Sign.INT, 2, listOf("from" to Sign.INT, "to" to Sign.INT)))
-            put(Type.INT_CAST, FunctionInfo(Sign.INT, 1, listOf("intCastable" to Sign.ANY)))
-            put(Type.EXIT, FunctionInfo(Sign.NONE, 1, listOf("exitCode" to Sign.INT)))
+            put(Type.PRINT, FunctionInfo(SignatureConstants.NONE, -1))
+            put(Type.PRINTLN, FunctionInfo(SignatureConstants.NONE, -1))
+            put(Type.LEN, FunctionInfo(SignatureConstants.INT, 1, listOf("measurable" to SignatureConstants.ANY)))
+            put(Type.SLEEP, FunctionInfo(SignatureConstants.NONE, 1, listOf("millis" to SignatureConstants.INT)))
+            put(Type.RAND, FunctionInfo(SignatureConstants.INT, 2, listOf("from" to SignatureConstants.INT, "to" to SignatureConstants.INT)))
+            put(Type.INT_CAST, FunctionInfo(SignatureConstants.INT, 1, listOf("intCastable" to SignatureConstants.ANY)))
+            put(Type.EXIT, FunctionInfo(SignatureConstants.NONE, 1, listOf("exitCode" to SignatureConstants.INT)))
 
-            put(Type.FLOAT_CAST, FunctionInfo(Sign.FLOAT, 1, listOf("floatCastable" to Sign.ANY)))
-            put(Type.CHAR_CAST, FunctionInfo(Sign.CHAR, 1, listOf("charCastable" to Sign.ANY)))
-            put(Type.BOOL_CAST, FunctionInfo(Sign.BOOL, 1, listOf("boolCastable" to Sign.ANY)))
-            put(Type.STRING_CAST, FunctionInfo(Sign.STRING, 1, listOf("stringCastable" to Sign.ANY)))
+            put(Type.FLOAT_CAST, FunctionInfo(SignatureConstants.FLOAT, 1, listOf("floatCastable" to SignatureConstants.ANY)))
+            put(Type.CHAR_CAST, FunctionInfo(SignatureConstants.CHAR, 1, listOf("charCastable" to SignatureConstants.ANY)))
+            put(Type.BOOL_CAST, FunctionInfo(SignatureConstants.BOOL, 1, listOf("boolCastable" to SignatureConstants.ANY)))
+            put(Type.STRING_CAST, FunctionInfo(SignatureConstants.STRING, 1, listOf("stringCastable" to SignatureConstants.ANY)))
 
-            put(Type.TIME, FunctionInfo(Sign.INT, 0))
-            put(Type.READ, FunctionInfo(Sign.STRING, 0))
-            put(Type.READLN, FunctionInfo(Sign.STRING, 0))
-            put(Type.FORMAT, FunctionInfo(Sign.STRING, -1))
-            put(Type.TYPE_OF, FunctionInfo(Sign.TYPE, 1, listOf("any" to Sign.ANY)))
+            put(Type.TIME, FunctionInfo(SignatureConstants.INT, 0))
+            put(Type.READ, FunctionInfo(SignatureConstants.STRING, 0))
+            put(Type.READLN, FunctionInfo(SignatureConstants.STRING, 0))
+            put(Type.FORMAT, FunctionInfo(SignatureConstants.STRING, -1))
+            put(Type.TYPE_OF, FunctionInfo(SignatureConstants.TYPE, 1, listOf("any" to SignatureConstants.ANY)))
 
-            put(Type.MEM_CLEAR, FunctionInfo(Sign.NONE, 0))
-            put(Type.COPY, FunctionInfo(null, 1, listOf("any" to Sign.ANY)))
+            put(Type.MEM_CLEAR, FunctionInfo(SignatureConstants.NONE, 0))
+            put(Type.COPY, FunctionInfo(null, 1, listOf("any" to SignatureConstants.ANY)))
         }
     }
 

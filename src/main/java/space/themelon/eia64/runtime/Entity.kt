@@ -15,7 +15,7 @@ open class Entity(
 
     open fun update(another: Any) {
         if (!mutable) throw RuntimeException("Entity $name is immutable")
-        if (signature == Sign.ANY) value = another
+        if (signature == SignatureConstants.ANY) value = another
         else {
             val otherSignature = getSignature(another)
             if (!matches(signature, otherSignature)) throw RuntimeException("Entity $name cannot change type $signature to $otherSignature")
@@ -39,17 +39,17 @@ open class Entity(
                 if (value.interruption != InterruptionType.NONE) getSignature(value.value)
                 else value.signature
             }
-            is ENil -> Sign.NIL
-            is EInt -> Sign.INT
-            is EFloat -> Sign.FLOAT
-            is EString -> Sign.STRING
-            is EBool -> Sign.BOOL
-            is EChar -> Sign.CHAR
+            is ENil -> SignatureConstants.NIL
+            is EInt -> SignatureConstants.INT
+            is EFloat -> SignatureConstants.FLOAT
+            is EString -> SignatureConstants.STRING
+            is EBool -> SignatureConstants.BOOL
+            is EChar -> SignatureConstants.CHAR
             is EArray -> ArrayExtension(value.elementSignature)
-            is EType -> Sign.TYPE
-            is Expression -> Sign.UNIT
-            is EJava -> ClassSign(value.get().javaClass)
-            else -> Sign.JAVA
+            is EType -> SignatureConstants.TYPE
+            is Expression -> SignatureConstants.UNIT
+            is EJava -> ClassSignature(value.get().javaClass)
+            else -> SignatureConstants.JAVA
         }
     }
 }

@@ -165,7 +165,6 @@ class Lexer(private val source: String) {
             if (consumeNext('.')) continue
             else break
         }
-        println(pkgName)
         return Token(line, IMPORT, emptyArray(), pkgName.toString())
     }
 

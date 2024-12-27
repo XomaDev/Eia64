@@ -5,5 +5,18 @@ import java.net.URL
 import kotlin.reflect.jvm.isAccessible
 
 fun main() {
-    println(JSONObject("{\"_id\":\"BqgeoqEdwnAQ\",\"content\":\"I'd rather regret the things that I have done than the things that I have not done.\",\"author\":\"Lucille Ball\",\"tags\":[\"Famous Quotes\"],\"authorSlug\":\"lucille-ball\",\"length\":83,\"dateAdded\":\"2021-03-26\",\"dateModified\":\"2023-04-14\"}\n"))
+    println(unboxType(Class.forName("java.lang.Integer")))
+}
+
+private fun unboxType(boxedType: Class<*>): Class<*> = when (boxedType) {
+    Boolean::class.java -> Boolean::class.javaPrimitiveType!!
+    Byte::class.java -> Byte::class.javaPrimitiveType!!
+    Char::class.java -> Char::class.javaPrimitiveType!!
+    Short::class.java -> Short::class.javaPrimitiveType!!
+    java.lang.Integer::class.java -> Int::class.javaPrimitiveType!!
+    Long::class.java -> Long::class.javaPrimitiveType!!
+    Float::class.java -> Float::class.javaPrimitiveType!!
+    Double::class.java -> Double::class.javaPrimitiveType!!
+    Void::class.java -> Void.TYPE
+    else -> boxedType
 }

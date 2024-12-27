@@ -1,6 +1,6 @@
 package space.themelon.eia64.analysis
 
-import space.themelon.eia64.signatures.Sign
+import space.themelon.eia64.signatures.SignatureConstants
 import space.themelon.eia64.signatures.Signature
 
 class ScopeManager {
@@ -20,7 +20,7 @@ class ScopeManager {
         return t
     }
 
-    private var expectedReturnSignature: Signature = Sign.NONE
+    private var expectedReturnSignature: Signature = SignatureConstants.NONE
     val getPromisedSignature
         get() = expectedReturnSignature
 
