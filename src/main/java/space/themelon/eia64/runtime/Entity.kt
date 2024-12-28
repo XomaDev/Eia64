@@ -46,7 +46,6 @@ open class Entity(
             is EBool -> SignatureConstants.BOOL
             is EChar -> SignatureConstants.CHAR
             is EArray -> ArrayExtension(value.elementSignature)
-            is EType -> SignatureConstants.TYPE
             is Expression -> SignatureConstants.UNIT
             is EJava -> ClassSignature(value.get().javaClass)
             else -> SignatureConstants.JAVA

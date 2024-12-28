@@ -33,7 +33,7 @@ enum class Type {
     E_ARRAY, E_ANY, E_UNIT, E_OBJECT, E_TYPE, E_JAVA,
 
     ALPHA,
-    E_TRUE, E_FALSE, CLASS_VALUE,
+    E_TRUE, E_FALSE,
     NIL,
 
     PUBLIC, PRIVATE,
@@ -137,39 +137,17 @@ enum class Type {
                 it["nil"] = StaticToken(NIL, arrayOf(Flag.VALUE))
                 it["true"] = StaticToken(E_TRUE, arrayOf(Flag.VALUE, Flag.E_BOOL))
                 it["false"] = StaticToken(E_FALSE, arrayOf(Flag.VALUE, Flag.E_BOOL))
-                it["type"] = StaticToken(CLASS_VALUE, arrayOf(Flag.VALUE))
 
                 it["public"] = StaticToken(PUBLIC, arrayOf(Flag.MODIFIER))
                 it["private"] = StaticToken(PRIVATE, arrayOf(Flag.MODIFIER))
 
-                it["bool"] = StaticToken(BOOL_CAST, arrayOf(Flag.NATIVE_CALL))
-                it["int"] = StaticToken(INT_CAST, arrayOf(Flag.NATIVE_CALL))
-                it["float"] = StaticToken(FLOAT_CAST, arrayOf(Flag.NATIVE_CALL))
-                it["char"] = StaticToken(CHAR_CAST, arrayOf(Flag.NATIVE_CALL))
-                it["str"] = StaticToken(STRING_CAST, arrayOf(Flag.NATIVE_CALL))
-
                 it["is"] = StaticToken(IS, arrayOf(Flag.IS, Flag.OPERATOR))
-
-                it["typeOf"] = StaticToken(TYPE_OF, arrayOf(Flag.NATIVE_CALL))
-                it["copy"] = StaticToken(COPY, arrayOf(Flag.NATIVE_CALL))
 
                 it["makeList"] = StaticToken(MAKE_LIST)
                 it["makeDict"] = StaticToken(MAKE_DICT)
 
                 it["arrayOf"] = StaticToken(ARRAY_OF)
                 it["makeArray"] = StaticToken(MAKE_ARRAY)
-
-                it["time"] = StaticToken(TIME, arrayOf(Flag.NATIVE_CALL))
-                it["rand"] = StaticToken(RAND, arrayOf(Flag.NATIVE_CALL))
-                it["print"] = StaticToken(PRINT, arrayOf(Flag.NATIVE_CALL))
-                it["println"] = StaticToken(PRINTLN, arrayOf(Flag.NATIVE_CALL))
-                it["read"] = StaticToken(READ, arrayOf(Flag.NATIVE_CALL))
-                it["readln"] = StaticToken(READLN, arrayOf(Flag.NATIVE_CALL))
-                it["sleep"] = StaticToken(SLEEP, arrayOf(Flag.NATIVE_CALL))
-                it["len"] = StaticToken(LEN, arrayOf(Flag.NATIVE_CALL))
-                it["format"] = StaticToken(FORMAT, arrayOf(Flag.NATIVE_CALL))
-                it["exit"] = StaticToken(EXIT, arrayOf(Flag.NATIVE_CALL))
-                it["memclear"] = StaticToken(MEM_CLEAR, arrayOf(Flag.NATIVE_CALL))
 
                 it["import"] = StaticToken(IMPORT)
                 it["throw"] = StaticToken(THROW)

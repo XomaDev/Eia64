@@ -23,7 +23,10 @@ abstract class Signature {
         SignatureConstants.DICT -> "java.util.HashMap"
         JAVA -> "java.lang.Object"
         is ClassSignature -> this.clazz.name
-        else -> null
+        else -> {
+            println("Cannot convert to java class $this")
+            null
+        }
     })
 
     abstract fun logName(): String

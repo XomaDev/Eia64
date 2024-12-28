@@ -416,13 +416,13 @@ class Parser(
             "Nil" -> SignatureConstants.NIL
             "Int" -> SignatureConstants.INT
             "Float" -> SignatureConstants.FLOAT
+            "Long" -> SignatureConstants.LONG
             "Bool" -> SignatureConstants.BOOL
             "String" -> SignatureConstants.STRING
             "Char" -> SignatureConstants.CHAR
             "Any" -> SignatureConstants.ANY
             "Array" -> SignatureConstants.ARRAY
             "Unit" -> SignatureConstants.UNIT
-            "Type" -> SignatureConstants.TYPE
             "Java" -> SignatureConstants.JAVA
             else -> {
                 environment.classes[name]?.let { return ClassSignature(it) }
@@ -594,12 +594,6 @@ class Parser(
             //  Note: it previously used to call parseTerm() but we changed to parseElement()
             /// Just remember this if something goes wrong while parsing the syntax!
             token.hasFlag(Flag.UNARY) -> return UnaryOperation(token, token.type, element(), true)
-            token.hasFlag(Flag.NATIVE_CALL) -> {
-                eat(Type.OPEN_CURVE)
-                val arguments = args()
-                eat(Type.CLOSE_CURVE)
-                return NativeCall(token, token.type, arguments)
-            }
 
             type == Type.ARRAY_OF -> {
                 if (isNext(Type.OPEN_CURVE)) {
@@ -695,23 +689,17 @@ class Parser(
             if (vrReference == null) {
                 if (manager.hasFunctionNamed(name))
                     Alpha(token, -3, name, SignatureConstants.NONE)
-                else if (environment.classes.contains(name))
-                    Alpha(token, -4, name, SignatureConstants.NONE)
-                else
-                    token.error("Cannot find symbol '$name'")
+                else {
+                    val javaClass = environment.classes[name]
+                    if (javaClass != null) Alpha(token, -4, name, ClassSignature(javaClass))
+                    else token.error("Cannot find symbol '$name'")
+                }
             } else {
                 // classic variable access
                 Alpha(token, vrReference.index, name, vrReference.signature)
             }
         }
-
-        Type.CLASS_VALUE -> parseType(token)
         else -> token.error("Unknown token type")
-    }
-
-    private fun parseType(token: Token): TypeLiteral {
-        eat(Type.DOUBLE_COLON)
-        return TypeLiteral(token, readSignature(next()))
     }
 
     private fun unitCall(alphaExpr: Expression): Expression {

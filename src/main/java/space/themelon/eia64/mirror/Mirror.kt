@@ -31,12 +31,13 @@ object Mirror {
 
     fun lookupMethod(name: String, clazz: Class<*>, lookupTypes: List<Class<*>>): Method {
         val argTypes = lookupTypes.map { unboxType(it) }
-        clazz.methods.forEach { println(it) }
         return clazz.methods
             .filter {
                 it.name == name
                         && it.parameterCount == argTypes.size
-                        && it.parameterTypes.withIndex().all { (i, pType) -> pType.isAssignableFrom(argTypes[i]) }
+                        && it.parameterTypes.withIndex().all { (i, pType) ->
+                    pType.isAssignableFrom(argTypes[i]) || pType == Object::class.java && argTypes[i].isPrimitive
+                }
             }
             .minByOrNull {
                 it.parameterTypes.withIndex().sumOf { (i, pType) -> computeHierarchyDepth(argTypes[i], pType) }
@@ -80,5 +81,13 @@ object Mirror {
         java.lang.Double::class.java -> Double::class.javaPrimitiveType!!
         java.lang.Void::class.java -> Void.TYPE
         else -> boxedType
+    }
+
+    fun invoke(method: Method, instance: Any?, args: Array<Any?>): Any? {
+        return if (args.size == 1) {
+            method.invoke(instance, args[0]) // avoids spread out bugs
+        } else {
+            method.invoke(instance, *args)
+        }
     }
 }

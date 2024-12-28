@@ -20,7 +20,6 @@ enum class Flag {
     V_KEYWORD,
 
     LOOP,
-    NATIVE_CALL,
     INTERRUPTION,
     NONE,
 }

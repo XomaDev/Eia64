@@ -4,6 +4,7 @@ import space.themelon.eia64.Expression
 import space.themelon.eia64.expressions.*
 import space.themelon.eia64.expressions.FunctionExpr
 import space.themelon.eia64.containers.*
+import space.themelon.eia64.mirror.Mirror
 import space.themelon.eia64.runtime.Conversions.eiaToJava
 import space.themelon.eia64.runtime.Conversions.javaToEia
 import space.themelon.eia64.runtime.Entity.Companion.getSignature
@@ -84,7 +85,6 @@ class Evaluator(
     override fun boolLiteral(literal: BoolLiteral) = EBool(literal.value)
     override fun stringLiteral(literal: StringLiteral) = EString(literal.value)
     override fun charLiteral(literal: CharLiteral) = EChar(literal.value)
-    override fun typeLiteral(literal: TypeLiteral) = EType(literal.signature)
 
     override fun alpha(alpha: Alpha) = memory.getVar(alpha.index, alpha.value)
 
@@ -224,7 +224,7 @@ class Evaluator(
             when (toUpdate) {
                 is Alpha -> update(toUpdate.index, toUpdate.value, value)
                 is ArrayAccess -> updateArrayElement(toUpdate, value)
-                is JavaField -> updateKotlinField(toUpdate, value)
+                is JavaField -> updateJavaField(toUpdate, value)
                 else -> throw RuntimeException("Unknown left operand for [= Assignment]: $toUpdate")
             }
             value
@@ -386,149 +386,10 @@ class Evaluator(
         return result
     }
 
-    override fun nativeCall(call: NativeCall): Any {
-        when (val type = call.call) {
-            PRINT, PRINTLN -> {
-                var printCount = 0
-                call.arguments.forEach {
-                    var printable = unboxEval(it)
-                    printable = if (printable is Array<*>) printable.contentDeepToString() else printable.toString()
-
-                    printCount += printable.length
-                    environment.standardOutput.print(printable)
-                }
-                if (type == PRINTLN) environment.standardOutput.print('\n')
-                return Nothing.INSTANCE
-            }
-
-            READ, READLN -> {
-                return EString(Scanner(environment.standardInput).let { if (type == READ) it.next() else it.nextLine() })
-            }
-
-            SLEEP -> {
-                Thread.sleep(intExpr(call.arguments[0]).get().toLong())
-                return Nothing.INSTANCE
-            }
-
-            LEN -> {
-                return EInt(
-                    when (val data = unboxEval(call.arguments[0])) {
-                        is EString -> data.length
-                        is EArray -> data.size
-                        is ExpressionList -> data.size
-                        is ENil -> 0
-                        else -> throw RuntimeException("Unknown measurable data type $data")
-                    }
-                )
-            }
-
-            FORMAT -> {
-                val exprs = call.arguments
-                val string = unboxEval(exprs[0])
-                if (getSignature(string) != SignatureConstants.STRING)
-                    throw RuntimeException("format() requires a string argument")
-                string as EString
-                if (exprs.size > 1) {
-                    val values = arrayOfNulls<Any>(exprs.size - 1)
-                    for (i in 1 until exprs.size) {
-                        val value = unboxEval(exprs[i])
-                        values[i - 1] = if (value is Primitive<*>) value.get() else value
-                    }
-                    return EString(String.format(string.get(), *values))
-                }
-                return string
-            }
-
-            INT_CAST -> {
-                val obj = unboxEval(call.arguments[0])
-
-                return when (val objType = getSignature(obj)) {
-                    SignatureConstants.INT -> obj
-                    SignatureConstants.CHAR -> EInt((obj as EChar).get().code)
-                    SignatureConstants.STRING -> EInt(obj.toString().toInt())
-                    SignatureConstants.FLOAT -> EInt((obj as EFloat).get().toInt())
-                    else -> throw RuntimeException("Unknown type for int() cast $objType")
-                }
-            }
-
-            FLOAT_CAST -> {
-                val obj = unboxEval(call.arguments[0])
-
-                return when (val objType = getSignature(obj)) {
-                    SignatureConstants.INT -> (obj as EInt).get().toFloat()
-                    SignatureConstants.FLOAT -> obj
-                    SignatureConstants.CHAR -> EFloat((obj as EChar).get().code.toFloat())
-                    SignatureConstants.STRING -> EFloat(obj.toString().toFloat())
-                    else -> throw RuntimeException("Unknown type for int() cast $objType")
-                }
-            }
-
-            CHAR_CAST -> {
-                val obj = unboxEval(call.arguments[0])
-                return when (val objType = getSignature(obj)) {
-                    SignatureConstants.CHAR -> objType
-                    SignatureConstants.INT -> EChar((obj as EInt).get().toChar())
-                    else -> throw RuntimeException("Unknown type for char() cast $objType")
-                }
-            }
-
-            STRING_CAST -> {
-                val obj = unboxEval(call.arguments[0])
-                if (getSignature(obj) == SignatureConstants.STRING) return obj
-                return EString(obj.toString())
-            }
-
-            BOOL_CAST -> {
-                val obj = unboxEval(call.arguments[0])
-                if (getSignature(obj) == SignatureConstants.BOOL) return obj
-                return EBool(
-                    when (obj) {
-                        "true" -> true
-                        "false" -> false
-                        else -> throw RuntimeException("Cannot parse boolean value: $obj")
-                    }
-                )
-            }
-
-            TYPE_OF -> return EType(getSignature(unboxEval(call.arguments[0])))
-
-            COPY -> {
-                val obj = unboxEval(call.arguments[0])
-                if (obj !is Primitive<*> || !obj.isCopyable())
-                    throw RuntimeException("Cannot apply copy() on object type ${getSignature(obj)} = $obj")
-                return obj.copy()!!
-            }
-
-            TIME -> return EInt((System.currentTimeMillis() - startupTime).toInt())
-
-            RAND -> {
-                val from = intExpr(call.arguments[0])
-                val to = intExpr(call.arguments[1])
-                return EInt(Random.nextInt(from.get(), to.get()))
-            }
-
-            // don't do a direct exitProcess(n), Eia could be running in a server
-            // you don't need the entire server to shut down
-            EXIT -> {
-                Environment.EIA_SHUTDOWN(intExpr(call.arguments[0]).get())
-                return EBool(true) // never reached (hopefully?)
-            }
-
-            MEM_CLEAR -> {
-                // for clearing memory of the current class
-                memory.clearMemory()
-                return Nothing.INSTANCE
-            }
-
-            else -> throw RuntimeException("Unknown native call operation: '$type'")
-        }
-    }
-
     override fun throwExpr(throwExpr: ThrowExpr): Any {
         val message = throwExpr.where.prepareError(unboxEval(throwExpr.error).toString())
         throw EiaRuntimeException(message)
     }
-
 
     override fun scope(scope: Scope): Any {
         if (scope.imaginary) return eval(scope.expr)
@@ -538,18 +399,15 @@ class Evaluator(
         return result
     }
 
-    private fun updateKotlinField(field: JavaField, value: Any) {
-        // do not evaluate field, it will lead to access
-        field.field as KMutableProperty1<Any, Any?>
-        field.field.set((unboxEval(field.jObject) as EJava).get(), value.eiaToJava())
+    private fun updateJavaField(field: JavaField, value: Any) {
+        field.field.let { it.get(if (Modifier.isStatic(it.modifiers)) null else value.eiaToJava()) }
     }
 
     override fun javaMethodCall(call: JavaMethodCall): Any {
+        val method = call.method
         val arguments = call.arguments.map { unboxEval(it).eiaToJava() }.toTypedArray()
-        return call.method.let {
-            if (Modifier.isStatic(it.modifiers)) it.invoke(null, arguments)
-            else it.invoke(unboxEval(call.jObject).eiaToJava(), *arguments)
-        }.javaToEia()
+        val instance = if (Modifier.isStatic(method.modifiers)) null else unboxEval(call.jObject).eiaToJava()
+        return Mirror.invoke(method, instance, arguments).javaToEia()
     }
 
     override fun javaFieldAccess(field: JavaField): Primitive<*> {

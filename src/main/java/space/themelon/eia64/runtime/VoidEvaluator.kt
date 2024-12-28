@@ -40,10 +40,6 @@ class VoidEvaluator() : Expression.Visitor<Any> {
         throw ShutdownException()
     }
 
-    override fun typeLiteral(literal: TypeLiteral): Any {
-        throw ShutdownException()
-    }
-
     override fun makeList(makeList: MakeList): Any {
         throw ShutdownException()
 
@@ -97,10 +93,6 @@ class VoidEvaluator() : Expression.Visitor<Any> {
     }
 
     override fun expressionBind(bind: ExpressionBind): Any {
-        throw ShutdownException()
-    }
-
-    override fun nativeCall(call: NativeCall): Any {
         throw ShutdownException()
     }
 

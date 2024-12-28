@@ -17,16 +17,10 @@ class Environment {
     var standardOutput = System.out
     var standardInput = System.`in`
 
-    var classes = mutableMapOf<String, Class<*>>()
+    var classes = HashMap<String, Class<*>>(DefaultImports.defaultClasses)
 
     private val evaluator = Evaluator("Main", this)
     private val parser = Parser(this)
-
-    init {
-        DefaultImports.defaultClassNames.withIndex().forEach { (index, clazz) ->
-           classes += clazz to DefaultImports.defaultClasses[index]
-        }
-    }
 
     fun parse(source: String) = parser.parse(Lexer(source).tokens)
     fun parse(file: File) = parse(file.readText())

@@ -10,7 +10,6 @@ object SignatureConstants {
     private const val LIST_SIGN = "sig_list"
     private const val DICT_SIGN = "sig_dict"
     private const val UNIT_SIGN = "sig_unit"
-    private const val CLASS_SIGN = "sig_class"
     private const val JAVA_OBJECT = "sig_java"
 
     // Always return new instance, since we are testing
@@ -19,19 +18,19 @@ object SignatureConstants {
     val NIL = SimpleSignature(NIL_SIGN)
     val ANY = SimpleSignature(ANY_SIGN)
 
-    val NUM = ClassSignature(String::class.java)
-    val INT = ClassSignature(Int::class.java)
-    val FLOAT = ClassSignature(Float::class.java)
-    val DOUBLE = ClassSignature(Double::class.java)
-    val STRING = ClassSignature(String::class.java)
-    val CHAR = ClassSignature(Char::class.java)
-    val BOOL = ClassSignature(Boolean::class.java)
-
     val ARRAY = SimpleSignature(ARRAY_SIGN)
     val LIST = SimpleSignature(LIST_SIGN)
     val DICT = SimpleSignature(DICT_SIGN)
     val UNIT = SimpleSignature(UNIT_SIGN)
-    val TYPE = SimpleSignature(CLASS_SIGN)
     val JAVA = SimpleSignature(JAVA_OBJECT)
+
+    val NUM = ClassSignature(String::class.java)
+    val INT = ClassSignature(Int::class.java)
+    val FLOAT = ClassSignature(Float::class.java)
+    val LONG = ClassSignature(Long::class.java)
+    val DOUBLE = ClassSignature(Double::class.java)
+    val STRING = ClassSignature(String::class.java)
+    val CHAR = ClassSignature(Char::class.java)
+    val BOOL = ClassSignature(Boolean::class.java)
 
 }

@@ -15,7 +15,6 @@ abstract class Expression {
         fun boolLiteral(literal: BoolLiteral): R
         fun stringLiteral(literal: StringLiteral): R
         fun charLiteral(literal: CharLiteral): R
-        fun typeLiteral(literal: TypeLiteral): R
         fun makeList(makeList: MakeList): R
         fun makeDict(makeDict: MakeDictionary): R
         fun variable(variable: Variable): R
@@ -29,7 +28,6 @@ abstract class Expression {
         fun binaryOperation(expr: BinaryOperation): R
         fun expressions(list: ExpressionList): R
         fun expressionBind(bind: ExpressionBind): R
-        fun nativeCall(call: NativeCall): R
         fun cast(cast: Cast): R
         fun scope(scope: Scope): R
         fun methodCall(call: MethodCall): R

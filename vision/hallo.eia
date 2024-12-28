@@ -1,2 +1,1 @@
-let name: String = "meow"
-println(name[0])
+Sys.println("hello")
