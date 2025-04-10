@@ -37,8 +37,7 @@ class Memory(private val trace: EiaTrace?) {
 
     private var recyclePool: Frame? = null
 
-    private val frameStack = Stack<Frame>()
-    private var currentFrame = Frame().also { frameStack.add(it) }
+    private var currentFrame = Frame()
 
     private fun createFrame() = if (recyclePool == null) {
         Frame(currentFrame)
@@ -57,7 +56,6 @@ class Memory(private val trace: EiaTrace?) {
 
     fun enterScope() {
         currentFrame = createFrame()
-        frameStack.push(currentFrame)
         //tracer.enterScope()
         trace?.enterScope() // forward calls
     }
@@ -67,7 +65,6 @@ class Memory(private val trace: EiaTrace?) {
         val reusable = currentFrame
         currentFrame = reusable.fSuper ?: throw RuntimeException("Already reached super scope")
 
-        frameStack.pop()
         recycle(reusable)
         //tracer.leaveScope()
         trace?.leaveScope() // forward calls
@@ -93,8 +90,7 @@ class Memory(private val trace: EiaTrace?) {
     }
 
     fun dynamicFnSearch(name: String): FunctionExpr? {
-        if (frameStack.size != 1)
-            throw RuntimeException("Dynamic search can only be requested from master scope")
+        if (currentFrame.fSuper != null) throw RuntimeException("Dynamic Function search can only be requested from global scope")
         return currentFrame.searchFn(name)
     }
 
